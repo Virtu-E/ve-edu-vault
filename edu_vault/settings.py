@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 
+from decouple import config
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -37,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "lti_provider",
 ]
 
 MIDDLEWARE = [
@@ -98,6 +101,19 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+
+# LTI CONFIG
+LTI_TOOL_CONFIG = {
+    "CLIENT_ID": config("SECRET_KEY"),
+    "DEPLOYMENT_ID": config("DEPLOYMENT_ID"),
+    "ISSUER": config("ISSUER"),
+    "AUTHORIZATION_URL": config("AUTHORIZATION_URL"),
+    "JWKS_ENDPOINT": config("JWKS_ENDPOINT"),
+    "TOKEN_URL": config("TOKEN_URL"),
+    "TOOL_URL": config("TOOL_URL"),
+    "PRIVATE_KEY": config("PRIVATE_KEY"),  # Private key for signing
+    "PUBLIC_KEY": config("PUBLIC_KEY"),  # Public key for validation
+}
 
 
 # Internationalization
