@@ -12,8 +12,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 
-from decouple import config
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -27,7 +25,14 @@ SECRET_KEY = "django-insecure-$%pf&(zm7psez39!gruk&7^_ao%@&6xhwtsg7=_bctml77s4gw
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "rare-deciding-lobster.ngrok-free.app",
+    "localhost",
+    "virtueducate.edly.io",
+]
+
+
+# Disable SSL verification globally for all requests
 
 
 # Application definition
@@ -40,7 +45,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "lti_provider",
+    "pylti1p3.contrib.django.lti1p3_tool_config",
 ]
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -51,6 +58,13 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://virtueducate.edly.io",
+    "https://local.edly.io",
+    # Add other trusted origins as needed
+]
+
 
 ROOT_URLCONF = "edu_vault.urls"
 
@@ -101,19 +115,6 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
-
-# LTI CONFIG
-LTI_TOOL_CONFIG = {
-    "CLIENT_ID": config("SECRET_KEY"),
-    "DEPLOYMENT_ID": config("DEPLOYMENT_ID"),
-    "ISSUER": config("ISSUER"),
-    "AUTHORIZATION_URL": config("AUTHORIZATION_URL"),
-    "JWKS_ENDPOINT": config("JWKS_ENDPOINT"),
-    "TOKEN_URL": config("TOKEN_URL"),
-    "TOOL_URL": config("TOOL_URL"),
-    "PRIVATE_KEY": config("PRIVATE_KEY"),  # Private key for signing
-    "PUBLIC_KEY": config("PUBLIC_KEY"),  # Public key for validation
-}
 
 
 # Internationalization

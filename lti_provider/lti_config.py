@@ -40,23 +40,23 @@ class DjangoToolConf(ToolConfAbstract):
 
     def find_registration_by_issuer(self, iss: str, *args, **kwargs) -> Registration:
         """Find a registration when the issuer has only one client ID."""
-        registration_data = self.find_registration(iss)
+        registration_data = self._get_registration_instance(iss)
         if not registration_data:
             raise ValueError(f"No registration found for issuer: {iss}")
         return registration_data
 
-    def find_registration_by_params(
-        self, iss: str, client_id: str, *args, **kwargs
-    ) -> None:
-        """Will not implement this because we dont need it right now"""
-        pass
-
-    def find_deployment(self, iss: str, deployment_id: str) -> None:
-        """Will not implement this because we dont need it right now"""
-        pass
-
-    def find_deployment_by_params(
-        self, iss: str, deployment_id: str, client_id: str, *args, **kwargs
-    ) -> None:
-        """Will not implement this because we dont need it right now"""
-        pass
+    # def find_registration_by_params(
+    #     self, iss: str, client_id: str, *args, **kwargs
+    # ) -> None:
+    #     """Will not implement this because we dont need it right now"""
+    #     pass
+    #
+    # def find_deployment(self, iss: str, deployment_id: str) -> None:
+    #     """Will not implement this because we dont need it right now"""
+    #     pass
+    #
+    # def find_deployment_by_params(
+    #     self, iss: str, deployment_id: str, client_id: str, *args, **kwargs
+    # ) -> None:
+    #     """Will not implement this because we dont need it right now"""
+    #     pass
