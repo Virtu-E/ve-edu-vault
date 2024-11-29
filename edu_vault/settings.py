@@ -25,7 +25,14 @@ SECRET_KEY = "django-insecure-$%pf&(zm7psez39!gruk&7^_ao%@&6xhwtsg7=_bctml77s4gw
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "rare-deciding-lobster.ngrok-free.app",
+    "localhost",
+    "virtueducate.edly.io",
+]
+
+
+# Disable SSL verification globally for all requests
 
 
 # Application definition
@@ -37,7 +44,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "lti_provider",
+    "pylti1p3.contrib.django.lti1p3_tool_config",
 ]
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -48,6 +58,13 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://virtueducate.edly.io",
+    "https://local.edly.io",
+    # Add other trusted origins as needed
+]
+
 
 ROOT_URLCONF = "edu_vault.urls"
 
