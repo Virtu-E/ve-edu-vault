@@ -1,0 +1,2 @@
+Interesting read here :
+https://www.mongodb.com/developer/code-examples/python/song-recommendations-example-app/
