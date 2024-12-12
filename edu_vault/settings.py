@@ -14,7 +14,7 @@ from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+MONGO_URL = "mongodb+srv://myAtlasDBUser:tkB0QqcKTztNhnWW@myatlasclusteredu.2khcb.mongodb.net/?retryWrites=true&w=majority&appName=myAtlasClusterEDU"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -71,7 +71,7 @@ ROOT_URLCONF = "edu_vault.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -83,6 +83,8 @@ TEMPLATES = [
         },
     },
 ]
+
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 WSGI_APPLICATION = "edu_vault.wsgi.application"
 
