@@ -52,7 +52,8 @@ class ProgressUpdater:
 
         self.user_question_attempt_instance.save()
 
-        # Check if the topic is cleared by verifying all questions in the metadata are marked as correct
+        # Check if the topic is cleared by verifying all
+        # questions in the metadata are marked as correct
         topic_cleared = all(
             value.get("is_correct", False) for value in question_metadata.values()
         )
