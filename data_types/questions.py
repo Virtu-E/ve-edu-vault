@@ -1,28 +1,25 @@
-from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List
+from typing import List
+
+from pydantic import BaseModel
 
 
-@dataclass
-class Choice:
+class Choice(BaseModel):
     text: str
     is_correct: bool
 
 
-@dataclass
-class Solution:
+class Solution(BaseModel):
     explanation: str
 
 
-@dataclass
-class Metadata:
+class Metadata(BaseModel):
     created_by: str
     created_at: datetime
     updated_at: datetime
 
 
-@dataclass
-class Question:
+class Question(BaseModel):
     _id: str
     question_id: str
     text: str
@@ -36,3 +33,11 @@ class Question:
     solution: Solution
     hint: str
     metadata: Metadata
+
+
+class QuestionAttemptData(BaseModel):
+    is_correct: bool
+    in_correct_count: int = 0
+    question_id: str
+    category_id: str
+    topic_id: str

@@ -35,7 +35,7 @@ EXAMINATION_LEVELS = [
 
 class Category(models.Model):
     """
-    Represents a unique question category within an academic class and examination level.
+    Represents a unique question category within an academic class, course and examination level.
     For example, "Quadratic Equations".
     """
 
@@ -47,11 +47,12 @@ class Category(models.Model):
     academic_class = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    course_key = models.CharField(max_length=255, unique=True)
 
     class Meta:
         verbose_name = "Question Category"
         verbose_name_plural = "Question Categories"
-        unique_together = ("examination_level", "academic_class", "name")
+        unique_together = ("examination_level", "academic_class", "course_key")
 
     def __str__(self):
         return self.name
@@ -100,9 +101,14 @@ class UserQuestionSet(models.Model):
         return f"{self.user.username} - {self.topic.name}"
 
 
-class UserTopicAttempts(models.Model):
+class UserQuestionAttempts(models.Model):
     """
-    Stores user attempts for a specific topic, including question metadata.
+    Stores user attempts for questions within a specific topic. Instead of creating a separate table for each question attempt,
+    we use a JSON field to store the attempt data. This design choice accommodates the dynamic nature of the questions,
+    which can change or be updated at any time based on user progress or other factors.
+
+    Using a JSON field is more efficient than managing hundreds of tables, as it simplifies operations such as deleting,
+    modifying, or updating questions without requiring extensive structural changes to the database.
     """
 
     user = models.ForeignKey(
@@ -116,25 +122,26 @@ class UserTopicAttempts(models.Model):
     )
 
     class Meta:
-        verbose_name = "User Topic Attempt"
-        verbose_name_plural = "User Topic Attempts"
+        verbose_name = "User Question Attempt"
+        verbose_name_plural = "User Questions Attempts"
 
     def __str__(self):
         return f"{self.user.username} - {self.topic.name} Attempts"
 
 
-class UserProgress(models.Model):
+class UserCategoryProgress(models.Model):
     """
-    Tracks the user's progress in relation to topics under a specific category.
+    Tracks the user's category progress by keeping track of the cleared/uncleared topics in the category
     """
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="progress")
-    category = models.ForeignKey(
+    category = models.OneToOneField(
         Category, on_delete=models.CASCADE, related_name="category_progress"
     )
     last_activity = models.DateTimeField(auto_now=True)
     total_topics = models.IntegerField(default=0)
     cleared_topics = models.IntegerField(default=0)
+    is_completed = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "User Progress"
