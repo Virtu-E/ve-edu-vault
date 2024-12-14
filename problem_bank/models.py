@@ -1,6 +1,30 @@
 from django.contrib.auth.models import User
 from django.db import models
 
+"""
+In Virtu Educate, challenges and quizzes are organized into categories.
+Every quiz or challenge is based on a specific category. For example, there can be a
+quiz on the mathematical "Quadratic" category. Within that category, we have topics that represent learning
+objectives or skills a user needs to master in order to fully understand the quadratic category.
+For every topic, there are questions of varying difficulty that the user must pass to clear the topic.
+Once the user has cleared all topics within a category, it indicates that they have mastered the category.
+
+Academic Class and Examination Level
+│
+├── Category
+│   ├── Topic 1
+│   │   ├── User Question Set (JSON: Question Set IDs)
+│   │   ├── User Topic Attempt (JSON: Attempt Data)
+│   │   └── User Progress (Tracks progress for Topic 1)
+│   ├── Topic 2
+│   │   ├── User Question Set (JSON: Question Set IDs)
+│   │   ├── User Topic Attempt (JSON: Attempt Data)
+│   │   └── User Progress (Tracks progress for Topic 2)
+│   └── ...
+│
+
+"""
+
 # Constants for examination levels
 EXAMINATION_LEVELS = [
     ("MSCE", "MSCE"),
@@ -9,81 +33,112 @@ EXAMINATION_LEVELS = [
 ]
 
 
-class QuestionCategory(models.Model):
+class Category(models.Model):
     """
-    Represents a question category.
+    Represents a unique question category within an academic class and examination level.
+    For example, "Quadratic Equations".
     """
 
-    name = models.CharField(max_length=255)
-    topic_details = models.JSONField(help_text="List of topics and their statuses.")
-    total_topics = models.PositiveIntegerField(
-        help_text="Total number of topics in the category."
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    examination_level = models.CharField(
+        choices=EXAMINATION_LEVELS, max_length=20, default="MSCE"
     )
+    academic_class = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Question Category"
+        verbose_name_plural = "Question Categories"
+        unique_together = ("examination_level", "academic_class", "name")
 
     def __str__(self):
         return self.name
 
 
+class Topic(models.Model):
+    """
+    Represents a topic or theme under a category. For example, "Completing the Square".
+    """
+
+    name = models.CharField(max_length=100)
+    category = models.ForeignKey(
+        Category, on_delete=models.CASCADE, related_name="topics"
+    )
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_completed = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "Question Topic"
+
+    def __str__(self):
+        return f"{self.category.name} - {self.name}"
+
+
 class UserQuestionSet(models.Model):
     """
-    Represents a user's question set within a course, organized by topics and categories.
-    Tracks progress, completion status, and topic-level details.
+    Represents a user's set of questions related to a specific topic.
+    The question set IDs are stored in MongoDB and referenced here.
     """
 
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="question_sets"
     )
+    topic = models.OneToOneField(
+        Topic, on_delete=models.CASCADE, related_name="question_sets"
+    )
     question_set_ids = models.JSONField(help_text="References to MongoDB question IDs.")
-    progress = models.FloatField(help_text="Progress as a percentage.")
-    completed = models.BooleanField(
-        default=False, help_text="Indicates if all topics are cleared."
-    )
-    question_set_category = models.ForeignKey(
-        QuestionCategory,
-        on_delete=models.CASCADE,
-        related_name="user_question_sets",
-        help_text="Category of the question set.",
-    )
-    examination_level = models.CharField(
-        max_length=10, choices=EXAMINATION_LEVELS, help_text="Examination level."
-    )
-    academic_class = models.CharField(max_length=50, help_text="E.g., Form 1, Form 2.")
-    cleared_topics = models.PositiveIntegerField(
-        default=0, help_text="Number of topics cleared by the user."
-    )
 
     class Meta:
         verbose_name = "User Question Set"
         verbose_name_plural = "User Question Sets"
-        unique_together = (
-            "user",
-            "question_set_category",
-            "examination_level",
-            "academic_class",
-        )
-        ordering = [
-            "user",
-            "question_set_category",
-            "examination_level",
-            "academic_class",
-        ]
 
     def __str__(self):
-        return f"{self.user.username} - {self.question_set_category.name} ({self.examination_level})"
+        return f"{self.user.username} - {self.topic.name}"
 
-    @property
-    def is_progress_complete(self):
-        """Check if progress is 100%."""
-        return self.progress == 100.0
 
-    def update_progress(self):
-        """
-        Updates the progress based on topics passed and total topics in the associated category.
-        """
-        total_topics = self.question_set_category.total_topics
-        if total_topics > 0:
-            self.progress = (self.cleared_topics / total_topics) * 100
-        else:
-            self.progress = 0
-        self.completed = self.progress == 100.0
-        self.save()
+class UserTopicAttempts(models.Model):
+    """
+    Stores user attempts for a specific topic, including question metadata.
+    """
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="question_attempts"
+    )
+    topic = models.OneToOneField(
+        Topic, on_delete=models.CASCADE, related_name="topic_attempts"
+    )
+    question_metadata = models.JSONField(
+        help_text="Metadata for questions attempted by the user."
+    )
+
+    class Meta:
+        verbose_name = "User Topic Attempt"
+        verbose_name_plural = "User Topic Attempts"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.topic.name} Attempts"
+
+
+class UserProgress(models.Model):
+    """
+    Tracks the user's progress in relation to topics under a specific category.
+    """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="progress")
+    category = models.ForeignKey(
+        Category, on_delete=models.CASCADE, related_name="category_progress"
+    )
+    last_activity = models.DateTimeField(auto_now=True)
+    total_topics = models.IntegerField(default=0)
+    cleared_topics = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = "User Progress"
+        verbose_name_plural = "User Progress"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.category.name} Progress"
