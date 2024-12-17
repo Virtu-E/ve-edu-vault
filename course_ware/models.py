@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import models
 
+# TODO : update the documentation below after alpha release --> things might have changes
 """
 In Virtu Educate, challenges and quizzes are organized into categories.
 Every quiz or challenge is based on a specific category. For example, there can be a
@@ -33,6 +34,23 @@ EXAMINATION_LEVELS = [
 ]
 
 
+class AcademicClass(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Course(models.Model):
+    """
+    Stores open edx course information.
+    """
+
+    name = models.CharField(max_length=255)
+    course_key = models.CharField(max_length=255, unique=True)
+    course_structure = models.JSONField()
+
+
 class Category(models.Model):
     """
     Represents a unique question category within an academic class, course and examination level.
@@ -44,10 +62,10 @@ class Category(models.Model):
     examination_level = models.CharField(
         choices=EXAMINATION_LEVELS, max_length=20, default="MSCE"
     )
-    academic_class = models.CharField(max_length=100)
+    academic_class = models.ForeignKey(AcademicClass, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    course_key = models.CharField(max_length=255, unique=True)
+    course = models.OneToOneField(Course, on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = "Question Category"
@@ -118,7 +136,8 @@ class UserQuestionAttempts(models.Model):
         Topic, on_delete=models.CASCADE, related_name="topic_attempts"
     )
     question_metadata = models.JSONField(
-        help_text="Metadata for questions attempted by the user."
+        help_text="Metadata for questions attempted by the user.",
+        default={"v1.0.0": {}},
     )
 
     class Meta:
@@ -139,9 +158,22 @@ class UserCategoryProgress(models.Model):
         Category, on_delete=models.CASCADE, related_name="category_progress"
     )
     last_activity = models.DateTimeField(auto_now=True)
-    total_topics = models.IntegerField(default=0)
-    cleared_topics = models.IntegerField(default=0)
+    # TODO : retire the is_completed field below because it is redundant
     is_completed = models.BooleanField(default=False)
+
+    @property
+    def get_cleared_topics_count(self):
+        return self.category.topic_set.filter(is_completed=True).count()
+
+    @property
+    def get_topics_count(self):
+        return self.category.topics.count()
+
+    @property
+    def progress_percentage(self):
+        total_topics = self.get_topics_count()
+        completed_topics = self.get_cleared_topics_count()
+        return (completed_topics / total_topics) * 100 if total_topics > 0 else 0
 
     class Meta:
         verbose_name = "User Progress"

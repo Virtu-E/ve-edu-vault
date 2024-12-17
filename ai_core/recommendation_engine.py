@@ -1,5 +1,7 @@
+from performance_engine import PerformanceEngineInterface
+
+from ai_core.performance_calculators import PerformanceCalculatorInterface
 from data_types.questions import Question
-from mongodb import mongo_database
 from nosql_database_engine import NoSqLDatabaseEngineInterface
 
 
@@ -11,8 +13,9 @@ class RecommendationEngine:
     # due to the nature of questions, we will be sorely using no sql databases to store the questions, hence the no sql database interface
     def __init__(
         self,
-        performance_engine,
+        performance_engine: PerformanceEngineInterface,
         database_engine: NoSqLDatabaseEngineInterface,
+        performance_calculator: PerformanceCalculatorInterface,
         database_name: str,
         collection_name: str,
     ):
@@ -39,7 +42,7 @@ class RecommendationEngine:
     """
 
     # TODO : handle database error connections gracefully
-    def get_questions_list_from_database(
+    def _get_questions_list_from_database(
         self,
         category: str,
         topic: str,
@@ -58,3 +61,12 @@ class RecommendationEngine:
             "difficulty": difficulty,
         }
         return collection.find(query)
+
+    def _get_questions_id_to_exclude(self, questions: list[str]) -> list[str]:
+        pass
+
+    def get_users_recommended_questions(self) -> list[Question]:
+        ranked_difficulties, difficulty_status = (
+            self._performance_engine.get_topic_performance_stats()
+        )
+        pass

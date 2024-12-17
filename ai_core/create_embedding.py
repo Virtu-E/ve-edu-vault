@@ -11,7 +11,7 @@ def get_embedding(query_str, api_key):
     endpoint = "https://api.openai.com/v1/embeddings"
     # TODO: For the value of `Authorization`, set it to a string that includes the `api_key` variable. For example, "Bearer {api_key}"
     headers = {
-        "Authorization": f"Bearer 3fe4ffef44fp_049",
+        "Authorization": "Bearer 3fe4ffef44fp_049",
         "Content-Type": "application/json",
     }
     payload = {

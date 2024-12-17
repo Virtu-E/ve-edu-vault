@@ -1,6 +1,6 @@
+from course_ware.models import Topic, UserCategoryProgress, UserQuestionAttempts
 from data_types.questions import QuestionAttemptData
 from exceptions import QuestionNotFoundError
-from problem_bank.models import Topic, UserCategoryProgress, UserQuestionAttempts
 
 
 class ProgressUpdater:
@@ -24,12 +24,9 @@ class ProgressUpdater:
         self.question_id = question_data.question_id
         self.question_data = question_data
 
-    def _update_user_question_attempt(self, data: QuestionAttemptData) -> bool:
+    def _update_user_question_attempt(self) -> bool:
         """
         Updates the user's question metadata every time the user attempts to answer.
-
-        Args:
-            data (QuestionAttemptData): Metadata about the user's attempt.
 
         Returns:
             bool: True if the topic associated with the question is cleared, False otherwise.
@@ -37,13 +34,13 @@ class ProgressUpdater:
         question_metadata = self.user_question_attempt_instance.question_metadata
 
         # Ensure the question exists in the metadata
-        question_data_instance = question_metadata.get(data.question_id)
+        question_data_instance = question_metadata.get(self.question_data.question_id)
         if question_data_instance is None:
             raise QuestionNotFoundError()
 
         # Update the question metadata if the question has never been answered correctly
         if not question_data_instance.get("is_correct", False):
-            if data.is_correct:
+            if self.question_data.is_correct:
                 question_data_instance["is_correct"] = True
             else:
                 question_data_instance["in_correct_count"] = (
@@ -62,24 +59,17 @@ class ProgressUpdater:
 
     def _update_user_category_progress(self, topic_cleared: bool) -> None:
         """
-        Updates a specific category's progress by modifying the status of cleared and uncleared topics.
-        Marks the category as complete if all topics have been cleared.
+        Updates a specific category's progress dynamically using properties.
 
         Args:
             topic_cleared (bool): Whether the topic was cleared.
         """
-        if self.user_category_progress_instance.is_completed:
+        if self.user_category_progress_instance.progress_percentage >= 100:
             return
 
         if topic_cleared:
-            self.user_category_progress_instance.cleared_topics += 1
-            if (
-                self.user_category_progress_instance.cleared_topics
-                >= self.user_category_progress_instance.total_topics
-            ):
-                self.user_category_progress_instance.is_completed = True
-
-        self.user_category_progress_instance.save()
+            # Save the user category progress instance to update `last_activity`
+            self.user_category_progress_instance.save()
 
     def _update_topic_progress(self, topic_cleared: bool) -> None:
         """
@@ -92,10 +82,11 @@ class ProgressUpdater:
             self.topic_instance.is_completed = True
             self.topic_instance.save()
 
+    # TODO: Use this to pass the grade back to edX for a specific topic, whether it is cleared or not
     def process_updates(self) -> None:
         """
         Coordinates the updates for user question attempts, category progress, and topic progress.
         """
-        topic_cleared = self._update_user_question_attempt(self.question_data)
+        topic_cleared = self._update_user_question_attempt()
         self._update_user_category_progress(topic_cleared)
         self._update_topic_progress(topic_cleared)
