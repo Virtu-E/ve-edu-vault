@@ -4,8 +4,8 @@ from typing import Any
 
 from ai_core.performance_calculators import PerformanceCalculatorInterface
 from course_ware.models import UserQuestionAttempts
+from data_types.ai_core import PerformanceStats
 from data_types.course_ware_schema import QuestionMetadata, UserQuestionAttemptsSchema
-from data_types.performance import PerformanceStats
 
 
 class PerformanceEngineInterface(ABC):

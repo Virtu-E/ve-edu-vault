@@ -4,8 +4,8 @@ from typing import Any
 
 import pandas as pd
 
+from data_types.ai_core import PerformanceStats
 from data_types.course_ware_schema import QuestionMetadata
-from data_types.performance import PerformanceStats
 
 
 class DifficultyStatus(Enum):

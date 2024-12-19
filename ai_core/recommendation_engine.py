@@ -1,6 +1,8 @@
+from typing import Literal
+
 from performance_engine import PerformanceEngineInterface
 
-from ai_core.performance_calculators import PerformanceCalculatorInterface
+from data_types.ai_core import RecommendationEngineConfig
 from data_types.questions import Question
 from nosql_database_engine import NoSqLDatabaseEngineInterface
 
@@ -15,14 +17,16 @@ class RecommendationEngine:
         self,
         performance_engine: PerformanceEngineInterface,
         database_engine: NoSqLDatabaseEngineInterface,
-        performance_calculator: PerformanceCalculatorInterface,
-        database_name: str,
-        collection_name: str,
+        config: RecommendationEngineConfig,
     ):
-        self._performance_engine = performance_engine
-        self._database_engine = database_engine
-        self._database_name = database_name
-        self._collection_name = collection_name
+        self.performance_engine = performance_engine
+        self.database_engine = database_engine
+        self.database_name = config.database_name
+        self.collection_name = config.collection_name
+        self.category = config.category
+        self.topic = config.topic
+        self.examination_level = config.examination_level
+        self.academic_class = config.academic_class
 
     """
     Fetches a list of questions from the specified database collection.
@@ -44,20 +48,16 @@ class RecommendationEngine:
     # TODO : handle database error connections gracefully
     def _get_questions_list_from_database(
         self,
-        category: str,
-        topic: str,
-        examination_level: str,
-        academic_class: str,
         difficulty: str,
     ) -> list[Question]:
-        collection = self._database_engine.fetch_from_db(
-            self._collection_name, self._database_name
+        collection = self.database_engine.fetch_from_db(
+            self.collection_name, self.database_name
         )
         query = {
-            "category": category,
-            "topic": topic,
-            "examination_level": examination_level,
-            "academic_class": academic_class,
+            "category": self.category,
+            "topic": self.topic,
+            "examination_level": self.examination_level,
+            "academic_class": self.academic_class,
             "difficulty": difficulty,
         }
         return collection.find(query)
@@ -65,8 +65,19 @@ class RecommendationEngine:
     def _get_questions_id_to_exclude(self, questions: list[str]) -> list[str]:
         pass
 
-    def get_users_recommended_questions(self) -> list[Question]:
-        ranked_difficulties, difficulty_status = (
-            self._performance_engine.get_topic_performance_stats()
-        )
+    def _process_incomplete_ranked_question_difficulties(
+        self,
+        incomplete_ranked_difficulties: list[
+            tuple[Literal["easy", "medium", "hard"], float]
+        ],
+    ) -> list[str]:
         pass
+
+    def get_users_recommended_questions(self):
+        """
+        Returns a list of Question IDs based on the users performance on prior questions.
+
+        """
+        incomplete_ranked_difficulties, difficulty_status = (
+            self.performance_engine.get_topic_performance_stats()
+        )
