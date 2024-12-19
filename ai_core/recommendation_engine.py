@@ -32,11 +32,9 @@ class RecommendationEngine:
     Fetches a list of questions from the specified database collection.
 
     Args:
-        category: e.g : quadratic_equations
-        topic: e.g : completing the square.
-        examination_level: e.g : MSCE.
-        academic_class: e.g. : Form 3
-        difficulty: e.g. : hard
+        performance_engine : the engine that will be used for performance calculations
+        database_engine : no sql database engine that will be used.
+        config : configuration object of type RecommendationEngineConfig
 
     Returns:
         A list of `Question` objects matching the specified criteria.

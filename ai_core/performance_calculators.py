@@ -33,10 +33,11 @@ class PerformanceCalculatorInterface(ABC):
 
 
 class AttemptBasedDifficultyRankerCalculator(PerformanceCalculatorInterface):
+    # TODO : need to extract this to an .env file at some point
     COMPLETION_THRESHOLD = 2 / 3  # Class constant for completion threshold
 
     def calculate_performance(
-        self, question_data: dict[str, QuestionMetadata | Any]
+        self, question_data: list[dict[str, QuestionMetadata | Any]]
     ) -> PerformanceStats:
         """
         Calculate performance based on question attempts and difficulty levels.

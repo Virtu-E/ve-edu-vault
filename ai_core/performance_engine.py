@@ -1,11 +1,14 @@
+import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Any
+from typing import Union
 
 from ai_core.performance_calculators import PerformanceCalculatorInterface
 from course_ware.models import UserQuestionAttempts
 from data_types.ai_core import PerformanceStats
 from data_types.course_ware_schema import QuestionMetadata, UserQuestionAttemptsSchema
+
+log = logging.getLogger(__name__)
 
 
 class PerformanceEngineInterface(ABC):
@@ -15,7 +18,7 @@ class PerformanceEngineInterface(ABC):
         Abstract method to get user's performance on a topic.
 
         Returns:
-            PerformanceStats: Performance statistics including rankings and status
+            PerformanceStats: Performance statistics including ranked_difficulties and difficulty_status
         """
         raise NotImplementedError
 
@@ -27,9 +30,7 @@ class PerformanceEngine(PerformanceEngineInterface):
 
     def __init__(
         self,
-        category: str,
         topic_id: str,
-        course_id: str,
         user_id: int,
         performance_calculator: PerformanceCalculatorInterface,
     ):
@@ -37,17 +38,32 @@ class PerformanceEngine(PerformanceEngineInterface):
         Initialize the PerformanceEngine instance.
 
         Args:
-            category: Category of performance calculation
-            topic_id: Topic ID associated with the user
-            course_id: Course ID
+
+            topic_id: Topic ID associated with the topic ( Topic Database Instance )
             user_id: User ID
             performance_calculator: Calculator instance for performance metrics
         """
-        self.category = category
+
         self.topic_id = topic_id
-        self.course_id = course_id
         self.user_id = user_id
         self.performance_calculator = performance_calculator
+
+    def get_topic_performance_stats(self) -> PerformanceStats:
+        """
+        Main method to get user performance stats based on question attempts related to a topic.
+
+        Returns:
+            PerformanceStats containing performance metrics
+        """
+        question_attempt_data = self._get_user_attempt_question_metadata()
+        if not question_attempt_data:
+            return PerformanceStats(ranked_difficulties=[], difficulty_status={})
+        question_metadata_current_version = self._get_current_question_version(
+            question_attempt_data, self._parse_version
+        )
+        return self.performance_calculator.calculate_performance(
+            question_metadata_current_version
+        )
 
     @staticmethod
     def _parse_version(version: str) -> tuple:
@@ -66,36 +82,21 @@ class PerformanceEngine(PerformanceEngineInterface):
         except (ValueError, AttributeError) as e:
             raise ValueError(f"Invalid version format: {version}") from e
 
-    def get_topic_performance_stats(self) -> PerformanceStats:
-        """
-        Get user performance stats based on question attempts.
-
-        Returns:
-            PerformanceStats containing performance metrics
-        """
-        question_attempt_data = self._get_user_attempt_question_metadata()
-        current_version_data = self._get_current_question_version(
-            question_attempt_data, self._parse_version
-        )
-        return self.performance_calculator.calculate_performance(current_version_data)
-
     def _get_current_question_version(
         self,
-        question_metadata: dict[str, dict[str, QuestionMetadata | Any]],
+        question_metadata: dict[str, dict[str, QuestionMetadata]],
         parse_version: Callable[[str], tuple],
-    ) -> dict[str, QuestionMetadata | Any]:
+    ) -> dict[str, QuestionMetadata]:
         """
         Get the current (latest) question version from metadata.
 
         Args:
-            question_metadata: Nested dictionary containing question metadata
+            question_metadata: Nested dictionary containing versioned question metadata
             parse_version: Function to parse version strings
 
         Returns:
-            Dictionary containing latest version's question metadata
+            Dictionary containing the question metadata with the latest version
         """
-        if not question_metadata:
-            return {}
 
         try:
             latest_version = max(question_metadata.keys(), key=parse_version)
@@ -105,12 +106,12 @@ class PerformanceEngine(PerformanceEngineInterface):
 
     def _get_user_attempt_question_metadata(
         self,
-    ) -> dict[str, dict[str, QuestionMetadata | Any]]:
+    ) -> Union[dict[str, dict[str, QuestionMetadata]], {}]:
         """
         Retrieve user's question attempt data.
 
         Returns:
-            Dictionary containing question metadata
+            Dictionary containing question metadata or empty dictionary
 
         Raises:
             UserQuestionAttempts.DoesNotExist: If no data found
@@ -124,11 +125,8 @@ class PerformanceEngine(PerformanceEngineInterface):
             )
             return schema.question_metadata
         except UserQuestionAttempts.DoesNotExist:
-            print(
-                f"No question attempt data found for user {self.user_id} "
-                f"and topic {self.topic_id}."
-            )
+            log.info(f"UserQuestionAttempts.DoesNotExist for topic {self.topic_id}")
             return {}
         except Exception as e:
-            print(f"An error occurred while retrieving question metadata: {e}")
+            log.error(f"An error occurred while retrieving question metadata: {e}")
             return {}

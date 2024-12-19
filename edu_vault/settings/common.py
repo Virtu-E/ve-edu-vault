@@ -10,8 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
-import os
 from pathlib import Path
+
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,6 +23,7 @@ MONGO_URL = "mongodb+srv://myAtlasDBUser:tkB0QqcKTztNhnWW@myatlasclusteredu.2khc
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-$%pf&(zm7psez39!gruk&7^_ao%@&6xhwtsg7=_bctml77s4gw"
+DEBUG = config("DEBUG", default=False, cast=bool)
 
 
 # Disable SSL verification globally for all requests
@@ -95,7 +97,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
+# TODO : set more app specific logging
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -104,26 +106,25 @@ LOGGING = {
             "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
             "style": "{",
         },
-        "simple": {
-            "format": "{levelname} {message}",
-            "style": "{",
-        },
+        "simple": {"format": "%(asctime)s::%(name)s::%(levelname)s::%(message)s"},
     },
     "handlers": {
         "console": {
+            "level": "DEBUG" if DEBUG else "INFO",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
         "file": {
+            "level": "DEBUG" if DEBUG else "INFO",
             "class": "logging.FileHandler",
-            "filename": "django.log",
-            "formatter": "verbose",
+            "filename": "virtu_educate.log",
+            "formatter": "simple",
         },
     },
     "loggers": {
-        "django": {
-            "handlers": ["console", "file"],
-            "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
+        "": {
+            "handlers": ["file", "console"],
+            "level": "DEBUG" if DEBUG else "INFO",
             "propagate": True,
         },
     },
