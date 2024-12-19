@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from common import *  # noqa: F401
+from .common import *  # noqa: F401
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent

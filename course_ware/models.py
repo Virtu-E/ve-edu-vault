@@ -70,7 +70,7 @@ class Category(models.Model):
     class Meta:
         verbose_name = "Question Category"
         verbose_name_plural = "Question Categories"
-        unique_together = ("examination_level", "academic_class", "course_key")
+        unique_together = ("examination_level", "academic_class", "course")
 
     def __str__(self):
         return self.name
