@@ -22,15 +22,6 @@ MONGO_URL = "mongodb+srv://myAtlasDBUser:tkB0QqcKTztNhnWW@myatlasclusteredu.2khc
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-$%pf&(zm7psez39!gruk&7^_ao%@&6xhwtsg7=_bctml77s4gw"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = [
-    "rare-deciding-lobster.ngrok-free.app",
-    "localhost",
-    "virtueducate.edly.io",
-]
-
 
 # Disable SSL verification globally for all requests
 
@@ -46,6 +37,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "lti_provider",
     "pylti1p3.contrib.django.lti1p3_tool_config",
+    "ai_core",
+    "course_ware",
 ]
 
 
@@ -57,12 +50,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    "https://virtueducate.edly.io",
-    "https://local.edly.io",
-    # Add other trusted origins as needed
 ]
 
 
@@ -87,17 +74,6 @@ TEMPLATES = [
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 WSGI_APPLICATION = "edu_vault.wsgi.application"
-
-
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
 
 
 # Password validation
