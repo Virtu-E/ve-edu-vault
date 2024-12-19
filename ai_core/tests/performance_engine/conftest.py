@@ -2,7 +2,7 @@ import pytest
 
 from ai_core.performance_calculators import PerformanceCalculatorInterface
 from ai_core.performance_engine import PerformanceEngine
-from ai_core.tests.performance_engine.performance_engine_factory import TopicFactory
+from course_ware.tests.course_ware_factory import TopicFactory
 from data_types.ai_core import PerformanceStats
 
 

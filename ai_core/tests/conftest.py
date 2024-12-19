@@ -1,6 +1,6 @@
 import pytest
 
-from ai_core.tests.performance_engine.performance_engine_factory import UserFactory
+from course_ware.tests.course_ware_factory import UserFactory
 
 
 @pytest.fixture(autouse=True)

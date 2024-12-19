@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from ai_core.tests.performance_engine.performance_engine_factory import (
+from course_ware.tests.course_ware_factory import (
     QuestionMetadataFactory,
     UserQuestionAttemptsFactory,
 )

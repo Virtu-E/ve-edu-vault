@@ -79,11 +79,11 @@ class PerformanceEngine(PerformanceEngineInterface):
         try:
             parts = version.lstrip("v").split(".")
             return tuple(map(int, parts))
-        except (ValueError, AttributeError) as e:
-            raise ValueError(f"Invalid version format: {version}") from e
+        except (ValueError, AttributeError):
+            raise ValueError(f"Invalid version format: {version}")
 
+    @staticmethod
     def _get_current_question_version(
-        self,
         question_metadata: dict[str, dict[str, QuestionMetadata]],
         parse_version: Callable[[str], tuple],
     ) -> dict[str, QuestionMetadata]:
