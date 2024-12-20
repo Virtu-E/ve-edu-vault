@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Literal, Union
@@ -6,6 +7,8 @@ import pandas as pd
 
 from data_types.ai_core import PerformanceStats
 from data_types.course_ware_schema import QuestionMetadata
+
+log = logging.getLogger(__name__)
 
 
 class DifficultyStatus(Enum):
@@ -49,6 +52,7 @@ class AttemptBasedDifficultyRankerCalculator(PerformanceCalculatorInterface):
             PerformanceStats: Contains ranked difficulties and their completion status
         """
         if not question_data:
+            log.info("No question metadata found, skipping performance calculation.")
             return PerformanceStats(ranked_difficulties=[], difficulty_status={})
         # dumping the data to JSON due to the way pandas work. If Pydantic model is sent,
         # it won't be able to see all the available data fields

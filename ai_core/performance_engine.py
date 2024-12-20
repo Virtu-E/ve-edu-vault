@@ -7,6 +7,7 @@ from ai_core.performance_calculators import PerformanceCalculatorInterface
 from course_ware.models import UserQuestionAttempts
 from data_types.ai_core import PerformanceStats
 from data_types.course_ware_schema import QuestionMetadata, UserQuestionAttemptsSchema
+from exceptions import DatabaseQueryError, VersionParsingError
 
 log = logging.getLogger(__name__)
 
@@ -57,6 +58,7 @@ class PerformanceEngine(PerformanceEngineInterface):
         """
         question_attempt_data = self._get_user_attempt_question_metadata()
         if not question_attempt_data:
+            log.info("No question attempt data for topic {}".format(self.topic_id))
             return PerformanceStats(ranked_difficulties=[], difficulty_status={})
         question_metadata_current_version = self._get_current_question_version(
             question_attempt_data, self._parse_version
@@ -80,7 +82,8 @@ class PerformanceEngine(PerformanceEngineInterface):
             parts = version.lstrip("v").split(".")
             return tuple(map(int, parts))
         except (ValueError, AttributeError):
-            raise ValueError(f"Invalid version format: {version}")
+            log.error("Unable to parse version string %s", version)
+            raise VersionParsingError(version)
 
     @staticmethod
     def _get_current_question_version(
@@ -98,11 +101,8 @@ class PerformanceEngine(PerformanceEngineInterface):
             Dictionary containing the question metadata with the latest version
         """
 
-        try:
-            latest_version = max(question_metadata.keys(), key=parse_version)
-            return question_metadata[latest_version]
-        except (ValueError, KeyError) as e:
-            raise ValueError("Invalid version format in metadata") from e
+        latest_version = max(question_metadata.keys(), key=parse_version)
+        return question_metadata[latest_version]
 
     def _get_user_attempt_question_metadata(
         self,
@@ -129,4 +129,4 @@ class PerformanceEngine(PerformanceEngineInterface):
             return {}
         except Exception as e:
             log.error(f"An error occurred while retrieving question metadata: {e}")
-            return {}
+            raise DatabaseQueryError(e)

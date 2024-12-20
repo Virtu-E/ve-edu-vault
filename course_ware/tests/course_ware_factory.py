@@ -8,6 +8,7 @@ from course_ware.models import (
     Topic,
     User,
     UserQuestionAttempts,
+    UserQuestionSet,
 )
 from data_types.course_ware_schema import QuestionMetadata
 
@@ -81,3 +82,12 @@ class UserQuestionAttemptsFactory(DjangoModelFactory):
             "v2.0.0": {"question1": QuestionMetadataFactory().__dict__},
         }
     )
+
+
+class UserQuestionSetFactory(DjangoModelFactory):
+    class Meta:
+        model = UserQuestionSet
+
+    user = SubFactory(UserFactory)
+    topic = SubFactory(TopicFactory)
+    question_set_ids = "[]"

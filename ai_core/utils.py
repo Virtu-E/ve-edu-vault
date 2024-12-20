@@ -3,6 +3,7 @@ from typing import List
 from exceptions import DatabaseQueryError
 
 
+# TODO : add logging capability here
 def fetch_from_model(model, **kwargs):
     try:
         return model.objects.get(**kwargs)

@@ -1,30 +1,53 @@
+import asyncio
 import json
+import logging
 import re
-from typing import Any, Dict, List, Literal, Tuple
+from dataclasses import dataclass
+from functools import lru_cache
+from typing import Any, Dict, List, Literal, Set, TypeVar
 
-from performance_engine import PerformanceEngineInterface
-
+from ai_core.performance_engine import PerformanceEngineInterface
 from ai_core.utils import fetch_from_model
 from course_ware.models import UserQuestionAttempts, UserQuestionSet
 from data_types.ai_core import RecommendationEngineConfig
 from data_types.questions import Question
-from exceptions import DatabaseQueryError, QuestionFetchError
+from exceptions import (
+    DatabaseQueryError,
+    DatabaseUpdateError,
+    InsufficientQuestionsError,
+    QuestionFetchError,
+)
 from nosql_database_engine import NoSqLDatabaseEngineInterface
 
+# Type variables for generics
+T = TypeVar("T")
 
-class UserDataError(Exception):
-    """Base exception for user data operations"""
+log = logging.getLogger(__name__)
 
-    pass
+
+# TODO : the naming here conflicts with the data type in the course ware schema in data type folder. Need to change it
+@dataclass
+class QuestionMetadata:
+    """Data class for question metadata"""
+
+    category: str
+    topic: str
+    examination_level: str
+    academic_class: str
+    difficulty: str
 
 
 class RecommendationEngine:
     """
-    Responsible for recommending a user's question set based on their performance on prior questions.
+    Responsible for recommending questions based on user performance.
 
-    This engine uses a combination of performance metrics and question metadata to generate
+    This engine uses performance metrics and question metadata to generate
     personalized question recommendations for users.
     """
+
+    MINIMUM_QUESTIONS_THRESHOLD = 9
+    VERSION_PATTERN = re.compile(r"v(\d+)\.(\d+)\.(\d+)")
+    DEFAULT_VERSION = "v0.0.0"
 
     def __init__(
         self,
@@ -37,65 +60,81 @@ class RecommendationEngine:
 
         Args:
             performance_engine: Engine for calculating user performance metrics
-            database_engine: NoSQL database interface for question storage
-            config: Configuration parameters for the recommendation engine
+            database_engine: NoSQL database interface
+            config: Configuration parameters
         """
         self.performance_engine = performance_engine
         self.database_engine = database_engine
-        self.database_name = config.database_name
-        self.collection_name = config.collection_name
-        self.category = config.category
-        self.topic = config.topic
-        self.examination_level = config.examination_level
-        self.academic_class = config.academic_class
-        self.user_id = config.user_id
-        self.topic_id = config.topic_id
-        self.min_questions_threshold = 9  # Minimum number of questions to recommend
+        self.config = config
 
-    def set_users_recommended_questions(self) -> None:
+        # Initialize database attributes
+        self._init_database_attributes()
+
+    def _init_database_attributes(self) -> None:
+        """Initialize database-related attributes from config"""
+        self.database_name = self.config.database_name
+        self.collection_name = self.config.collection_name
+        self.metadata = QuestionMetadata(
+            category=self.config.category,
+            topic=self.config.topic,
+            examination_level=self.config.examination_level,
+            academic_class=self.config.academic_class,
+            difficulty="",  # Will be set during question fetching
+        )
+
+    @property
+    def user_id(self) -> int:
+        """Get user ID from config"""
+        return self.config.user_id
+
+    @property
+    def topic_id(self) -> int:
+        """Get topic ID from config"""
+        return self.config.topic_id
+
+    async def set_users_recommended_questions(self) -> None:
         """
         Sets the user's recommended questions in the database.
-
-        This method handles both creating new records and updating existing ones.
-
+        Handles both creating new records and updating existing ones.
         """
+        try:
+            recommended_questions = await self._get_users_recommended_questions()
 
-        # TODO : batch operations ?
-        recommended_questions = self._get_users_recommended_questions()
+            await self._save_recommended_questions(recommended_questions)
+            await self._update_user_question_attempts()
 
-        # Handle UserQuestionSet
-        self._save_recommended_questions(recommended_questions)
+            log.info(f"Successfully updated questions for user {self.user_id}")
 
-        # Handle UserQuestionAttempts
-        self._update_user_question_attempts()
+        except Exception as e:
+            log.error(f"Error setting recommended questions: {str(e)}")
+            raise DatabaseUpdateError(f"Error setting recommended questions: {str(e)}")
 
-    def _save_recommended_questions(
+    async def _save_recommended_questions(
         self, recommended_questions: List[Question]
     ) -> None:
-
-        users_question_table = fetch_from_model(
+        """Save recommended questions to the database"""
+        question_set = await fetch_from_model(
             UserQuestionSet, user_id=self.user_id, topic_id=self.topic_id
         )
-        users_question_table.question_set_ids = json.dumps(
-            [{"id": question._id} for question in recommended_questions]
-        )
-        users_question_table.save()
+        question_set.question_set_ids = self._serialize_questions(recommended_questions)
+        await question_set.save()
 
-    def _update_user_question_attempts(self) -> None:
-
-        user_question_attempts = fetch_from_model(
+    async def _update_user_question_attempts(self) -> None:
+        """Update user question attempts with new version"""
+        attempts = await fetch_from_model(
             UserQuestionAttempts, user_id=self.user_id, topic_id=self.topic_id
         )
-        next_version = self.get_next_version(user_question_attempts.question_metadata)
-        user_question_attempts.question_metadata[next_version] = {}
-        user_question_attempts.save()
+        next_version = self.get_next_version(attempts.question_metadata)
+        attempts.question_metadata[next_version] = {}
+        await attempts.save()
 
-    def _get_questions_list_from_database(
-        self,
-        difficulty: str,
+    @lru_cache(maxsize=128)
+    async def _get_questions_list_from_database(
+        self, difficulty: str
     ) -> List[Question]:
         """
         Fetches questions from the database based on specified criteria.
+        Uses caching to improve performance for repeated requests.
 
         Args:
             difficulty: The difficulty level of questions to fetch
@@ -104,110 +143,122 @@ class RecommendationEngine:
             List of Question objects matching the criteria
 
         Raises:
-            QuestionFetchError: If there's an error fetching questions from the database
+            QuestionFetchError: If there's an error fetching questions
         """
         try:
-            collection = self.database_engine.fetch_from_db(
+            collection = await self.database_engine.fetch_from_db(
                 self.collection_name, self.database_name
             )
-            query = {
-                "category": self.category,
-                "topic": self.topic,
-                "examination_level": self.examination_level,
-                "academic_class": self.academic_class,
-                "difficulty": difficulty,
-            }
-            documents = collection.find(query)
-            return [Question(**doc) for doc in documents]
-        except Exception as e:
-            raise QuestionFetchError(
-                f"Failed to fetch questions from database: {str(e)}"
-            )
 
-    def _get_question_ids(self) -> list[Dict[str]]:
+            query = self._build_query(difficulty)
+            documents = await collection.find(query)
+
+            return [Question(**doc) for doc in documents]
+
+        except Exception as e:
+            log.error(f"Database fetch error: {str(e)}")
+            raise QuestionFetchError(f"Failed to fetch questions: {str(e)}")
+
+    def _build_query(self, difficulty: str) -> Dict[str, Any]:
+        """Build the database query based on metadata"""
+        return {
+            "category": self.metadata.category,
+            "topic": self.metadata.topic,
+            "examination_level": self.metadata.examination_level,
+            "academic_class": self.metadata.academic_class,
+            "difficulty": difficulty,
+        }
+
+    async def _get_question_ids(self) -> Set[str]:
         """
-        Extracts all question IDs from the UserQuestionSet table
+        Extracts question IDs from the UserQuestionSet table
 
         Returns:
-            A list containing a dictionary with question IDs
+            Set of question IDs
         """
-
         try:
-            user_question_set = fetch_from_model(
+            question_set = await fetch_from_model(
                 UserQuestionSet, user_id=self.user_id, topic_id=self.topic_id
             )
-            return user_question_set.question_set_ids
+            return {q["id"] for q in json.loads(question_set.question_set_ids)}
+
         except Exception as e:
+            log.error(f"Error fetching question IDs: {str(e)}")
             raise DatabaseQueryError(f"Error processing question IDs: {str(e)}")
 
+    @staticmethod
     def _exclude_current_users_questions(
-        self, recommended_questions: List[Question]
+        recommended_questions: List[Question], current_ids: Set[str]
     ) -> List[Question]:
         """
         Filters out questions that the user has already attempted.
 
         Args:
             recommended_questions: List of potentially recommended questions
+            current_ids: Set of current question IDs
 
         Returns:
-            Filtered list of questions excluding those already attempted by the user
+            Filtered list of questions excluding those already attempted
         """
-        current_users_question_ids = self._get_question_ids()
+        return [q for q in recommended_questions if q.question_id not in current_ids]
 
-        question_ids = {question["id"] for question in current_users_question_ids}
-
-        filtered_questions = [
-            question
-            for question in recommended_questions
-            if question["_id"] not in question_ids
-        ]
-
-        return filtered_questions
-
-    def _process_ranked_difficulties(
+    async def _process_ranked_difficulties(
         self,
-        ranked_difficulties: List[Tuple[Literal["easy", "medium", "hard"], float]],
+        ranked_difficulties: list[tuple[Literal["easy", "medium", "hard"], float]],
     ) -> List[Question]:
         """
         Processes ranked difficulties to fetch corresponding questions.
 
         Args:
-            ranked_difficulties: List of tuples containing difficulty levels and their scores
+            ranked_difficulties: List of tuples containing difficulty levels and scores
 
         Returns:
             List of questions based on the ranked difficulties
         """
-        recommended_questions: List[Question] = []
-        for difficulty, _ in ranked_difficulties:
-            questions = self._get_questions_list_from_database(difficulty)
-            recommended_questions.extend(questions)
-        return recommended_questions
+        tasks = [
+            self._get_questions_list_from_database(difficulty)
+            for difficulty, _ in ranked_difficulties
+        ]
+        question_lists = await asyncio.gather(*tasks)
+        return [q for sublist in question_lists for q in sublist]
 
-    def _get_users_recommended_questions(self) -> List[Question]:
+    async def _get_users_recommended_questions(self) -> List[Question]:
         """
         Generates recommended questions based on user performance.
 
         Returns:
             List of recommended Question objects
 
+        Raises:
+            InsufficientQuestionsError: If not enough questions are available
         """
-
-        ranked_difficulties, _ = self.performance_engine.get_topic_performance_stats()
-        recommended_questions = self._process_ranked_difficulties(ranked_difficulties)
-        filtered_questions = self._exclude_current_users_questions(
-            recommended_questions
+        ranked_difficulties, stats = (
+            await self.performance_engine.get_topic_performance_stats()
+        )
+        recommended_questions = await self._process_ranked_difficulties(
+            ranked_difficulties
         )
 
-        if len(filtered_questions) < self.min_questions_threshold:
-            # TODO: Implement AI-based question recommendation
-            raise QuestionFetchError(
-                "Insufficient questions to recommend; consider AI-based generation."
+        current_ids = await self._get_question_ids()
+        filtered_questions = self._exclude_current_users_questions(
+            recommended_questions, current_ids
+        )
+
+        if len(filtered_questions) < self.MINIMUM_QUESTIONS_THRESHOLD:
+            log.warning(f"Insufficient questions for user {self.user_id}")
+            raise InsufficientQuestionsError(
+                "Insufficient questions available. Consider AI-based generation."
             )
 
         return filtered_questions
 
     @staticmethod
-    def get_next_version(versions: Dict[str, Any]) -> str:
+    def _serialize_questions(questions: List[Question]) -> str:
+        """Serialize questions to JSON format"""
+        return json.dumps([{"id": q.question_id} for q in questions])
+
+    @classmethod
+    def get_next_version(cls, versions: Dict[str, Any]) -> str:
         """
         Generates the next version number based on existing versions.
 
@@ -218,18 +269,21 @@ class RecommendationEngine:
             Next version string in the format "vX.Y.Z"
         """
         if not versions:
-            return "v0.0.0"
+            return cls.DEFAULT_VERSION
 
         try:
-            version_keys = list(versions.keys())
-            version_keys.sort(key=lambda x: [int(i) for i in x.lstrip("v").split(".")])
-
+            version_keys = sorted(
+                versions.keys(),
+                key=lambda x: [int(i) for i in x.lstrip("v").split(".")],
+            )
             latest_version = version_keys[-1]
-            match = re.match(r"v(\d+)\.(\d+)\.(\d+)", latest_version)
 
-            if match:
-                major, _, _ = map(int, match.groups())
+            if match := cls.VERSION_PATTERN.match(latest_version):
+                major = int(match.group(1))
                 return f"v{major + 1}.0.0"
-            return "v0.0.0"
-        except Exception:
-            return "v0.0.0"
+
+            return cls.DEFAULT_VERSION
+
+        except Exception as e:
+            logging.error(f"Version parsing error: {str(e)}")
+            return cls.DEFAULT_VERSION

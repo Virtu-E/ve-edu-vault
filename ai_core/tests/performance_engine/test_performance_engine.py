@@ -7,6 +7,7 @@ from course_ware.tests.course_ware_factory import (
     UserQuestionAttemptsFactory,
 )
 from data_types.ai_core import PerformanceStats
+from exceptions import DatabaseQueryError, VersionParsingError
 
 
 class TestPerformanceEngine:
@@ -17,9 +18,9 @@ class TestPerformanceEngine:
 
     def test_parse_version_invalid(self, performance_engine):
         """Test parsing invalid version strings"""
-        with pytest.raises(ValueError):
+        with pytest.raises(VersionParsingError):
             performance_engine._parse_version("invalid")
-        with pytest.raises(ValueError):
+        with pytest.raises(VersionParsingError):
             performance_engine._parse_version("v1.a.0")
 
     def test_get_current_question_version(self, performance_engine):
@@ -84,14 +85,14 @@ class TestPerformanceEngine:
             "course_ware.models.UserQuestionAttempts.objects.get",
             side_effect=Exception("Test error"),
         ):
-            result = performance_engine._get_user_attempt_question_metadata()
-            assert result == {}
+            with pytest.raises(DatabaseQueryError):
+                performance_engine._get_user_attempt_question_metadata()
 
     def test_get_current_question_version_invalid_metadata(self, performance_engine):
         """Test handling invalid metadata in get_current_question_version"""
         invalid_metadata = {"invalid_version": {}, "also_invalid": {}}
 
-        with pytest.raises(ValueError):
+        with pytest.raises(VersionParsingError):
             performance_engine._get_current_question_version(
                 invalid_metadata, performance_engine._parse_version
             )
