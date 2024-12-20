@@ -109,6 +109,12 @@ class UserQuestionSet(models.Model):
     topic = models.OneToOneField(
         Topic, on_delete=models.CASCADE, related_name="question_sets"
     )
+    # Example of data stored in the field
+    # [
+    #     {"id": "question_id_1"},
+    #     {"id": "question_id_2"},
+    #     {"id": "question_id_3"}
+    # ]
     question_set_ids = models.JSONField(help_text="References to MongoDB question IDs.")
 
     class Meta:
