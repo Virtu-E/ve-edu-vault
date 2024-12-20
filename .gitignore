@@ -104,3 +104,5 @@ dmypy.json
 # Windows
 Thumbs.db
 ehthumbs.db
+
+ .mypy_cache/

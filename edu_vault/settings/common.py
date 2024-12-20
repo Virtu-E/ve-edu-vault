@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 
+from decouple import config
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 MONGO_URL = "mongodb+srv://myAtlasDBUser:tkB0QqcKTztNhnWW@myatlasclusteredu.2khcb.mongodb.net/?retryWrites=true&w=majority&appName=myAtlasClusterEDU"
@@ -21,15 +23,7 @@ MONGO_URL = "mongodb+srv://myAtlasDBUser:tkB0QqcKTztNhnWW@myatlasclusteredu.2khc
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-$%pf&(zm7psez39!gruk&7^_ao%@&6xhwtsg7=_bctml77s4gw"
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = [
-    "rare-deciding-lobster.ngrok-free.app",
-    "localhost",
-    "virtueducate.edly.io",
-]
+DEBUG = config("DEBUG", default=False, cast=bool)
 
 
 # Disable SSL verification globally for all requests
@@ -46,6 +40,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "lti_provider",
     "pylti1p3.contrib.django.lti1p3_tool_config",
+    "ai_core",
+    "course_ware",
 ]
 
 
@@ -57,12 +53,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    "https://virtueducate.edly.io",
-    "https://local.edly.io",
-    # Add other trusted origins as needed
 ]
 
 
@@ -89,17 +79,6 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 WSGI_APPLICATION = "edu_vault.wsgi.application"
 
 
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
-
-
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -117,6 +96,39 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+
+# TODO : set more app specific logging
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+        "simple": {"format": "%(asctime)s::%(name)s::%(levelname)s::%(message)s"},
+    },
+    "handlers": {
+        "console": {
+            "level": "DEBUG" if DEBUG else "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file": {
+            "level": "DEBUG" if DEBUG else "INFO",
+            "class": "logging.FileHandler",
+            "filename": "virtu_educate.log",
+            "formatter": "simple",
+        },
+    },
+    "loggers": {
+        "": {
+            "handlers": ["file", "console"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": True,
+        },
+    },
+}
 
 
 # Internationalization

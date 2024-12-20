@@ -27,3 +27,5 @@ class RecommendationEngineConfig(BaseModel):
     examination_level: str
     academic_class: str
     topic: str
+    user_id: int
+    topic_id: int
