@@ -1,4 +1,4 @@
-from factory import Dict, Factory, Faker, SubFactory
+from factory import Dict, Factory, Faker, Sequence, SubFactory
 from factory.django import DjangoModelFactory
 
 from course_ware.models import (
@@ -19,7 +19,7 @@ class UserFactory(DjangoModelFactory):
 
     username = Faker("user_name")
     email = Faker("email")
-    password = Faker("password")
+    id = Sequence(lambda n: n + 1)
 
 
 class AcademicClassFactory(DjangoModelFactory):
