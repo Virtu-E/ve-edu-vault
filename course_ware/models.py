@@ -1,4 +1,3 @@
-from django.contrib.auth.models import User
 from django.db import models
 
 # TODO : update the documentation below after alpha release --> things might have changes
@@ -32,6 +31,33 @@ EXAMINATION_LEVELS = [
     ("JCE", "JCE"),
     ("IGCSE", "IGCSE"),
 ]
+
+
+class User(models.Model):
+    id = models.PositiveIntegerField(
+        primary_key=True, unique=True, help_text="edX user ID"
+    )
+    username = models.CharField(
+        null=True, blank=True, max_length=100, unique=True, help_text="edX username"
+    )
+    email = models.EmailField(null=True, blank=True, help_text="edX email")
+    # In case i need them in future
+    # edx_data = models.JSONField(
+    #     db_index=True, null=True, blank=True,
+    #     help_text="edX user metadata"
+    # )
+    # data = models.JSONField(
+    #     db_index=True, null=True, blank=True,
+    #     help_text="Additional user metadata"
+    # )
+    active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "edX User"
+        verbose_name_plural = "edX Users"
+
+    def __str__(self):
+        return self.username
 
 
 class AcademicClass(models.Model):
