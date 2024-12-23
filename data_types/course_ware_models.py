@@ -5,3 +5,4 @@ class EdxUserData(BaseModel):
     id: int
     username: str
     email: str
+    course_key: str

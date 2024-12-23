@@ -169,6 +169,8 @@ class UserQuestionAttempts(models.Model):
     topic = models.OneToOneField(
         Topic, on_delete=models.CASCADE, related_name="topic_attempts"
     )
+    # the data is stored in this format :  dict[str, dict[str, QuestionMetadata | Any]]. Check in data types module
+    # for more info ( course_ware_schema.py )
     question_metadata = models.JSONField(
         help_text="Metadata for questions attempted by the user.",
         default={"v1.0.0": {}},

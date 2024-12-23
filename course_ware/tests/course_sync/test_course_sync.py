@@ -8,7 +8,6 @@ from course_ware.models import Category, Topic
 from exceptions import DatabaseQueryError, DatabaseUpdateError
 
 
-@pytest.mark.django_db
 class TestCourseSync:
 
     def test_get_existing_ids_empty_db(self, course_sync):
