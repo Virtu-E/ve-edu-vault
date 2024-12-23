@@ -1,3 +1,4 @@
+import factory
 from factory import Dict, Factory, Faker, Sequence, SubFactory
 from factory.django import DjangoModelFactory
 
@@ -35,7 +36,20 @@ class CourseFactory(DjangoModelFactory):
 
     name = Faker("name")
     course_key = Faker("uuid4")
-    course_structure = Faker("json")
+    course_outline = {
+        "chapter1": {
+            "type": "chapter",
+            "display_name": "Chapter 1",
+            "description": "First chapter",
+            "children": ["sequential1"],
+        },
+        "sequential1": {
+            "type": "sequential",
+            "display_name": "Sequential 1",
+            "description": "First sequential",
+            "children": [],
+        },
+    }
 
 
 class CategoryFactory(DjangoModelFactory):
@@ -44,6 +58,8 @@ class CategoryFactory(DjangoModelFactory):
 
     course = SubFactory(CourseFactory)
     academic_class = SubFactory(AcademicClassFactory)
+    block_id = factory.Sequence(lambda n: f"chapter{n}")
+    description = factory.Sequence(lambda n: f"Description {n}")
 
 
 class TopicFactory(DjangoModelFactory):
@@ -51,9 +67,10 @@ class TopicFactory(DjangoModelFactory):
         model = Topic
 
     name = Faker("word")
-    description = Faker("text")
     is_completed = Faker("boolean")
     category = SubFactory(CategoryFactory)
+    block_id = factory.Sequence(lambda n: f"chapter{n}")
+    description = factory.Sequence(lambda n: f"Description {n}")
 
 
 class QuestionMetadataFactory(Factory):

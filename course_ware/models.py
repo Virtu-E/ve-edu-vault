@@ -74,7 +74,7 @@ class Course(models.Model):
 
     name = models.CharField(max_length=255)
     course_key = models.CharField(max_length=255, unique=True)
-    course_structure = models.JSONField()
+    course_outline = models.JSONField()
 
 
 class Category(models.Model):
@@ -88,6 +88,7 @@ class Category(models.Model):
     examination_level = models.CharField(
         choices=EXAMINATION_LEVELS, max_length=20, default="MSCE"
     )
+    block_id = models.TextField(unique=True, db_index=True, null=False, blank=False)
     academic_class = models.ForeignKey(AcademicClass, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -111,6 +112,7 @@ class Topic(models.Model):
     category = models.ForeignKey(
         Category, on_delete=models.CASCADE, related_name="topics"
     )
+    block_id = models.TextField(unique=True, db_index=True, null=False, blank=False)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

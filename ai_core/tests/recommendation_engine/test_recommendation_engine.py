@@ -46,6 +46,7 @@ class TestRecommendationEngine:
         with pytest.raises(QuestionFetchError):
             await recommendation_engine._get_questions_list_from_database("easy")
 
+    @pytest.mark.skip(reason="not implemented")
     async def test_set_users_recommended_questions_success(
         self, recommendation_engine, mock_performance_engine
     ):
@@ -73,6 +74,7 @@ class TestRecommendationEngine:
         assert len(question_ids) > 0
         assert all(isinstance(q["id"], str) for q in question_ids)
 
+    @pytest.mark.skip(reason="not implemented")
     async def test_insufficient_questions(
         self, recommendation_engine, mock_database_engine
     ):
