@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "pylti1p3.contrib.django.lti1p3_tool_config",
     "ai_core",
     "course_ware",
+    "rest_framework",
 ]
 
 

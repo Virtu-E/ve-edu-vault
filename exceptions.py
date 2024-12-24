@@ -82,6 +82,15 @@ class JsonParsingError(ParsingError):
         super().__init__(self.message)
 
 
+class TypeValidationError(ParsingError):
+    """Raised when an error occurs during type validation."""
+
+    def __init__(self, field_name, message="Validation failed for field"):
+        self.field_name = field_name
+        self.message = f"{message}: {field_name}"
+        super().__init__(self.message)
+
+
 class XmlParsingError(ParsingError):
     """Raised when an XML string cannot be parsed."""
 

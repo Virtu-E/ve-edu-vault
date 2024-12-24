@@ -210,6 +210,7 @@ class CourseSync:
                 f"Error syncing topics for course {self.course.name}: {e}"
             )
 
+    # TODO: include model called default question IDs
     @transaction.atomic
     def sync(self, force: bool = False) -> bool:
         """

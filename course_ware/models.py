@@ -76,6 +76,9 @@ class Course(models.Model):
     course_key = models.CharField(max_length=255, unique=True)
     course_outline = models.JSONField()
 
+    def __str__(self):
+        return self.name
+
 
 class Category(models.Model):
     """
@@ -116,6 +119,7 @@ class Topic(models.Model):
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # This does not make sense, it has to be deleted
     is_completed = models.BooleanField(default=False)
 
     class Meta:

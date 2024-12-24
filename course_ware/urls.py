@@ -4,6 +4,8 @@ from . import views
 
 urlpatterns = [
     path(
-        "mathematics/", views.mathematics_problem_view, name="mathematics_problem_view"
+        "get_questions/",
+        views.GetQuestionsView.as_view(),
+        name="mathematics_problem_view",
     ),
 ]

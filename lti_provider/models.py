@@ -6,6 +6,7 @@ from django.db import models
 ToolConsumerModel = TypeVar("ToolConsumerModel", bound="ToolConsumer")
 
 
+# TODO : Delete this
 class ToolConsumer(models.Model):
     issuer = models.CharField(max_length=255, unique=True, blank=True, null=True)
     client_id = models.CharField(max_length=255, unique=True, blank=True, null=True)
