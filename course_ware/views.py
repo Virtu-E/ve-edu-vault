@@ -40,8 +40,9 @@ class GetQuestionsView(DatabaseView):
                 User, username=serializer.validated_data["username"]
             )
             # TODO : i have to provide more data like category, course etc
+            # Provide topic ID/block ID here
             topic = get_object_or_404(
-                Topic, name=serializer.validated_data["topic_name"]
+                Topic, block_id=serializer.validated_data["topic_id"]
             )
 
             # Get the associated UserQuestionSet for the user and topic
@@ -75,7 +76,7 @@ class GetQuestionsView(DatabaseView):
             return Response(
                 {
                     "username": serializer.validated_data["username"],
-                    "topic": serializer.validated_data["username"],
+                    "topic": serializer.validated_data["topic_id"],
                     "questions": questions,
                     "question_attempts": "",
                 }

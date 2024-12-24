@@ -51,7 +51,9 @@ def lti_launch(request):
         print(launch_data)
 
         # Example: You can store or process payload data here
-        return redirect("http://localhost:3000/assesment")
+        return redirect(
+            "http://localhost:3000/assesment/block-v1%3AVirtuEducate%2B100%2B2024%2Btype%40lti_consumer%2Bblock%40e8fdb7a5189d4802a4c4ae8de231425d"
+        )
 
     except Exception as e:
         print(e, " here is an error message")
