@@ -1,5 +1,9 @@
 from django.db import models
 
+from ai_core.performance_calculators import log
+from data_types.course_ware_schema import QuestionMetadata
+from exceptions import VersionParsingError
+
 # TODO : update the documentation below after alpha release --> things might have changes
 """
 In Virtu Educate, challenges and quizzes are organized into categories.
@@ -153,6 +157,20 @@ class UserQuestionSet(models.Model):
         verbose_name = "User Question Set"
         verbose_name_plural = "User Question Sets"
 
+    @property
+    def get_question_set_ids(self) -> list[str]:
+        """
+        Retrieve a list of question set IDs as strings.
+
+        This property processes the `question_set_ids` attribute,
+        which is expected to be a list of dictionaries containing an "id" key,
+        and returns a list of the "id" values as strings.
+
+        Returns:
+            list[str]: A list of question set IDs in string format.
+        """
+        return [str(item["id"]) for item in self.question_set_ids]
+
     def __str__(self):
         return f"{self.user.username} - {self.topic.name}"
 
@@ -183,6 +201,37 @@ class UserQuestionAttempts(models.Model):
     class Meta:
         verbose_name = "User Question Attempt"
         verbose_name_plural = "User Questions Attempts"
+
+    @staticmethod
+    def _parse_version(version: str) -> tuple:
+        """
+        Parse version string into tuple of integers.
+
+        Args:
+            version: Version string (e.g., 'v1.0.0')
+
+        Returns:
+            Tuple of integers representing version components
+        """
+        try:
+            parts = version.lstrip("v").split(".")
+            return tuple(map(int, parts))
+        except (ValueError, AttributeError):
+            log.error("Unable to parse version string %s", version)
+            raise (VersionParsingError(version))
+
+    @property
+    def get_latest_question_metadata(self) -> dict[str, QuestionMetadata]:
+        """
+        Get the current (latest) question version from metadata.
+
+        Returns:
+            Dictionary containing the question metadata (
+               -> Top-level key: Question ID,
+               -> Second-level key: QuestionMetadata )
+        """
+        latest_version = max(self.question_metadata.keys(), key=self._parse_version)
+        return self.question_metadata[latest_version]
 
     def __str__(self):
         return f"{self.user.username} - {self.topic.name} Attempts"

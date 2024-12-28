@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from .common import *  # noqa: F401
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -22,8 +20,13 @@ DATABASES = {
     },
 }
 
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+
 CSRF_TRUSTED_ORIGINS = [
     "https://virtueducate.edly.io",
     "https://local.edly.io",
+    "https://vault.virtueducate.edly.io",
     # Add other trusted origins as needed
 ]

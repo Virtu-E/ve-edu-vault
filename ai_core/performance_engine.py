@@ -67,6 +67,7 @@ class PerformanceEngine(PerformanceEngineInterface):
             question_metadata_current_version
         )
 
+    # TODO : deprecate this method because it has been moved to the model class
     @staticmethod
     def _parse_version(version: str) -> tuple:
         """
@@ -85,6 +86,7 @@ class PerformanceEngine(PerformanceEngineInterface):
             log.error("Unable to parse version string %s", version)
             raise VersionParsingError(version)
 
+    # TODO : deprecate this method because it has been moved to the model class
     @staticmethod
     def _get_current_question_version(
         question_metadata: dict[str, dict[str, QuestionMetadata]],

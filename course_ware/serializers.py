@@ -6,5 +6,8 @@ class QueryParamsSerializer(serializers.Serializer):
     topic_id = serializers.CharField(required=True)
 
 
-class QuestionAttempt(serializers.Serializer):
-    topic = serializers.CharField(required=True)
+class QuestionAttemptSerializer(serializers.Serializer):
+    topic_id = serializers.CharField(required=True)
+    question_id = serializers.CharField(required=True)
+    difficulty = serializers.CharField(required=True)
+    username = serializers.CharField(required=True)
