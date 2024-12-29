@@ -1,7 +1,8 @@
+from typing import Any
+
 from django.db import models
 
 from ai_core.performance_calculators import log
-from data_types.course_ware_schema import QuestionMetadata
 from exceptions import VersionParsingError
 
 # TODO : update the documentation below after alpha release --> things might have changes
@@ -158,7 +159,7 @@ class UserQuestionSet(models.Model):
         verbose_name_plural = "User Question Sets"
 
     @property
-    def get_question_set_ids(self) -> list[str]:
+    def get_question_set_ids(self) -> set[str]:
         """
         Retrieve a list of question set IDs as strings.
 
@@ -169,7 +170,7 @@ class UserQuestionSet(models.Model):
         Returns:
             list[str]: A list of question set IDs in string format.
         """
-        return [str(item["id"]) for item in self.question_set_ids]
+        return {str(item["id"]) for item in self.question_set_ids}
 
     def __str__(self):
         return f"{self.user.username} - {self.topic.name}"
@@ -221,7 +222,7 @@ class UserQuestionAttempts(models.Model):
             raise (VersionParsingError(version))
 
     @property
-    def get_latest_question_metadata(self) -> dict[str, QuestionMetadata]:
+    def get_latest_question_metadata(self) -> dict[str, Any]:
         """
         Get the current (latest) question version from metadata.
 

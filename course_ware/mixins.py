@@ -11,7 +11,7 @@ class RetrieveUserAndResourcesMixin:
     """
 
     @staticmethod
-    def get_user_from_validated_data(serializer):
+    def get_user_from_validated_data(serializer) -> User:
         """
         Retrieve a User object based on 'username' from validated serializer data.
 
@@ -30,7 +30,7 @@ class RetrieveUserAndResourcesMixin:
 
     # TODO : i have to provide more data like category, course etc
     @staticmethod
-    def get_topic_from_validated_data(serializer):
+    def get_topic_from_validated_data(serializer) -> Topic:
         """
         Retrieve a Topic object based on 'topic_id' from validated serializer data.
 

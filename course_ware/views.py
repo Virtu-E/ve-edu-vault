@@ -1,4 +1,5 @@
 import logging
+from typing import Any, Dict, Optional
 
 from bson import ObjectId  # For MongoDB ObjectId handling
 from django.shortcuts import get_object_or_404
@@ -83,66 +84,145 @@ class GetQuestionsView(RetrieveUserAndResourcesMixin, DatabaseView):
             )
 
 
+# TODO : how to handle really long post code blocks. Look at edx and anthropic codebase
 class PostQuestionAttemptView(RetrieveUserAndResourcesMixin, APIView):
     """
-    Post question attempts for a specific user and topic.
+    API View to handle posting and processing of question attempts for a specific user and topic.
+
+    This view manages:
+    - Validation of question attempts
+    - Tracking attempt counts
+    - Managing question metadata
+    - Enforcing attempt limits
+
+    Attributes:
+        MAX_ATTEMPTS (int): Maximum number of attempts allowed per question
     """
 
-    def post(self, request):
-        serializer = QuestionAttemptSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    MAX_ATTEMPTS = 3
 
-        # we have the user question attempt data. now we have to get the question attempt model
-        user = self.get_user_from_validated_data(serializer)
-        topic = self.get_topic_from_validated_data(serializer)
-        question_set = self.get_user_question_set(user, topic).get_question_set_ids
+    @staticmethod
+    def _validate_question_exists(
+        question_id: str, question_set: set[str], username: str
+    ) -> bool:
+        """
+        Validate if the given question ID exists in the user's question set.
 
-        user_question_attempt = get_object_or_404(
-            UserQuestionAttempts, user=user, topic=topic
-        )
-        question_metadata = user_question_attempt.get_latest_question_metadata
-        # now we have to update the question data inside the question metadata
-        question_metadata_instance = question_metadata.get(
-            serializer.validated_data["question_id"], None
-        )
+        Args:
+            question_id: The ID of the question being attempted
+            question_set: Set of valid question IDs for the user
+            username: Username for logging purposes
 
-        if question_metadata_instance:
-            # we only want to update if the user has not gotten the question correctly
-            if question_metadata_instance["is_correct"]:
-                return
+        Returns:
+            bool: True if question exists
 
-            # user has maxed out all the chances needed to get the question correct. Hence, officially  failed
-            if question_metadata_instance["attempt_number"] == 3:
-                return
+        Raises:
+            ValidationError: If question ID does not exist
+        """
+        if question_id not in question_set:
+            error_msg = f"Question ID '{question_id}' not found in question set for user '{username}'"
+            log.error(error_msg)
+            raise ValidationError(error_msg)
+        return True
 
-            question_metadata_instance["attempt_number"] = (
-                question_metadata_instance["attempt_number"] + 1
-            )
-            user_question_attempt.save()
+    def _handle_existing_attempt(self, metadata: Dict[str, Any]) -> Optional[Response]:
+        """
+        Handle logic for an existing question attempt.
+
+        Args:
+            metadata: Current question metadata
+
+        Returns:
+            Response if attempt should be rejected, None if attempt is valid
+        """
+        if metadata["is_correct"]:
             return Response(
-                "Question Attempt data Saved", status=status.HTTP_201_CREATED
-            )
-
-        # the question metadata for the question ID as not yet been created
-        # but we need to validate if the question ID exists in the user question set
-        if not serializer.validated_data["question_id"] in question_set:
-            # the supplied question ID does not correlate with the questions ID in the user question set
-            log.error(
-                "The supplied question ID '%s' does not match any question ID in the UserQuestionSet for the user '%s'.",
-                serializer.validated_data["question_id"],
-                serializer.validated_data["username"],
-            )
-
-            return Response(
-                {
-                    "error": (
-                        "The supplied question ID '%s' does not match any question ID in the UserQuestionSet for the user '%s'.",
-                        serializer.validated_data["question_id"],
-                        serializer.validated_data["username"],
-                    )
-                },
+                {"message": "Question already correctly answered"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # create the question metadata and then return a success
+        if metadata["attempt_number"] >= self.MAX_ATTEMPTS:
+            return Response(
+                {"message": f"Maximum attempts ({self.MAX_ATTEMPTS}) reached"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return None
+
+    # TODO : update it with the necessary topics etc
+    @staticmethod
+    def _update_question_metadata(
+        metadata: Dict[str, Any], is_correct: bool, attempt_number: int
+    ) -> Dict[str, Any]:
+        """
+        Update the metadata for a question attempt.
+
+        Args:
+            metadata: Current question metadata
+            is_correct: Whether the attempt was correct
+            attempt_number: Current attempt number
+
+        Returns:
+            Dict containing updated metadata of type QuestionMetadata
+        """
+        return {**metadata, "is_correct": is_correct, "attempt_number": attempt_number}
+
+    def post(self, request):
+        try:
+            serializer = QuestionAttemptSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            # we have the user question attempt data. now we have to get the question attempt model
+            user = self.get_user_from_validated_data(serializer)
+            topic = self.get_topic_from_validated_data(serializer)
+            user_question_set = self.get_user_question_set(
+                user, topic
+            ).get_question_set_ids
+            question_id = serializer.validated_data["question_id"]
+
+            self._validate_question_exists(
+                question_id, user_question_set, serializer.validated_data["username"]
+            )
+
+            user_question_attempt = get_object_or_404(
+                UserQuestionAttempts, user=user, topic=topic
+            )
+            question_metadata = user_question_attempt.get_latest_question_metadata
+
+            question_metadata_instance = question_metadata.get(
+                serializer.validated_data["question_id"], None
+            )
+
+            if question_metadata_instance:
+                # Handle existing attempt
+                response = self._handle_existing_attempt(question_metadata_instance)
+                if response:
+                    return response
+
+                # Update attempt count
+                question_metadata[question_id] = self._update_question_metadata(
+                    question_metadata_instance,
+                    is_correct=question_metadata_instance["is_correct"],
+                    attempt_number=question_metadata_instance["attempt_number"] + 1,
+                )
+            else:
+
+                # Create new metadata entry
+                question_metadata[question_id] = {
+                    "is_correct": serializer.validated_data["username"],
+                    "attempt_number": 1,
+                    "difficulty": serializer.validated_data["difficulty"],
+                    "topic": topic.name,
+                    "question_id": question_id,
+                }
+
+            user_question_attempt.save()
+
+            return Response(
+                {"message": "Question attempt recorded successfully"},
+                status=status.HTTP_201_CREATED,
+            )
+        except ValidationError as e:
+            log.error(str(e))
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

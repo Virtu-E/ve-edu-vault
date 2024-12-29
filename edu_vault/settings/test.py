@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from .common import *  # noqa: F401
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
