@@ -109,19 +109,25 @@ LOGGING = {
             "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
             "style": "{",
         },
+        "detailed": {
+            "format": (
+                "%(asctime)s [%(levelname)s] %(name)s (%(filename)s:%(lineno)d) "
+                "%(message)s"
+            )
+        },
         "simple": {"format": "%(asctime)s::%(name)s::%(levelname)s::%(message)s"},
     },
     "handlers": {
         "console": {
             "level": "DEBUG" if DEBUG else "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "detailed",
         },
         "file": {
             "level": "DEBUG" if DEBUG else "INFO",
             "class": "logging.FileHandler",
             "filename": "virtu_educate.log",
-            "formatter": "simple",
+            "formatter": "verbose",
         },
     },
     "loggers": {
@@ -129,6 +135,11 @@ LOGGING = {
             "handlers": ["file", "console"],
             "level": "DEBUG" if DEBUG else "INFO",
             "propagate": True,
+        },
+        "django": {
+            "handlers": ["file", "console"],
+            "level": "ERROR",
+            "propagate": False,
         },
     },
 }
