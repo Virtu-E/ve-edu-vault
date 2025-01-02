@@ -136,10 +136,10 @@ LOGGING = {
             "level": "DEBUG" if DEBUG else "INFO",
             "propagate": True,
         },
-        "django": {
-            "handlers": ["file", "console"],
-            "level": "ERROR",
-            "propagate": False,
+        "django.request": {
+            "handlers": ["console"],  # or ["file", "console"] if you want both
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": True,
         },
     },
 }
