@@ -15,7 +15,7 @@ from course_ware.serializers import (
     PostQuestionAttemptSerializer,
     QueryParamsSerializer,
 )
-from data_types.questions import Question
+from data_types.questions import Question, QuestionAttemptData
 from edu_vault.settings import common
 from nosql_database_engine import MongoDatabaseEngine
 
@@ -71,6 +71,7 @@ class QuestionManagementBase(RetrieveUserAndResourcesMixin, APIView):
             raise ValidationError(error_msg)
         return True
 
+    # TODO : add custom error to catch mongo db question not found
     @staticmethod
     def handle_response(func):
         """Decorator for handling common error responses."""
@@ -101,26 +102,34 @@ class GetQuestionsView(QuestionManagementBase):
     serializer_class = QueryParamsSerializer
 
     @QuestionManagementBase.handle_response
-    def get(self, request):
+    def get(self, request, username, block_id):
         user, topic, question_set_ids = self.validate_and_get_resources(
-            request.query_params
+            data=({"username": username, "block_id": block_id}),
         )
 
         mongo_client = self.mongo_client.fetch_from_db(
             "mathematics_problems", "virtu_educate"
         )
 
+        object_ids = [ObjectId(id) for id in question_set_ids if ObjectId.is_valid(id)]
+
+        if not object_ids:  # Return an empty list if no valid ObjectIds
+            return []
+
+        # Query MongoDB
+        docs = mongo_client.find({"_id": {"$in": object_ids}})
+
         questions = [
-            Question(**doc).model_dump()
-            for doc in mongo_client.find(
-                {"_id": {"$in": [ObjectId(id) for id in question_set_ids]}}
+            Question(**{**doc, "_id": str(doc["_id"])}).model_dump(
+                by_alias=True, exclude={"choices": {"is_correct"}}
             )
+            for doc in docs
         ]
 
         return Response(
             {
                 "username": self.serializer.validated_data["username"],
-                "topic": self.serializer.validated_data["topic_id"],
+                "block_id": self.serializer.validated_data["block_id"],
                 "questions": questions,
                 "question_attempts": "",
             }
@@ -144,10 +153,22 @@ class PostQuestionAttemptView(QuestionManagementBase):
         if metadata["attempt_number"] >= self.MAX_ATTEMPTS:
             return Response(
                 {"message": f"Maximum attempts ({self.MAX_ATTEMPTS}) reached"},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         return None
+
+    # TODO : dont hard code values plus
+    def _is_choice_answer_correct(self, choice_id: int, question_id: str) -> bool:
+        mongo_client = self.mongo_client.fetch_from_db(
+            "mathematics_problems", "virtu_educate"
+        )
+        result = mongo_client.find_one({"_id": ObjectId(question_id)})
+
+        question_instance = Question(**{**result, "_id": str(question_id)})
+        if not question_instance.choices[choice_id].is_correct:
+            return False
+        return True
 
     @staticmethod
     def _update_question_metadata(
@@ -178,21 +199,31 @@ class PostQuestionAttemptView(QuestionManagementBase):
 
             question_metadata[question_id] = self._update_question_metadata(
                 question_metadata_instance,
-                is_correct=question_metadata_instance["is_correct"],
+                is_correct=self._is_choice_answer_correct(
+                    self.serializer.validated_data["choice_id"],
+                    self.serializer.validated_data["question_id"],
+                ),
                 attempt_number=question_metadata_instance["attempt_number"] + 1,
             )
         else:
             question_metadata[question_id] = {
-                "is_correct": self.serializer.validated_data["username"],
+                "is_correct": self._is_choice_answer_correct(
+                    self.serializer.validated_data["choice_id"],
+                    self.serializer.validated_data["question_id"],
+                ),
                 "attempt_number": 1,
                 "difficulty": self.serializer.validated_data["difficulty"],
                 "topic": topic.name,
                 "question_id": question_id,
             }
 
+        question_metadata[question_id]["choice_id"] = self.serializer.validated_data[
+            "choice_id"
+        ]
         user_question_attempt.save()
+
         return Response(
-            {"message": "Question attempt recorded successfully"},
+            QuestionAttemptData(**question_metadata[question_id]).model_dump(),
             status=status.HTTP_201_CREATED,
         )
 
@@ -203,9 +234,11 @@ class GetQuestionAttemptView(QuestionManagementBase):
     serializer_class = GetQuestionSerializer
 
     @QuestionManagementBase.handle_response
-    def get(self, request):
+    def get(self, request, username, block_id, question_id):
         user, topic, question_set_ids = self.validate_and_get_resources(
-            request.query_params
+            data=(
+                {"username": username, "block_id": block_id, "question_id": question_id}
+            ),
         )
 
         question_id = self.serializer.validated_data["question_id"]
@@ -218,4 +251,4 @@ class GetQuestionAttemptView(QuestionManagementBase):
         )
         response = user_question_attempt.get_latest_question_metadata.get(question_id)
 
-        return Response(Question(**response).model_dump())
+        return Response(QuestionAttemptData(**response).model_dump())

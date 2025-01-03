@@ -120,7 +120,11 @@ class Topic(models.Model):
     category = models.ForeignKey(
         Category, on_delete=models.CASCADE, related_name="topics"
     )
-    block_id = models.TextField(unique=True, db_index=True, null=False, blank=False)
+    block_id = models.TextField(
+        unique=True, db_index=True, null=False, blank=False
+    )  # edx block ID associated with the topic
+    # TODO : add the below topic ID to the database
+    # topic_id  = models.CharField(max_length=255, unique=True, db_index=True)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

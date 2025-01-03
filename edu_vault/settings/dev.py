@@ -30,5 +30,4 @@ CSRF_TRUSTED_ORIGINS = [
     "https://virtueducate.edly.io",
     "https://local.edly.io",
     "https://vault.virtueducate.edly.io",
-    # Add other trusted origins as needed
 ]

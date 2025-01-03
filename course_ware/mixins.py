@@ -32,7 +32,7 @@ class RetrieveUserAndResourcesMixin:
     @staticmethod
     def get_topic_from_validated_data(serializer) -> Topic:
         """
-        Retrieve a Topic object based on 'topic_id' from validated serializer data.
+        Retrieve a Topic object based on 'block_id' from validated serializer data.
 
         Args:
             serializer: The serializer containing validated data.
@@ -41,11 +41,11 @@ class RetrieveUserAndResourcesMixin:
             Topic: The retrieved Topic object.
 
         Raises:
-            ValidationError: If 'topic_id' is not in the validated data.
+            ValidationError: If 'block_id' is not in the validated data.
         """
-        if "topic_id" not in serializer.validated_data:
-            raise ValidationError({"topic_id": "Topic ID is required."})
-        return get_object_or_404(Topic, block_id=serializer.validated_data["topic_id"])
+        if "block_id" not in serializer.validated_data:
+            raise ValidationError({"block_id": "Block ID is required."})
+        return get_object_or_404(Topic, block_id=serializer.validated_data["block_id"])
 
     @staticmethod
     def get_user_question_set(user, topic):
