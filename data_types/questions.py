@@ -56,3 +56,5 @@ class QuestionAttemptData(BaseModel):
     topic: str
     question_id: str
     choice_id: int
+    total_correct_count: int
+    total_incorrect_count: int

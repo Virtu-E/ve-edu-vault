@@ -238,6 +238,20 @@ class UserQuestionAttempts(models.Model):
         latest_version = max(self.question_metadata.keys(), key=self._parse_version)
         return self.question_metadata[latest_version]
 
+    @property
+    def get_correct_questions_count(self) -> int:
+        question_metadata = self.get_latest_question_metadata
+        correct_count = len([q for q in question_metadata.values() if q["is_correct"]])
+        return correct_count
+
+    @property
+    def get_incorrect_questions_count(self) -> int:
+        question_metadata = self.get_latest_question_metadata
+        incorrect_count = len(
+            [q for q in question_metadata.values() if not q["is_correct"]]
+        )
+        return incorrect_count
+
     def __str__(self):
         return f"{self.user.username} - {self.topic.name} Attempts"
 

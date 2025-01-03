@@ -223,7 +223,11 @@ class PostQuestionAttemptView(QuestionManagementBase):
         user_question_attempt.save()
 
         return Response(
-            QuestionAttemptData(**question_metadata[question_id]).model_dump(),
+            QuestionAttemptData(
+                **question_metadata[question_id],
+                total_incorrect_count=user_question_attempt.get_incorrect_questions_count,
+                total_correct_count=user_question_attempt.get_correct_questions_count,
+            ).model_dump(),
             status=status.HTTP_201_CREATED,
         )
 
@@ -250,5 +254,19 @@ class GetQuestionAttemptView(QuestionManagementBase):
             UserQuestionAttempts, user=user, topic=topic
         )
         response = user_question_attempt.get_latest_question_metadata.get(question_id)
+        if not response:
+            # means that the question does not yet have an entry in the question attempt metadata
+            return Response(
+                {
+                    "total_correct_count": user_question_attempt.get_correct_questions_count,
+                    "total_incorrect_count": user_question_attempt.get_incorrect_questions_count,
+                }
+            )
 
-        return Response(QuestionAttemptData(**response).model_dump())
+        return Response(
+            QuestionAttemptData(
+                **response,
+                total_correct_count=user_question_attempt.get_correct_questions_count,
+                total_incorrect_count=user_question_attempt.get_incorrect_questions_count,
+            ).model_dump()
+        )
