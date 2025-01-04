@@ -2,9 +2,10 @@ import logging
 from typing import Any, Dict, Optional, Set, Tuple
 
 from bson import ObjectId
+from decouple import config
 from django.shortcuts import get_object_or_404
-from pydantic_core import ValidationError
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -17,6 +18,7 @@ from course_ware.serializers import (
 )
 from data_types.questions import Question, QuestionAttemptData
 from edu_vault.settings import common
+from exceptions import QuestionNotFoundError
 from nosql_database_engine import MongoDatabaseEngine
 
 log = logging.getLogger(__name__)
@@ -45,10 +47,10 @@ class QuestionManagementBase(RetrieveUserAndResourcesMixin, APIView):
             Tuple containing user, topic, and question set IDs
 
         Raises:
-            ValidationError: If serializer_class is not set or validation fails
+            Exception: If serializer_class is not set or validation fails
         """
         if not self.serializer_class:
-            raise ValidationError("serializer_class must be set on the view")
+            raise Exception("serializer_class must be set on the view")
 
         self.serializer = self.serializer_class(data=data)
         if not self.serializer.is_valid():
@@ -68,7 +70,7 @@ class QuestionManagementBase(RetrieveUserAndResourcesMixin, APIView):
         if question_id not in question_set:
             error_msg = f"Question ID '{question_id}' not found in question set for user '{username}'"
             log.error(error_msg)
-            raise ValidationError(error_msg)
+            raise QuestionNotFoundError(question_id, username)
         return True
 
     # TODO : add custom error to catch mongo db question not found
@@ -90,7 +92,7 @@ class QuestionManagementBase(RetrieveUserAndResourcesMixin, APIView):
                         "message": "Ensure all required parameters are included in the GET request.",
                         "details": str(e),
                     },
-                    status=status.HTTP_400_BAD_REQUEST,  # Use 400 for client errors
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
         return wrapper
@@ -107,17 +109,19 @@ class GetQuestionsView(QuestionManagementBase):
             data=({"username": username, "block_id": block_id}),
         )
 
-        mongo_client = self.mongo_client.fetch_from_db(
-            "mathematics_problems", "virtu_educate"
-        )
-
         object_ids = [ObjectId(id) for id in question_set_ids if ObjectId.is_valid(id)]
 
-        if not object_ids:  # Return an empty list if no valid ObjectIds
-            return []
+        if not object_ids:
+            log.info(f"No valid question IDs found for user '${username}'")
+            return Response(
+                {"message": f"No valid question IDs found for user ${username}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         # Query MongoDB
-        docs = mongo_client.find({"_id": {"$in": object_ids}})
+        docs = self.mongo_client.fetch_from_db(
+            "mathematics_problems", "virtu_educate", {"_id": {"$in": object_ids}}
+        )
 
         questions = [
             Question(**{**doc, "_id": str(doc["_id"])}).model_dump(
@@ -131,7 +135,6 @@ class GetQuestionsView(QuestionManagementBase):
                 "username": self.serializer.validated_data["username"],
                 "block_id": self.serializer.validated_data["block_id"],
                 "questions": questions,
-                "question_attempts": "",
             }
         )
 
@@ -140,7 +143,7 @@ class PostQuestionAttemptView(QuestionManagementBase):
     """Handle posting and processing of question attempts."""
 
     serializer_class = PostQuestionAttemptSerializer
-    MAX_ATTEMPTS = 3
+    MAX_ATTEMPTS = config("MAX_QUESTION_ATTEMPTS", default=3, cast=int)
 
     def _handle_existing_attempt(self, metadata: Dict[str, Any]) -> Optional[Response]:
         """Handle logic for an existing question attempt."""
@@ -160,10 +163,9 @@ class PostQuestionAttemptView(QuestionManagementBase):
 
     # TODO : dont hard code values plus
     def _is_choice_answer_correct(self, choice_id: int, question_id: str) -> bool:
-        mongo_client = self.mongo_client.fetch_from_db(
-            "mathematics_problems", "virtu_educate"
+        result = self.mongo_client.fetch_from_db(
+            "mathematics_problems", "virtu_educate", {"_id": ObjectId(question_id)}
         )
-        result = mongo_client.find_one({"_id": ObjectId(question_id)})
 
         question_instance = Question(**{**result, "_id": str(question_id)})
         if not question_instance.choices[choice_id].is_correct:
