@@ -3,39 +3,24 @@ from unittest.mock import Mock
 import pytest
 from rest_framework.test import APIClient
 
+from course_ware.serializers import QueryParamsSerializer
 from course_ware.tests.course_ware_factory import (
     TopicFactory,
     UserFactory,
     UserQuestionAttemptsFactory,
     UserQuestionSetFactory,
 )
-from course_ware.views import GetQuestionsView, PostQuestionAttemptView
+from course_ware.views import (
+    GetQuestionsView,
+    PostQuestionAttemptView,
+    QuestionManagementBase,
+)
 from nosql_database_engine import MongoDatabaseEngine
 
 
 @pytest.fixture
 def api_client():
     return APIClient()
-
-
-# @pytest.fixture
-# def mock_mongo_client():
-#     with patch("nosql_database_engine.MongoDatabaseEngine") as mock:
-#         yield mock.return_value
-
-
-# @pytest.fixture
-# def mock_mongo_client():
-#     with patch("nosql_database_engine.MongoDatabaseEngine") as mock_engine:
-#         mock_instance = MagicMock()
-#         mock_engine.return_value = mock_instance
-#
-#         # Mock methods like fetch_from_db, write_to_db, etc.
-#         mock_instance.fetch_from_db.return_value = [
-#             {"_id": "fake_id", "question_text": "Mock Question"}
-#         ]
-#         mock_instance.write_to_db.return_value = None
-#         yield mock_instance
 
 
 @pytest.fixture
@@ -84,4 +69,14 @@ def user_question_set(user, topic):
             {"id": "65989c1b4f37a89def789abc"},
             {"id": "65989c1b4f37a89def456789"},
         ],
+    )
+
+
+@pytest.fixture
+def question_management_base(mock_db_client):
+    class TestQuestionManagementBase(QuestionManagementBase):
+        serializer_class = QueryParamsSerializer
+
+    return TestQuestionManagementBase(
+        no_sql_database_client=mock_db_client,
     )
