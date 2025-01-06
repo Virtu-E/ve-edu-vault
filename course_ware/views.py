@@ -17,68 +17,26 @@ from course_ware.serializers import (
     QueryParamsSerializer,
 )
 from data_types.questions import Question, QuestionAttemptData
-from edu_vault.settings import common
 from edu_vault.settings.common import COURSE_DATABASE_NAME_MAPPING, NO_SQL_DATABASE_NAME
 from exceptions import ParsingError, QuestionNotFoundError
-from nosql_database_engine import MongoDatabaseEngine, NoSqLDatabaseEngineInterface
+from nosql_database_engine import NoSqLDatabaseEngineInterface
 
 log = logging.getLogger(__name__)
 
 
-class QuestionManagementBase(RetrieveUserAndResourcesMixin, APIView):
-    """
-    Base class for question management views with common functionality.
-    """
+class QuestionViewBase(RetrieveUserAndResourcesMixin, APIView):
+    """Base class for all question views with common functionality."""
 
     serializer_class = None
-    no_sql_database_client = None
 
     def __init__(self, **kwargs):
         super().__init__()
-        self.no_sql_database_client = kwargs.get("no_sql_database_client")
-        if not self.no_sql_database_client:
-            raise ValueError("database_client is required")
-        if not isinstance(self.no_sql_database_client, NoSqLDatabaseEngineInterface):
-            raise ValueError("Please use a valid database engine instance")
         if not self.serializer_class:
             raise Exception("serializer_class must be set on the view")
         self.serializer = None
 
-    # TODO : add validation for the database name here
-
-    @staticmethod
-    def _get_collection_name_from_topic(topic: Topic) -> str:
-        if not isinstance(topic, Topic):
-            log.error("Invalid topic instance")
-            raise ValidationError("Invalid topic instance")
-
-        course_id = topic.category.course.course_key
-
-        collection_name = COURSE_DATABASE_NAME_MAPPING.get(course_id, None)
-        if not collection_name:
-            log.error(
-                f"could not find database collection associated with the course ID {course_id}"
-            )
-            raise ParsingError(
-                f"could not find database collection associated with the course ID {course_id}"
-            )
-
-        return collection_name
-
-    def validate_and_get_resources(self, data) -> Tuple[User, Topic, Set[str], str]:
-        """
-        Common validation and resource retrieval logic.
-
-        Args:
-            data: Request data to validate (either query_params or request.data)
-
-        Returns:
-            Tuple containing user, topic, and question set IDs
-
-        Raises:
-            Exception: If serializer_class is not set or validation fails
-        """
-
+    def validate_and_get_resources(self, data) -> Tuple[User, Topic, Set[str]]:
+        """Common validation and resource retrieval logic."""
         self.serializer = self.serializer_class(data=data)
         if not self.serializer.is_valid():
             raise ValidationError(self.serializer.errors)
@@ -86,27 +44,19 @@ class QuestionManagementBase(RetrieveUserAndResourcesMixin, APIView):
         user = self.get_user_from_validated_data(self.serializer)
         topic = self.get_topic_from_validated_data(self.serializer)
         user_question_set_instance = self.get_user_question_set(user, topic)
-        collection_name = self._get_collection_name_from_topic(topic)
 
-        return (
-            user,
-            topic,
-            user_question_set_instance.get_question_set_ids,
-            collection_name,
-        )
+        return user, topic, user_question_set_instance.get_question_set_ids
 
     @staticmethod
     def validate_question_exists(
         question_id: str, question_set: set[str], username: str
     ) -> bool:
-        """Validate if question exists in user's question set."""
         if question_id not in question_set:
             error_msg = f"Question ID '{question_id}' not found in question set for user '{username}'"
             log.error(error_msg)
             raise QuestionNotFoundError(question_id, username)
         return True
 
-    # TODO : add custom error to catch mongo db question not found
     @staticmethod
     def handle_response(func):
         """Decorator for handling common error responses."""
@@ -131,11 +81,49 @@ class QuestionManagementBase(RetrieveUserAndResourcesMixin, APIView):
         return wrapper
 
 
-class GetQuestionsView(QuestionManagementBase):
+class DatabaseQuestionViewBase(QuestionViewBase):
+    """Base class for views that require database access."""
+
+    no_sql_database_client = None
+
+    def __init__(self, **kwargs):
+        super().__init__()
+        self.no_sql_database_client = kwargs.get("no_sql_database_client")
+        if not self.no_sql_database_client:
+            raise ValueError("database_client is required")
+        if not isinstance(self.no_sql_database_client, NoSqLDatabaseEngineInterface):
+            raise ValueError("Please use a valid database engine instance")
+
+    @staticmethod
+    def _get_collection_name_from_topic(topic: Topic) -> str:
+        if not isinstance(topic, Topic):
+            log.error("Invalid topic instance")
+            raise ValidationError("Invalid topic instance")
+
+        course_id = topic.category.course.course_key
+        collection_name = COURSE_DATABASE_NAME_MAPPING.get(course_id, None)
+        if not collection_name:
+            log.error(
+                f"could not find database collection associated with the course ID {course_id}"
+            )
+            raise ParsingError(
+                f"could not find database collection associated with the course ID {course_id}"
+            )
+        return collection_name
+
+    def validate_and_get_resources(self, data) -> Tuple[User, Topic, Set[str], str]:
+        """Extended validation that includes collection name."""
+        user, topic, question_set_ids = super().validate_and_get_resources(data)
+        collection_name = self._get_collection_name_from_topic(topic)
+        return user, topic, question_set_ids, collection_name
+
+
+class GetQuestionsView(DatabaseQuestionViewBase):
     """Get questions for a specific user and topic."""
 
     serializer_class = QueryParamsSerializer
 
+    @QuestionViewBase.handle_response
     def get(self, request, username, block_id):
         user, topic, question_set_ids, collection_name = (
             self.validate_and_get_resources(
@@ -172,14 +160,11 @@ class GetQuestionsView(QuestionManagementBase):
         )
 
 
-class PostQuestionAttemptView(QuestionManagementBase):
+class PostQuestionAttemptView(DatabaseQuestionViewBase):
     """Handle posting and processing of question attempts."""
 
     serializer_class = PostQuestionAttemptSerializer
     MAX_ATTEMPTS = config("MAX_QUESTION_ATTEMPTS", default=3, cast=int)
-
-    def __init__(self, database_client: NoSqLDatabaseEngineInterface):
-        super().__init__(database_client=database_client)
 
     def _handle_existing_attempt(self, metadata: Dict[str, Any]) -> Optional[Response]:
         """Handle logic for an existing question attempt."""
@@ -200,7 +185,7 @@ class PostQuestionAttemptView(QuestionManagementBase):
     def _is_choice_answer_correct(
         self, choice_id: int, question_id: str, collection_name: str
     ) -> bool:
-        result = self.database_client.fetch_from_db(
+        result = self.no_sql_database_client.fetch_from_db(
             collection_name, NO_SQL_DATABASE_NAME, {"_id": ObjectId(question_id)}
         )
 
@@ -216,7 +201,7 @@ class PostQuestionAttemptView(QuestionManagementBase):
         """Update the metadata for a question attempt."""
         return {**metadata, "is_correct": is_correct, "attempt_number": attempt_number}
 
-    @QuestionManagementBase.handle_response
+    @QuestionViewBase.handle_response
     def post(self, request):
         user, topic, question_set_ids, collection_name = (
             self.validate_and_get_resources(request.data)
@@ -275,17 +260,14 @@ class PostQuestionAttemptView(QuestionManagementBase):
         )
 
 
-class GetQuestionAttemptView(QuestionManagementBase):
+class GetQuestionAttemptView(QuestionViewBase):
     """Retrieve a question attempt for a user."""
 
     serializer_class = GetQuestionSerializer
 
-    def __init__(self, database_client: NoSqLDatabaseEngineInterface):
-        super().__init__(database_client=database_client)
-
-    @QuestionManagementBase.handle_response
+    @QuestionViewBase.handle_response
     def get(self, request, username, block_id, question_id):
-        user, topic, question_set_ids, _ = self.validate_and_get_resources(
+        user, topic, question_set_ids = self.validate_and_get_resources(
             data=(
                 {"username": username, "block_id": block_id, "question_id": question_id}
             ),
@@ -316,54 +298,3 @@ class GetQuestionAttemptView(QuestionManagementBase):
                 total_incorrect_count=user_question_attempt.get_incorrect_questions_count,
             ).model_dump()
         )
-
-
-def get_database_client() -> MongoDatabaseEngine:
-    """
-    Factory function to create and configure a MongoDB database client.
-
-    Returns:
-        MongoDatabaseEngine: A configured instance of the MongoDB database engine
-        with connection settings from common configuration.
-    """
-    return MongoDatabaseEngine(getattr(common, "MONGO_URL", None))
-
-
-def get_questions_view_factory(*args, **kwargs):
-    """
-    Factory function to create a properly configured GetQuestionsView instance.
-
-    Returns:
-        Callable: A Django view callable configured with the necessary database client.
-    """
-    database_client = get_database_client()
-    view_instance = GetQuestionsView.as_view(no_sql_database_client=database_client)
-    return view_instance
-
-
-def post_question_attempt_view_factory() -> PostQuestionAttemptView:
-    """
-    Factory function to create a PostQuestionAttemptView with configured database client.
-
-    This factory handles the creation and injection of the database client
-    dependency for the PostQuestionAttemptView.
-
-    Returns:
-        Type[PostQuestionAttemptView]: A configured PostQuestionAttemptView class with
-        database client dependency injected.
-    """
-    return PostQuestionAttemptView(database_client=get_database_client())
-
-
-def get_question_attempt_view_factory() -> GetQuestionAttemptView:
-    """
-    Factory function to create a GetQuestionAttemptView with configured database client.
-
-    Creates and configures a GetQuestionAttemptView with the appropriate database
-    client dependency already injected.
-
-    Returns:
-        Type[GetQuestionAttemptView]: A configured GetQuestionAttemptView class with
-        database client dependency injected.
-    """
-    return GetQuestionAttemptView(database_client=get_database_client())

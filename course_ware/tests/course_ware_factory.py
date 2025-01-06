@@ -2,7 +2,7 @@ from datetime import datetime
 
 import factory
 from bson import ObjectId
-from factory import Dict, Factory, Faker, Sequence, SubFactory
+from factory import Factory, Faker, Sequence, SubFactory
 from factory.django import DjangoModelFactory
 
 from course_ware.models import (
@@ -81,11 +81,27 @@ class QuestionMetadataFactory(Factory):
     class Meta:
         model = QuestionMetadata
 
-    question_id = Faker("uuid4")
+    question_id = factory.LazyFunction(lambda: str(ObjectId()))
     attempt_number = Faker("random_int", min=1, max=3)
     is_correct = Faker("boolean")
     topic = Faker("word")
     difficulty = Faker("random_element", elements=["easy", "medium", "hard"])
+
+
+def generate_question_metadata():
+    """
+    Generate a dictionary where keys and values' 'id' fields match.
+    """
+
+    def create_question():
+        question = QuestionMetadataFactory()
+        question_id = question.question_id
+        return question_id, vars(question)
+
+    return {
+        "v1.0.0": dict(create_question() for _ in range(2)),
+        "v2.0.0": dict(create_question() for _ in range(1)),
+    }
 
 
 class UserQuestionAttemptsFactory(DjangoModelFactory):
@@ -94,15 +110,7 @@ class UserQuestionAttemptsFactory(DjangoModelFactory):
 
     user = SubFactory(UserFactory)
     topic = SubFactory(TopicFactory)
-    question_metadata = Dict(
-        {
-            "v1.0.0": {
-                "question1": QuestionMetadataFactory().__dict__,
-                "question2": QuestionMetadataFactory().__dict__,
-            },
-            "v2.0.0": {"question1": QuestionMetadataFactory().__dict__},
-        }
-    )
+    question_metadata = factory.LazyFunction(generate_question_metadata)
 
 
 class UserQuestionSetFactory(DjangoModelFactory):
@@ -144,8 +152,8 @@ class QuestionFactory(factory.Factory):
     class Meta:
         model = Question
 
-    id = factory.LazyFunction(lambda: str(ObjectId()))
-    question_id = factory.Faker("uuid4")
+    _id = factory.LazyFunction(lambda: str(ObjectId()))
+    question_id = factory.LazyFunction(lambda: str(ObjectId()))
     text = factory.Faker("sentence")
     topic = factory.Faker("word")
     category = factory.Faker("word")
