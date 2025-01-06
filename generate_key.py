@@ -27,5 +27,4 @@ with open("lti_provider/public_key.pem", "wb") as f:
         )
     )
 
-
 print("RSA Key Pair Generated and Saved!")

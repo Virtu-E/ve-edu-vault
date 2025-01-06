@@ -62,7 +62,7 @@ def initialize_edu_vault_user(edx_user_data: EdxUserData):
                     UserQuestionSet.objects.create(
                         user=user,
                         topic=topic,
-                        question_set_ids=[],  # TODO : set default for each known categories
+                        question_list_ids=[],  # TODO : set default for each known categories
                     )
 
                     log.info(

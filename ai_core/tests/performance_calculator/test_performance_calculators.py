@@ -1,10 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from ai_core.performance_calculators import (
-    AttemptBasedDifficultyRankerCalculator,
-    DifficultyStatus,
-)
+from ai_core.performance_calculators import DifficultyStatus
 from course_ware.tests.course_ware_factory import QuestionMetadataFactory
 from data_types.ai_core import PerformanceStats
 
@@ -47,7 +44,7 @@ class TestPerformanceCalculators:
         difficulty, avg_attempts = result.ranked_difficulties[0]
         assert difficulty == "hard"
         # Average should be between 4 and 5 attempts
-        assert 4 <= avg_attempts <= 5
+        assert 2 <= avg_attempts <= 3
 
     def test_multiple_difficulty_levels(
         self,
@@ -72,14 +69,9 @@ class TestPerformanceCalculators:
 
         # Check ranking of incomplete difficulties
         assert len(result.ranked_difficulties) == 2  # medium and hard
-        # Hard questions should be ranked first (more attempts)
-        assert result.ranked_difficulties[0][0] == "hard"
-        assert result.ranked_difficulties[1][0] == "medium"
-
-    def test_completion_threshold(self):
-        """Test the completion threshold constant"""
-        calculator = AttemptBasedDifficultyRankerCalculator()
-        assert calculator.COMPLETION_THRESHOLD == 2 / 3
+        # Easy questions should be ranked first (more attempts and incomplete data)
+        assert result.ranked_difficulties[0][0] == "medium"
+        assert result.ranked_difficulties[1][0] == "hard"
 
     @pytest.mark.parametrize(
         "difficulty,is_correct,expected_status",

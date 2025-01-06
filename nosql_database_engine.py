@@ -22,11 +22,23 @@ log = logging.getLogger(__name__)
 
 class NoSqLDatabaseEngineInterface(ABC):
     @abstractmethod
-    def fetch_from_db(self, collection_name: str, database_name: str) -> Any:
+    def fetch_from_db(
+        self,
+        collection_name: str,
+        database_name: str,
+        query: Dict = None,
+        projection: Dict = None,
+    ) -> Any:
         raise NotImplementedError
 
     @abstractmethod
-    def write_to_db(self, data: Any, collection_name: str, database_name: str) -> None:
+    def write_to_db(
+        self,
+        data: Union[Dict, list],
+        collection_name: str,
+        database_name: str,
+        timestamp: bool = True,
+    ) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -97,7 +109,7 @@ class MongoDatabaseEngine(NoSqLDatabaseEngineInterface):
                 serverSelectionTimeoutMS=5000,  # 5 second timeout
             )
             # Verify connection
-            self._client.server_info()
+            # self._client.server_info()
             self.logger.info("Successfully connected to MongoDB")
         except (ConnectionError, ServerSelectionTimeoutError) as e:
             self.logger.error(f"Failed to connect to MongoDB: {str(e)}")

@@ -1,16 +1,18 @@
 import asyncio
 import json
 import logging
-import re
-from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Dict, List, Literal, Set, TypeVar
+from typing import List, Literal, Set, TypeVar
 
 from ai_core.performance_engine import PerformanceEngineInterface
 from ai_core.utils import fetch_from_model
 from course_ware.models import UserQuestionAttempts, UserQuestionSet
-from data_types.ai_core import RecommendationEngineConfig
+from data_types.ai_core import (
+    RecommendationEngineConfig,
+    RecommendationQuestionMetadata,
+)
 from data_types.questions import Question
+from edu_vault.settings.common import MINIMUM_QUESTIONS_THRESHOLD
 from exceptions import (
     DatabaseQueryError,
     DatabaseUpdateError,
@@ -25,18 +27,6 @@ T = TypeVar("T")
 log = logging.getLogger(__name__)
 
 
-# TODO : the naming here conflicts with the data type in the course ware schema in data type folder. Need to change it
-@dataclass
-class QuestionMetadata:
-    """Data class for question metadata"""
-
-    category: str
-    topic: str
-    examination_level: str
-    academic_class: str
-    difficulty: str
-
-
 class RecommendationEngine:
     """
     Responsible for recommending questions based on user performance.
@@ -44,10 +34,6 @@ class RecommendationEngine:
     This engine uses performance metrics and question metadata to generate
     personalized question recommendations for users.
     """
-
-    MINIMUM_QUESTIONS_THRESHOLD = 9
-    VERSION_PATTERN = re.compile(r"v(\d+)\.(\d+)\.(\d+)")
-    DEFAULT_VERSION = "v0.0.0"
 
     def __init__(
         self,
@@ -71,15 +57,16 @@ class RecommendationEngine:
         self._init_database_attributes()
 
     def _init_database_attributes(self) -> None:
-        """Initialize database-related attributes from config"""
+        """Initialize attributes from config"""
         self.database_name = self.config.database_name
         self.collection_name = self.config.collection_name
-        self.metadata = QuestionMetadata(
+        self.metadata = RecommendationQuestionMetadata(
             category=self.config.category,
             topic=self.config.topic,
             examination_level=self.config.examination_level,
             academic_class=self.config.academic_class,
-            difficulty="",  # Will be set during question fetching
+            difficulty=None,  # this will be set after we have decided what
+            # level of recommended questions we want to recommend to the user
         )
 
     @property
@@ -116,7 +103,10 @@ class RecommendationEngine:
         question_set = await fetch_from_model(
             UserQuestionSet, user_id=self.user_id, topic_id=self.topic_id
         )
-        question_set.question_set_ids = self._serialize_questions(recommended_questions)
+        # question_list_ids is a JSON field
+        question_set.question_list_ids = json.dumps(
+            self._serialize_questions(recommended_questions)
+        )
         await question_set.save()
 
     async def _update_user_question_attempts(self) -> None:
@@ -124,8 +114,8 @@ class RecommendationEngine:
         attempts = await fetch_from_model(
             UserQuestionAttempts, user_id=self.user_id, topic_id=self.topic_id
         )
-        next_version = self.get_next_version(attempts.question_metadata)
-        attempts.question_metadata[next_version] = {}
+        next_version = attempts.get_next_version
+        attempts.question_metadata[next_version] = dict()
         await attempts.save()
 
     @lru_cache(maxsize=128)
@@ -133,7 +123,7 @@ class RecommendationEngine:
         self, difficulty: str
     ) -> List[Question]:
         """
-        Fetches questions from the database based on specified criteria.
+        Fetches questions from the database based on Recommendation Question Metadata.
         Uses caching to improve performance for repeated requests.
 
         Args:
@@ -146,28 +136,20 @@ class RecommendationEngine:
             QuestionFetchError: If there's an error fetching questions
         """
         try:
-            collection = await self.database_engine.fetch_from_db(
-                self.collection_name, self.database_name
+            documents = await self.database_engine.fetch_from_db(
+                self.collection_name,
+                self.database_name,
+                query=self._build_query(difficulty).__dict__,
             )
-
-            query = self._build_query(difficulty)
-            documents = await collection.find(query)
-
             return [Question(**doc) for doc in documents]
 
         except Exception as e:
             log.error(f"Database fetch error: {str(e)}")
             raise QuestionFetchError(f"Failed to fetch questions: {str(e)}")
 
-    def _build_query(self, difficulty: str) -> Dict[str, Any]:
+    def _build_query(self, difficulty: str) -> RecommendationQuestionMetadata:
         """Build the database query based on metadata"""
-        return {
-            "category": self.metadata.category,
-            "topic": self.metadata.topic,
-            "examination_level": self.metadata.examination_level,
-            "academic_class": self.metadata.academic_class,
-            "difficulty": difficulty,
-        }
+        return self.metadata.model_copy(update={"difficulty": difficulty})
 
     async def _get_question_ids(self) -> Set[str]:
         """
@@ -180,7 +162,7 @@ class RecommendationEngine:
             question_set = await fetch_from_model(
                 UserQuestionSet, user_id=self.user_id, topic_id=self.topic_id
             )
-            return {q["id"] for q in json.loads(question_set.question_set_ids)}
+            return question_set.get_question_set_ids
 
         except Exception as e:
             log.error(f"Error fetching question IDs: {str(e)}")
@@ -244,7 +226,7 @@ class RecommendationEngine:
             recommended_questions, current_ids
         )
 
-        if len(filtered_questions) < self.MINIMUM_QUESTIONS_THRESHOLD:
+        if len(filtered_questions) < MINIMUM_QUESTIONS_THRESHOLD:
             log.warning(f"Insufficient questions for user {self.user_id}")
             raise InsufficientQuestionsError(
                 "Insufficient questions available. Consider AI-based generation."
@@ -253,37 +235,6 @@ class RecommendationEngine:
         return filtered_questions
 
     @staticmethod
-    def _serialize_questions(questions: List[Question]) -> str:
-        """Serialize questions to JSON format"""
-        return json.dumps([{"id": q.question_id} for q in questions])
-
-    @classmethod
-    def get_next_version(cls, versions: Dict[str, Any]) -> str:
-        """
-        Generates the next version number based on existing versions.
-
-        Args:
-            versions: Dictionary of existing versions
-
-        Returns:
-            Next version string in the format "vX.Y.Z"
-        """
-        if not versions:
-            return cls.DEFAULT_VERSION
-
-        try:
-            version_keys = sorted(
-                versions.keys(),
-                key=lambda x: [int(i) for i in x.lstrip("v").split(".")],
-            )
-            latest_version = version_keys[-1]
-
-            if match := cls.VERSION_PATTERN.match(latest_version):
-                major = int(match.group(1))
-                return f"v{major + 1}.0.0"
-
-            return cls.DEFAULT_VERSION
-
-        except Exception as e:
-            logging.error(f"Version parsing error: {str(e)}")
-            return cls.DEFAULT_VERSION
+    def _serialize_questions(questions: List[Question]) -> List[dict[str, str]]:
+        """Serialize questions to a compatible format for the User QuestionSet table"""
+        return [{"id": q.question_id} for q in questions]

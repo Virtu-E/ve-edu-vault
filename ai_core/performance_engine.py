@@ -1,13 +1,12 @@
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Callable
-from typing import Union
+from typing import Dict, Tuple, Union
 
 from ai_core.performance_calculators import PerformanceCalculatorInterface
 from course_ware.models import UserQuestionAttempts
 from data_types.ai_core import PerformanceStats
 from data_types.course_ware_schema import QuestionMetadata, UserQuestionAttemptsSchema
-from exceptions import DatabaseQueryError, VersionParsingError
+from exceptions import DatabaseQueryError
 
 log = logging.getLogger(__name__)
 
@@ -56,67 +55,35 @@ class PerformanceEngine(PerformanceEngineInterface):
         Returns:
             PerformanceStats containing performance metrics
         """
-        question_attempt_data = self._get_user_attempt_question_metadata()
-        if not question_attempt_data:
+        question_attempt_data, question_attempt_instance = (
+            self._get_user_attempt_question_metadata()
+        )
+        if not question_attempt_data and not question_attempt_instance:
             log.info("No question attempt data for topic {}".format(self.topic_id))
             return PerformanceStats(ranked_difficulties=[], difficulty_status={})
-        question_metadata_current_version = self._get_current_question_version(
-            question_attempt_data, self._parse_version
+        question_metadata_current_version = (
+            question_attempt_instance.get_current_version
         )
         return self.performance_calculator.calculate_performance(
             question_metadata_current_version
         )
 
-    # TODO : deprecate this method because it has been moved to the model class
-    @staticmethod
-    def _parse_version(version: str) -> tuple:
-        """
-        Parse version string into tuple of integers.
-
-        Args:
-            version: Version string (e.g., 'v1.0.0')
-
-        Returns:
-            Tuple of integers representing version components
-        """
-        try:
-            parts = version.lstrip("v").split(".")
-            return tuple(map(int, parts))
-        except (ValueError, AttributeError):
-            log.error("Unable to parse version string %s", version)
-            raise VersionParsingError(version)
-
-    # TODO : deprecate this method because it has been moved to the model class
-    @staticmethod
-    def _get_current_question_version(
-        question_metadata: dict[str, dict[str, QuestionMetadata]],
-        parse_version: Callable[[str], tuple],
-    ) -> dict[str, QuestionMetadata]:
-        """
-        Get the current (latest) question version from metadata.
-
-        Args:
-            question_metadata: Nested dictionary containing versioned question metadata
-            parse_version: Function to parse version strings
-
-        Returns:
-            Dictionary containing the question metadata with the latest version
-        """
-
-        latest_version = max(question_metadata.keys(), key=parse_version)
-        return question_metadata[latest_version]
-
     def _get_user_attempt_question_metadata(
         self,
-    ) -> Union[dict[str, dict[str, QuestionMetadata]], {}]:
+    ) -> Union[
+        Tuple[Dict[str, Dict[str, "QuestionMetadata"]], "UserQuestionAttempts"],
+        Tuple[Dict, None],
+    ]:
         """
         Retrieve user's question attempt data.
 
         Returns:
-            Dictionary containing question metadata or empty dictionary
+            Tuple:
+                - A dictionary containing question metadata and the question attempt instance.
+                - An empty dictionary and None if no data is found.
 
         Raises:
-            UserQuestionAttempts.DoesNotExist: If no data found
+            DatabaseQueryError: If an unexpected error occurs.
         """
         try:
             question_attempt_instance = UserQuestionAttempts.objects.get(
@@ -125,10 +92,14 @@ class PerformanceEngine(PerformanceEngineInterface):
             schema = UserQuestionAttemptsSchema.model_validate(
                 question_attempt_instance
             )
-            return schema.question_metadata
+            return schema.question_metadata, question_attempt_instance
         except UserQuestionAttempts.DoesNotExist:
-            log.info(f"UserQuestionAttempts.DoesNotExist for topic {self.topic_id}")
-            return {}
+            log.info(
+                f"No question attempts found for user_id={self.user_id}, topic_id={self.topic_id}."
+            )
+            return {}, None
         except Exception as e:
-            log.error(f"An error occurred while retrieving question metadata: {e}")
-            raise DatabaseQueryError(e)
+            log.error(
+                f"Error retrieving question metadata for user_id={self.user_id}, topic_id={self.topic_id}: {e}"
+            )
+            raise DatabaseQueryError(f"An unexpected error occurred: {e}")

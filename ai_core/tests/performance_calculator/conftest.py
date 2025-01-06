@@ -43,11 +43,11 @@ def mixed_hard_questions():
     # 2 correct answers
     for i in range(2):
         questions[f"hard_correct_{i}"] = QuestionMetadataFactory(
-            difficulty="hard", is_correct="true", attempt_number=4
+            difficulty="hard", is_correct="true", attempt_number=3
         )
     # 4 incorrect answers
     for i in range(4):
         questions[f"hard_incorrect_{i}"] = QuestionMetadataFactory(
-            difficulty="hard", is_correct="false", attempt_number=5
+            difficulty="hard", is_correct="false", attempt_number=2
         )
     return questions

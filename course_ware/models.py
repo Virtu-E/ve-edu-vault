@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from django.db import models
@@ -36,6 +37,9 @@ EXAMINATION_LEVELS = [
     ("JCE", "JCE"),
     ("IGCSE", "IGCSE"),
 ]
+
+DEFAULT_VERSION = "v1.0.0"
+VERSION_PATTERN = re.compile(r"v(\d+)\.(\d+)\.(\d+)")
 
 
 class User(models.Model):
@@ -156,7 +160,9 @@ class UserQuestionSet(models.Model):
     #     {"id": "question_id_2"},
     #     {"id": "question_id_3"}
     # ]
-    question_set_ids = models.JSONField(help_text="References to MongoDB question IDs.")
+    question_list_ids = models.JSONField(
+        help_text="References to MongoDB question IDs."
+    )
 
     class Meta:
         verbose_name = "User Question Set"
@@ -165,16 +171,16 @@ class UserQuestionSet(models.Model):
     @property
     def get_question_set_ids(self) -> set[str]:
         """
-        Retrieve a list of question set IDs as strings.
+        Retrieve a set of question set IDs as strings.
 
         This property processes the `question_set_ids` attribute,
         which is expected to be a list of dictionaries containing an "id" key,
-        and returns a list of the "id" values as strings.
+        and returns a set of the "id" values as strings.
 
         Returns:
-            list[str]: A list of question set IDs in string format.
+            set[str]: A set of question set IDs in string format.
         """
-        return {str(item["id"]) for item in self.question_set_ids}
+        return {str(item["id"]) for item in self.question_list_ids}
 
     def __str__(self):
         return f"{self.user.username} - {self.topic.name}"
@@ -226,6 +232,16 @@ class UserQuestionAttempts(models.Model):
             raise (VersionParsingError(version))
 
     @property
+    def get_current_version(self) -> str:
+        """
+        Retrieve the current version based on question metadata.
+
+        Returns:
+            str: The current version key with the highest value based on parsing.
+        """
+        return max(self.question_metadata.keys(), key=self._parse_version)
+
+    @property
     def get_latest_question_metadata(self) -> dict[str, Any]:
         """
         Get the current (latest) question version from metadata.
@@ -235,8 +251,7 @@ class UserQuestionAttempts(models.Model):
                -> Top-level key: Question ID,
                -> Second-level key: QuestionMetadata )
         """
-        latest_version = max(self.question_metadata.keys(), key=self._parse_version)
-        return self.question_metadata[latest_version]
+        return self.question_metadata[self.get_current_version]
 
     @property
     def get_correct_questions_count(self) -> int:
@@ -251,6 +266,40 @@ class UserQuestionAttempts(models.Model):
             [q for q in question_metadata.values() if not q["is_correct"]]
         )
         return incorrect_count
+
+    @property
+    def get_next_version(self) -> str:
+        """
+        Generates the next version number based on existing versions.
+
+        Returns:
+            Next version string in the format "vX.Y.Z"
+        """
+
+        versions = self.question_metadata
+
+        if not versions:
+            return DEFAULT_VERSION
+
+        try:
+            version_keys = sorted(
+                versions.keys(),
+                key=lambda x: [int(i) for i in x.lstrip("v").split(".")],
+            )
+            latest_version = version_keys[-1]
+
+            if match := VERSION_PATTERN.match(latest_version):
+                major = int(match.group(1))
+                return f"v{major + 1}.0.0"
+
+            log.error("Unable to parse version string %s", latest_version)
+            raise VersionParsingError(
+                "Unable to parse version string %s", latest_version
+            )
+
+        except Exception as e:
+            log.error(f"Version parsing error: {str(e)}")
+            raise VersionParsingError(f"Version parsing error: {str(e)}")
 
     def __str__(self):
         return f"{self.user.username} - {self.topic.name} Attempts"

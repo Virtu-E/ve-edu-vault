@@ -7,6 +7,7 @@ import pandas as pd
 
 from data_types.ai_core import PerformanceStats
 from data_types.course_ware_schema import QuestionMetadata
+from edu_vault.settings.common import COMPLETION_THRESHOLD
 
 log = logging.getLogger(__name__)
 
@@ -36,8 +37,6 @@ class PerformanceCalculatorInterface(ABC):
 
 
 class AttemptBasedDifficultyRankerCalculator(PerformanceCalculatorInterface):
-    # TODO : need to extract this to an .env file at some point
-    COMPLETION_THRESHOLD = 2 / 3  # Class constant for completion threshold
 
     def calculate_performance(
         self, question_data: dict[str, QuestionMetadata]
@@ -74,8 +73,9 @@ class AttemptBasedDifficultyRankerCalculator(PerformanceCalculatorInterface):
             ranked_difficulties=ranked_difficulties, difficulty_status=difficulty_status
         )
 
+    @staticmethod
     def _calculate_difficulty_status(
-        self, difficulty_groups: pd.core.groupby.GroupBy
+        difficulty_groups: pd.core.groupby.GroupBy,
     ) -> Union[
         dict[Literal["easy", "medium", "hard"], Literal["incomplete", "completed"]], {}
     ]:
@@ -96,7 +96,7 @@ class AttemptBasedDifficultyRankerCalculator(PerformanceCalculatorInterface):
 
             status = (
                 DifficultyStatus.COMPLETED
-                if completed_questions >= self.COMPLETION_THRESHOLD * total_questions
+                if completed_questions >= COMPLETION_THRESHOLD * total_questions
                 else DifficultyStatus.INCOMPLETE
             )
             difficulty_status[difficulty] = status.value
