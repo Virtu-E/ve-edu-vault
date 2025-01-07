@@ -89,7 +89,7 @@ def question_management_base(mock_db_client):
 
 
 @pytest.fixture
-def url_params(self, user, user_question_attempts, topic):
+def url_params(user, user_question_attempts, topic):
     """Fixture for common URL parameters"""
     return {
         "username": user.username,

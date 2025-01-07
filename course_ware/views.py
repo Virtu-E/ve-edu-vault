@@ -298,3 +298,7 @@ class GetQuestionAttemptView(QuestionViewBase):
                 total_incorrect_count=user_question_attempt.get_incorrect_questions_count,
             ).model_dump()
         )
+
+
+class PostFinishExam:
+    pass
