@@ -58,14 +58,18 @@ class PerformanceEngine(PerformanceEngineInterface):
         question_attempt_data, question_attempt_instance = (
             self._get_user_attempt_question_metadata()
         )
+
         if not question_attempt_data and not question_attempt_instance:
             log.info("No question attempt data for topic {}".format(self.topic_id))
             return PerformanceStats(ranked_difficulties=[], difficulty_status={})
         question_metadata_current_version = (
-            question_attempt_instance.get_current_version
+            question_attempt_instance.get_latest_question_metadata
         )
         return self.performance_calculator.calculate_performance(
-            question_metadata_current_version
+            {
+                key: QuestionMetadata(**value)
+                for key, value in question_metadata_current_version.items()
+            }
         )
 
     def _get_user_attempt_question_metadata(

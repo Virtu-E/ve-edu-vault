@@ -1,4 +1,8 @@
-from course_ware.views import GetQuestionsView, PostQuestionAttemptView
+from course_ware.views import (
+    GetQuestionsView,
+    PostQuestionAttemptView,
+    QuizCompletionView,
+)
 from edu_vault.settings import common
 from nosql_database_engine import MongoDatabaseEngine
 
@@ -15,3 +19,4 @@ def create_view_with_db(view_class):
 
 get_questions_view_factory = create_view_with_db(GetQuestionsView)
 post_question_attempt_view_factory = create_view_with_db(PostQuestionAttemptView)
+complete_quiz_view_factory = create_view_with_db(QuizCompletionView)

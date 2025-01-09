@@ -169,7 +169,9 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-COURSE_DATABASE_NAME_MAPPING = {"some course id": "mathematics_problems"}
+COURSE_DATABASE_NAME_MAPPING = {
+    "course-v1:VirtuEducate+100+2024course-v1:VirtuEducate+100+2024": "mathematics_problems"
+}
 # TODO : thinking of using getattr when accessing this. Food for thought
 NO_SQL_DATABASE_NAME = config("NO_SQL_DATABASE_NAME")
 MINIMUM_QUESTIONS_THRESHOLD = 9

@@ -9,6 +9,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from ai_core.performance_calculators import AttemptBasedDifficultyRankerCalculator
+from ai_core.performance_engine import PerformanceEngine
 from course_ware.mixins import RetrieveUserAndResourcesMixin
 from course_ware.models import Topic, User, UserQuestionAttempts
 from course_ware.serializers import (
@@ -182,17 +184,20 @@ class PostQuestionAttemptView(DatabaseQuestionViewBase):
 
         return None
 
+    @staticmethod
+    def _is_choice_correct(question_instance: Question, choice_id: int) -> bool:
+        return question_instance.choices[choice_id].is_correct
+
     def _is_choice_answer_correct(
         self, choice_id: int, question_id: str, collection_name: str
     ) -> bool:
-        result = self.no_sql_database_client.fetch_from_db(
+        result_lists = self.no_sql_database_client.fetch_from_db(
             collection_name, NO_SQL_DATABASE_NAME, {"_id": ObjectId(question_id)}
         )
-
+        # TODO : simplify this by removing the need pf checking the data structure
+        result = result_lists[0] if isinstance(result_lists, list) else result_lists
         question_instance = Question(**{**result, "_id": str(question_id)})
-        if not question_instance.choices[choice_id].is_correct:
-            return False
-        return True
+        return self._is_choice_correct(question_instance, choice_id)
 
     @staticmethod
     def _update_question_metadata(
@@ -300,5 +305,105 @@ class GetQuestionAttemptView(QuestionViewBase):
         )
 
 
-class PostFinishExam:
-    pass
+class QuizCompletionView(DatabaseQuestionViewBase):
+    # TODO : one thing we need to implement is Authorization, Authentication and Auditing for the API endpoints
+    """
+    View to handle the completion of a quiz/challenge.
+    """
+
+    serializer_class = QueryParamsSerializer
+
+    def _ensure_user_question_attempts_exist(
+        self,
+        user_question_ids: set[str],
+        user_attempts_instance: UserQuestionAttempts,
+        collection_name: str,
+    ):
+        """
+        Ensures that all questions in the provided user_question_ids have corresponding attempt data.
+        If attempt data is missing, it is created with default values.
+
+        Args:
+            user_question_ids (set[str]): Set of question IDs for the user.
+            user_attempts_instance (UserQuestionAttempts): Instance containing user question attempts.
+            collection_name (str): Name of the No SQL Database collection to fetch question data from.
+        """
+
+        existing_attempts = user_attempts_instance.get_latest_question_metadata
+
+        missing_question_ids = user_question_ids - existing_attempts.keys()
+
+        if not missing_question_ids:
+            return
+
+        question_data_list = self.no_sql_database_client.fetch_from_db(
+            collection_name,
+            NO_SQL_DATABASE_NAME,
+            {
+                "_id": {
+                    "$in": [
+                        ObjectId(question_id) for question_id in missing_question_ids
+                    ]
+                }
+            },
+        )
+
+        fetched_question_ids = {
+            str(question_data["_id"]) for question_data in question_data_list
+        }
+
+        missing_questions = missing_question_ids - fetched_question_ids
+        if missing_questions:
+            raise ValueError(
+                f"Questions with IDs {', '.join(missing_questions)} not found in the database."
+            )
+
+        for question_data in question_data_list:
+            question_id = str(question_data["_id"])
+            question_instance = Question(**{**question_data, "_id": question_id})
+
+            existing_attempts[question_id] = {
+                "is_correct": False,
+                "difficulty": question_instance.difficulty,
+                "topic": question_instance.topic,
+                "attempt_number": 0,
+                "question_id": question_id,
+            }
+
+        user_attempts_instance.save()
+
+    def post(self, request):
+        #   TODO : the naming here already shows that my function is doing two things. Change that
+        user, topic, question_set_ids, collection_name = (
+            self.validate_and_get_resources(request.data)
+        )
+        # we have to create a filler for all unattempted questions that the user has been assigned in the question set
+        user_question_attempt = get_object_or_404(
+            UserQuestionAttempts, user=user, topic=topic
+        )
+
+        self._ensure_user_question_attempts_exist(
+            question_set_ids, user_question_attempt, collection_name
+        )
+
+        # we have to calculate the performance
+        performance_calculator_instance = AttemptBasedDifficultyRankerCalculator()
+        performance_engine = PerformanceEngine(
+            topic_id=topic.id,
+            user_id=user.id,
+            performance_calculator=performance_calculator_instance,
+        )
+        performance_stats = performance_engine.get_topic_performance_stats()
+        return Response(performance_stats.model_dump(), status.HTTP_200_OK)
+
+        # what do we do during examination complete process ?
+        # we get the quiz details
+        # - course, topic, examination level etc
+        # RecommendationQuestionMetadata - of this instance
+
+        # we calculate the grades for the user
+        # we pass the grades back to edx platform
+        # we suggest new question sets if the user has failed the exam
+        # we award them a completion badge and then turn the topic to just practice only
+        # where they can select the level of questions and they just randomly practice
+        # choose quiz difficulty, practice questions etc

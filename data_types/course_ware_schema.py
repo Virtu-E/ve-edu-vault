@@ -9,7 +9,7 @@ class QuestionMetadata(BaseModel):
     """
 
     question_id: str  # this is the mongo question ID
-    attempt_number: conint(ge=1, le=3)  # Minimum 1, Maximum 3
+    attempt_number: conint(ge=0, le=3)  # Minimum 1, Maximum 3
     is_correct: bool
     topic: str
     difficulty: str

@@ -1,6 +1,7 @@
-from typing import Literal
+from typing import Dict, List
 
 from pydantic import BaseModel, Field, constr
+from typing_extensions import Literal
 
 
 class PerformanceStats(BaseModel):
@@ -8,16 +9,35 @@ class PerformanceStats(BaseModel):
     Stores comprehensive performance statistics.
 
     Attributes:
-        ranked_difficulties: List of question difficulty rankings ordered by average question attempts per difficulty
-        difficulty_status: Dictionary mapping difficulty levels to their completion status
+        ranked_difficulties: A list of difficulty rankings ordered by the average number of attempts per difficulty level.
+        difficulty_status: A dictionary mapping each difficulty level to its completion status.
     """
 
-    ranked_difficulties: list[tuple[Literal["easy", "medium", "hard"], float]] = Field(
-        ..., description="Ordered list of difficulty rankings"
+    ranked_difficulties: List[tuple[Literal["easy", "medium", "hard"], float]] = Field(
+        ...,
+        description=(
+            "A list of tuples where each tuple contains a difficulty level (easy, medium, hard) "
+            "and the corresponding average number of attempts for that difficulty, "
+            "ordered by the average attempts in ascending order."
+        ),
     )
-    difficulty_status: dict[
+
+    difficulty_status: Dict[
         Literal["easy", "medium", "hard"], Literal["incomplete", "completed"]
-    ] = Field(..., description="Completion status for each difficulty level")
+    ] = Field(
+        ...,
+        description=(
+            "A dictionary mapping each difficulty level to its completion status. "
+            "'incomplete' means the user has not yet completed questions for that difficulty, "
+            "while 'completed' means they have completed all required questions for that difficulty."
+        ),
+    )
+
+    # def __init__(self, **kwargs):
+    #     super().__init__(**kwargs)
+    #
+    #     # Ensure ranked_difficulties is ordered by average attempts
+    #     self.ranked_difficulties.sort(key=lambda x: x[1])
 
 
 class RecommendationEngineConfig(BaseModel):
