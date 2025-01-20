@@ -1,17 +1,16 @@
 import json
 from datetime import datetime
-from typing import Any, Dict
 from unittest.mock import AsyncMock
 
 import pytest
 from asgiref.sync import sync_to_async
 
-from ai_core.recommendation_engine import QuestionMetadata, RecommendationEngine
 from course_ware.models import UserQuestionSet
 from course_ware.tests.course_ware_factory import (
     UserQuestionAttemptsFactory,
     UserQuestionSetFactory,
 )
+from data_types.ai_core import RecommendationQuestionMetadata
 from data_types.questions import Choice, Metadata, Question, Solution
 from exceptions import (
     DatabaseUpdateError,
@@ -110,25 +109,12 @@ class TestRecommendationEngine:
         with pytest.raises(InsufficientQuestionsError):
             await recommendation_engine.set_users_recommended_questions()
 
-    @pytest.mark.parametrize(
-        "versions,expected",
-        [
-            ({}, "v0.0.0"),
-            ({"v0.0.0": {}}, "v1.0.0"),
-            ({"v1.0.0": {}}, "v2.0.0"),
-            ({"v2.0.0": {}, "v1.0.0": {}}, "v3.0.0"),
-        ],
-    )
-    def test_get_next_version(self, versions: Dict[str, Any], expected: str):
-        """Test version number generation"""
-        assert RecommendationEngine.get_next_version(versions) == expected
-
     async def test_build_query(self, recommendation_engine):
         """Test database query building"""
         query = recommendation_engine._build_query("medium")
-        assert query["difficulty"] == "medium"
-        assert query["category"] == recommendation_engine.metadata.category
-        assert query["topic"] == recommendation_engine.metadata.topic
+        assert query.difficulty == "medium"
+        assert query.category == recommendation_engine.metadata.category
+        assert query.topic == recommendation_engine.metadata.topic
 
     async def test_exclude_current_users_questions(self, recommendation_engine):
         """Test filtering out existing questions"""
@@ -152,12 +138,16 @@ class TestRecommendationEngine:
                     Choice(text="Choice 3", is_correct=False),
                     Choice(text="Choice 4", is_correct=False),
                 ],
-                solution=Solution(explanation="Explanation for question 1"),
+                solution=Solution(
+                    explanation="Explanation for question 1",
+                    steps=["Step 1: Analyze the equation", "Step 2: Solve for x"],
+                ),
                 hint="Hint for question 1",
                 metadata=Metadata(
                     created_by="admin",
                     created_at=datetime(2024, 12, 20, 10, 0, 0),
                     updated_at=datetime(2024, 12, 20, 12, 0, 0),
+                    time_estimate=5,
                 ),
             ),
             Question(
@@ -176,12 +166,16 @@ class TestRecommendationEngine:
                     Choice(text="Option C", is_correct=False),
                     Choice(text="Option D", is_correct=False),
                 ],
-                solution=Solution(explanation="Explanation for question 2"),
+                solution=Solution(
+                    explanation="Explanation for question 2",
+                    steps=["Step 1: Analyze the forces", "Step 2: Apply Newton's laws"],
+                ),
                 hint="Hint for question 2",
                 metadata=Metadata(
                     created_by="teacher",
                     created_at=datetime(2024, 12, 19, 14, 0, 0),
                     updated_at=datetime(2024, 12, 20, 9, 30, 0),
+                    time_estimate=10,
                 ),
             ),
             Question(
@@ -200,12 +194,19 @@ class TestRecommendationEngine:
                     Choice(text="Answer 3", is_correct=True),
                     Choice(text="Answer 4", is_correct=False),
                 ],
-                solution=Solution(explanation="Explanation for question 3"),
+                solution=Solution(
+                    explanation="Explanation for question 3",
+                    steps=[
+                        "Step 1: Identify functional groups",
+                        "Step 2: Predict reaction mechanism",
+                    ],
+                ),
                 hint="Hint for question 3",
                 metadata=Metadata(
                     created_by="admin",
                     created_at=datetime(2024, 12, 18, 16, 0, 0),
                     updated_at=datetime(2024, 12, 20, 8, 45, 0),
+                    time_estimate=15,
                 ),
             ),
             Question(
@@ -224,16 +225,22 @@ class TestRecommendationEngine:
                     Choice(text="Option 3", is_correct=True),
                     Choice(text="Option 4", is_correct=False),
                 ],
-                solution=Solution(explanation="Explanation for question 4"),
+                solution=Solution(
+                    explanation="Explanation for question 4",
+                    steps=[
+                        "Step 1: Understand Mendelian ratios",
+                        "Step 2: Apply Punnett square",
+                    ],
+                ),
                 hint="Hint for question 4",
                 metadata=Metadata(
                     created_by="teacher",
                     created_at=datetime(2024, 12, 17, 11, 0, 0),
                     updated_at=datetime(2024, 12, 19, 13, 15, 0),
+                    time_estimate=8,
                 ),
             ),
         ]
-
         filtered = recommendation_engine._exclude_current_users_questions(
             questions, current_ids
         )
@@ -252,7 +259,7 @@ class TestRecommendationEngine:
 
 def test_question_metadata():
     """Test QuestionMetadata dataclass"""
-    metadata = QuestionMetadata(
+    metadata = RecommendationQuestionMetadata(
         category="math",
         topic="algebra",
         examination_level="high_school",

@@ -2,43 +2,13 @@ from unittest.mock import patch
 
 import pytest
 
-from course_ware.tests.course_ware_factory import (
-    QuestionMetadataFactory,
-    UserQuestionAttemptsFactory,
-)
+from course_ware.models import UserQuestionAttempts
+from course_ware.tests.course_ware_factory import UserQuestionAttemptsFactory
 from data_types.ai_core import PerformanceStats
-from exceptions import DatabaseQueryError, VersionParsingError
+from exceptions import DatabaseQueryError
 
 
 class TestPerformanceEngine:
-    def test_parse_version_valid(self, performance_engine):
-        """Test parsing valid version strings"""
-        assert performance_engine._parse_version("v1.0.0") == (1, 0, 0)
-        assert performance_engine._parse_version("v2.1.3") == (2, 1, 3)
-
-    def test_parse_version_invalid(self, performance_engine):
-        """Test parsing invalid version strings"""
-        with pytest.raises(VersionParsingError):
-            performance_engine._parse_version("invalid")
-        with pytest.raises(VersionParsingError):
-            performance_engine._parse_version("v1.a.0")
-
-    def test_get_current_question_version(self, performance_engine):
-        """Test getting the latest version from question metadata"""
-        question_metadata = {
-            "v1.0.0": {
-                "question1": QuestionMetadataFactory().__dict__,
-            },
-            "v2.0.0": {
-                "question2": QuestionMetadataFactory().__dict__,
-            },
-        }
-
-        latest_version = performance_engine._get_current_question_version(
-            question_metadata, performance_engine._parse_version
-        )
-
-        assert latest_version == question_metadata["v2.0.0"]
 
     def test_get_topic_performance_stats_with_data(
         self, performance_engine, user, topic
@@ -69,15 +39,18 @@ class TestPerformanceEngine:
         """Test successfully retrieving question metadata"""
         UserQuestionAttemptsFactory(user=user, topic=topic)
 
-        result = performance_engine._get_user_attempt_question_metadata()
+        result, user_question_attempt_instance = (
+            performance_engine._get_user_attempt_question_metadata()
+        )
         assert isinstance(result, dict)
+        assert isinstance(user_question_attempt_instance, UserQuestionAttempts)
         assert "v1.0.0" in result
         assert "v2.0.0" in result
 
     def test_get_user_attempt_question_metadata_not_found(self, performance_engine):
         """Test getting question metadata when user attempts don't exist"""
         result = performance_engine._get_user_attempt_question_metadata()
-        assert result == {}
+        assert result == ({}, None)
 
     def test_get_user_attempt_question_metadata_error(self, performance_engine):
         """Test handling errors when retrieving question metadata"""
@@ -87,15 +60,6 @@ class TestPerformanceEngine:
         ):
             with pytest.raises(DatabaseQueryError):
                 performance_engine._get_user_attempt_question_metadata()
-
-    def test_get_current_question_version_invalid_metadata(self, performance_engine):
-        """Test handling invalid metadata in get_current_question_version"""
-        invalid_metadata = {"invalid_version": {}, "also_invalid": {}}
-
-        with pytest.raises(VersionParsingError):
-            performance_engine._get_current_question_version(
-                invalid_metadata, performance_engine._parse_version
-            )
 
     def test_default_question_metadata(self, performance_engine, user, topic):
         """Test that new UserQuestionAttempts instances have default metadata"""

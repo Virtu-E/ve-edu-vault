@@ -25,7 +25,6 @@ MONGO_URL = "mongodb+srv://myAtlasDBUser:tkB0QqcKTztNhnWW@myatlasclusteredu.2khc
 SECRET_KEY = "django-insecure-$%pf&(zm7psez39!gruk&7^_ao%@&6xhwtsg7=_bctml77s4gw"
 DEBUG = config("DEBUG", default=False, cast=bool)
 
-
 # Disable SSL verification globally for all requests
 
 
@@ -43,8 +42,16 @@ INSTALLED_APPS = [
     "ai_core",
     "course_ware",
     "rest_framework",
+    "corsheaders",
 ]
 
+# TODO : csrf protection vs authentication
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.BasicAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
+    ],
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -54,8 +61,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
 ]
-
 
 ROOT_URLCONF = "edu_vault.urls"
 
@@ -78,7 +85,6 @@ TEMPLATES = [
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 WSGI_APPLICATION = "edu_vault.wsgi.application"
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -107,19 +113,25 @@ LOGGING = {
             "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
             "style": "{",
         },
+        "detailed": {
+            "format": (
+                "%(asctime)s [%(levelname)s] %(name)s (%(filename)s:%(lineno)d) "
+                "%(message)s"
+            )
+        },
         "simple": {"format": "%(asctime)s::%(name)s::%(levelname)s::%(message)s"},
     },
     "handlers": {
         "console": {
             "level": "DEBUG" if DEBUG else "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "detailed",
         },
         "file": {
             "level": "DEBUG" if DEBUG else "INFO",
             "class": "logging.FileHandler",
             "filename": "virtu_educate.log",
-            "formatter": "simple",
+            "formatter": "verbose",
         },
     },
     "loggers": {
@@ -128,9 +140,13 @@ LOGGING = {
             "level": "DEBUG" if DEBUG else "INFO",
             "propagate": True,
         },
+        "django.request": {
+            "handlers": ["console"],  # or ["file", "console"] if you want both
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": True,
+        },
     },
 }
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
@@ -143,7 +159,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
@@ -153,3 +168,11 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+COURSE_DATABASE_NAME_MAPPING = {
+    "course-v1:VirtuEducate+100+2024course-v1:VirtuEducate+100+2024": "mathematics_problems"
+}
+# TODO : thinking of using getattr when accessing this. Food for thought
+NO_SQL_DATABASE_NAME = config("NO_SQL_DATABASE_NAME")
+MINIMUM_QUESTIONS_THRESHOLD = 9
+COMPLETION_THRESHOLD = 2 / 3

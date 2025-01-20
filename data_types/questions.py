@@ -1,13 +1,17 @@
 from datetime import datetime
 from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic.v1 import validator
 
 
 class Choice(BaseModel):
     text: str
-    is_correct: bool
+    is_correct: bool = Field(
+        exclude=True,
+    )
+    # TODO : introduce choice ID to allow randomization from the frontend
+    # choice_id : int
 
 
 class Solution(BaseModel):
@@ -23,8 +27,10 @@ class Metadata(BaseModel):
 
 
 class Question(BaseModel):
-    _id: str  # skip this, will be auto generated when we insert questions to mongo
-    question_id: str
+    id: str = Field(..., alias="_id")
+    question_id: (
+        str  # why am i including this here ? I feel like it will just create confusion
+    )
     text: str
     topic: str
     category: str
@@ -37,6 +43,9 @@ class Question(BaseModel):
     hint: str
     metadata: Metadata
 
+    class Config:
+        allow_population_by_field_name = True
+
     @validator("_id", pre=True, always=True)
     def ensure_string(cls, value):
         return str(value)
@@ -44,7 +53,10 @@ class Question(BaseModel):
 
 class QuestionAttemptData(BaseModel):
     is_correct: bool
-    in_correct_count: int = 0
+    attempt_number: int
+    difficulty: str
+    topic: str
     question_id: str
-    category_id: str
-    topic_id: str
+    choice_id: int
+    total_correct_count: int
+    total_incorrect_count: int

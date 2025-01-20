@@ -1,5 +1,8 @@
+from datetime import datetime
+
 import factory
-from factory import Dict, Factory, Faker, Sequence, SubFactory
+from bson import ObjectId
+from factory import Factory, Faker, Sequence, SubFactory
 from factory.django import DjangoModelFactory
 
 from course_ware.models import (
@@ -12,6 +15,7 @@ from course_ware.models import (
     UserQuestionSet,
 )
 from data_types.course_ware_schema import QuestionMetadata
+from data_types.questions import Choice, Metadata, Question, Solution
 
 
 class UserFactory(DjangoModelFactory):
@@ -77,11 +81,27 @@ class QuestionMetadataFactory(Factory):
     class Meta:
         model = QuestionMetadata
 
-    question_id = Faker("uuid4")
-    attempt_number = Faker("random_int", min=1, max=10)
+    question_id = factory.LazyFunction(lambda: str(ObjectId()))
+    attempt_number = Faker("random_int", min=1, max=3)
     is_correct = Faker("boolean")
     topic = Faker("word")
     difficulty = Faker("random_element", elements=["easy", "medium", "hard"])
+
+
+def generate_question_metadata():
+    """
+    Generate a dictionary where keys and values' 'id' fields match.
+    """
+
+    def create_question():
+        question = QuestionMetadataFactory()
+        question_id = question.question_id
+        return question_id, vars(question)
+
+    return {
+        "v1.0.0": dict(create_question() for _ in range(2)),
+        "v2.0.0": dict(create_question() for _ in range(1)),
+    }
 
 
 class UserQuestionAttemptsFactory(DjangoModelFactory):
@@ -90,15 +110,7 @@ class UserQuestionAttemptsFactory(DjangoModelFactory):
 
     user = SubFactory(UserFactory)
     topic = SubFactory(TopicFactory)
-    question_metadata = Dict(
-        {
-            "v1.0.0": {
-                "question1": QuestionMetadataFactory().__dict__,
-                "question2": QuestionMetadataFactory().__dict__,
-            },
-            "v2.0.0": {"question1": QuestionMetadataFactory().__dict__},
-        }
-    )
+    question_metadata = factory.LazyFunction(generate_question_metadata)
 
 
 class UserQuestionSetFactory(DjangoModelFactory):
@@ -107,4 +119,49 @@ class UserQuestionSetFactory(DjangoModelFactory):
 
     user = SubFactory(UserFactory)
     topic = SubFactory(TopicFactory)
-    question_set_ids = "[]"
+    question_list_ids = []
+
+
+class ChoiceFactory(factory.Factory):
+    class Meta:
+        model = Choice
+
+    text = factory.Faker("sentence")
+    is_correct = factory.Faker("boolean")
+
+
+class SolutionFactory(factory.Factory):
+    class Meta:
+        model = Solution
+
+    explanation = factory.Faker("sentence")
+    steps = factory.List([factory.Faker("sentence") for _ in range(3)])
+
+
+class MetadataFactory(factory.Factory):
+    class Meta:
+        model = Metadata
+
+    created_by = factory.Faker("name")
+    created_at = factory.LazyFunction(datetime.utcnow)
+    updated_at = factory.LazyFunction(datetime.utcnow)
+    time_estimate = factory.Faker("random_int", min=1, max=60)
+
+
+class QuestionFactory(factory.Factory):
+    class Meta:
+        model = Question
+
+    _id = factory.LazyFunction(lambda: str(ObjectId()))
+    question_id = factory.LazyFunction(lambda: str(ObjectId()))
+    text = factory.Faker("sentence")
+    topic = factory.Faker("word")
+    category = factory.Faker("word")
+    academic_class = factory.Faker("word")
+    examination_level = factory.Faker("word")
+    difficulty = factory.Faker("word")
+    tags = factory.List([factory.Faker("word") for _ in range(3)])
+    choices = factory.List([ChoiceFactory() for _ in range(4)])
+    solution = factory.SubFactory(SolutionFactory)
+    hint = factory.Faker("sentence")
+    metadata = factory.SubFactory(MetadataFactory)

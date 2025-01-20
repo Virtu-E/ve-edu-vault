@@ -40,8 +40,7 @@ def mock_performance_engine():
 @pytest.fixture
 def mock_database_engine():
     engine = AsyncMock()
-    collection = AsyncMock()
-    collection.find.return_value = [
+    collection = [
         {
             "_id": f"question_{i}",
             "question_id": f"question_{i}",
@@ -55,12 +54,16 @@ def mock_database_engine():
             "choices": [
                 {"text": f"Choice {j}", "is_correct": j == 0} for j in range(4)
             ],
-            "solution": {"explanation": f"Explanation for question {i}"},
+            "solution": {
+                "explanation": f"Explanation for question {i}",
+                "steps": [f"Step 1 for question {i}", f"Step 2 for question {i}"],
+            },
             "hint": f"Hint for question {i}",
             "metadata": {
                 "created_by": "admin",
                 "created_at": datetime(2024, 12, 20, 10, 0, 0),
                 "updated_at": datetime(2024, 12, 20, 12, 0, 0),
+                "time_estimate": 5,
             },
         }
         for i in range(10)

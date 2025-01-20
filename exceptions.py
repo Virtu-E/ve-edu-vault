@@ -23,6 +23,20 @@ class MongoDbConfigurationError(DatabaseError):
         super().__init__(message)
 
 
+class MongoDbConnectionError(DatabaseError):
+    """Raised when connection to MongoDB fails."""
+
+    def __init__(self, message):
+        super().__init__(message)
+
+
+class MongoDbOperationError(DatabaseError):
+    """Raised when MongoDB operations fail."""
+
+    def __init__(self, message):
+        super().__init__(message)
+
+
 class QuestionFetchError(DatabaseError):
     """Raised when there is an error fetching questions from MongoDB."""
 
@@ -104,3 +118,36 @@ class InsufficientQuestionsError(QuestionFetchError):
     """Exception raised when there are not enough questions available"""
 
     pass
+
+
+# TODO : change the base class below to a more appropriate and meaningful name
+class ValidationError(VirtuEducateError):
+    """Exception raised for validation errors."""
+
+    def __init__(self, message="Validation error occurred", *args):
+        self.message = message
+        super().__init__(self.message, *args)
+
+    def __str__(self):
+        return f"{self.__class__.__name__}: {self.message}"
+
+
+class QuestionNotFoundError(ValidationError):
+    """Raised when a question is not found in a user's question set."""
+
+    def __init__(self, question_id, username, message="Question not found"):
+        self.question_id = question_id
+        self.username = username
+        self.message = (
+            f"{message}: Question ID '{question_id}' not found for user '{username}'"
+        )
+        super().__init__(self.message)
+
+
+class InvalidParameterError(VirtuEducateError):
+    """Raised when there are missing or invalid parameters in a request."""
+
+    def __init__(self, parameter, message="Invalid parameter"):
+        self.parameter = parameter
+        self.message = f"{message}: '{parameter}'"
+        super().__init__(self.message)

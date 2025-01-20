@@ -1,6 +1,10 @@
 # lti_provider/views.py
 
-from cryptography.hazmat.primitives import serialization
+
+import base64
+
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -22,7 +26,7 @@ def lti_login(request):
     try:
         oidc_login = DjangoOIDCLogin(request, tool_conf_2)
         get_launch_url(request)
-        return oidc_login.redirect("https://virtueducate.edly.io/lti/launch/")
+        return oidc_login.redirect("https://vault.virtueducate.edly.io/lti/launch/")
     except Exception as e:
         print(e)
         return JsonResponse({"error": str(e)}, status=400)
@@ -52,7 +56,7 @@ def lti_launch(request):
 
         # Example: You can store or process payload data here
         return redirect(
-            "http://localhost:3000/assesment/block-v1%3AVirtuEducate%2B100%2B2024%2Btype%40lti_consumer%2Bblock%40e8fdb7a5189d4802a4c4ae8de231425d"
+            "https://virtueducate.edly.io/assesment/block-v1:VirtuEducate+100+2024+type@lti_consumer+block@e8fdb7a5189d4802a4c4ae8de231425d"
         )
 
     except Exception as e:
@@ -69,20 +73,61 @@ def load_public_key():
     return public_key
 
 
+def generate_kid(public_key: RSAPublicKey) -> str:
+    """
+    Generate a Key ID (kid) based on the public key.
+    """
+    # Serialize the public key to DER format
+    der_public_key = public_key.public_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    # Compute the SHA-256 hash of the serialized key
+    digest = hashes.Hash(hashes.SHA256())
+    digest.update(der_public_key)
+    hashed_key = digest.finalize()
+    # Encode the hash in URL-safe base64 format without padding
+    kid = base64.urlsafe_b64encode(hashed_key).decode("utf-8").rstrip("=")
+    return kid
+
+
 # TODO : dont make it hard coded
 def jwks_view(request):
     """
     Expose the public key in JWKS format.
     """
     public_key = load_public_key()
-    public_key.public_numbers()
+    public_numbers = public_key.public_numbers()
+
+    # Base64 encode the modulus and exponent
+    n = (
+        base64.urlsafe_b64encode(
+            public_numbers.n.to_bytes(
+                (public_numbers.n.bit_length() + 7) // 8, byteorder="big"
+            )
+        )
+        .decode("utf-8")
+        .rstrip("=")
+    )
+    e = (
+        base64.urlsafe_b64encode(
+            public_numbers.e.to_bytes(
+                (public_numbers.e.bit_length() + 7) // 8, byteorder="big"
+            )
+        )
+        .decode("utf-8")
+        .rstrip("=")
+    )
+
+    # Generate the dynamic Key ID
+    kid = generate_kid(public_key)
 
     # Construct the JWK (JSON Web Key)
     jwk = {
-        "e": "AQAB",
-        "kid": "q2IZGBMbJQdpokvk4-yvf7G3g_AD9AUl1JU5dJWXZ-g",
+        "e": e,
+        "kid": kid,
         "kty": "RSA",
-        "n": "yGp6gbpugPvgg3W_joITFYSqYUT6fYPvHGjZjPL_7d9wVZFM2sLRMjPkYxff4hEuEmTjwPTByKD5oYeyiqUKKZCgbZ5Jhh9hOfMaKZ0bOM2VG2wSk8ucPmxoTqEUQtxbOqj8sDwsTo7Wr6bA6fB2KjWqV32giHBVFiiPIBx0UieZRyCI8gwDhtSGJx3i9dFDrssokhBRqsPI9xlYpVulN7DLjk00SYG6w62kKuUAaabYe8cUEg0Kt8KwpUvZPSirJqwXqsX4s6GlUQ4qQ6Yt_mvFtxsElmzWJ5-zbKNJ3JO9zvtNAx1pC_lVFkC20T1YWm96Zcd-JUl0afUvnU13Fw",
+        "n": n,
         "alg": "RS256",
         "use": "sig",
     }
