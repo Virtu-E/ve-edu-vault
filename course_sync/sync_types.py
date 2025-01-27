@@ -4,12 +4,7 @@ from typing import Dict, Set
 
 from course_sync.extractor import StructureExtractor
 from course_sync.side_effects import CreationSideEffect
-from course_ware.models import (
-    AcademicClass,
-    Category,
-    Course,
-    Topic,
-)
+from course_ware.models import AcademicClass, Category, Course, Topic
 
 log = logging.getLogger(__name__)
 
