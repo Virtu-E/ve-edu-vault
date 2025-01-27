@@ -1,0 +1,425 @@
+[
+  {
+    "question_id": "chemist_careers_introduction_to_chemistry_easy_1",
+    "text": "What is the primary role of a chemist?",
+    "topic": "chemist_careers",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "easy",
+    "tags": [
+      "chemist",
+      "career"
+    ],
+    "choices": [
+      {
+        "text": "To conduct experiments and analyze substances",
+        "is_correct": true
+      },
+      {
+        "text": "To teach mathematics",
+        "is_correct": false
+      },
+      {
+        "text": "To design computer software",
+        "is_correct": false
+      },
+      {
+        "text": "To manage a business",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "The primary role of a chemist involves conducting experiments and analyzing substances to understand their properties and reactions.",
+      "steps": [
+        "Identify what a chemist does in their daily work.",
+        "Understand that the job revolves around experiments and analysis."
+      ]
+    },
+    "hint": "Think about what scientists do in laboratories.",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:49:48.083837+00:00",
+      "updated_at": "2025-01-22 19:49:48.083837+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "chemist_careers_introduction_to_chemistry_easy_2",
+    "text": "Which of the following is a common workplace for a chemist?",
+    "topic": "chemist_careers",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "easy",
+    "tags": [
+      "chemist",
+      "workplace"
+    ],
+    "choices": [
+      {
+        "text": "Laboratory",
+        "is_correct": true
+      },
+      {
+        "text": "Library",
+        "is_correct": false
+      },
+      {
+        "text": "Factory",
+        "is_correct": false
+      },
+      {
+        "text": "Hospital",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "Chemists typically work in laboratories where they can conduct experiments and analyze data.",
+      "steps": [
+        "Recall typical environments where scientific work is done.",
+        "Identify that laboratories are specifically designed for experiments."
+      ]
+    },
+    "hint": "Where do scientists usually perform their experiments?",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:49:48.083837+00:00",
+      "updated_at": "2025-01-22 19:49:48.083837+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "chemist_careers_introduction_to_chemistry_easy_3",
+    "text": "What type of education is typically required to become a chemist?",
+    "topic": "chemist_careers",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "easy",
+    "tags": [
+      "education",
+      "chemist"
+    ],
+    "choices": [
+      {
+        "text": "A bachelor's degree in chemistry",
+        "is_correct": true
+      },
+      {
+        "text": "A high school diploma",
+        "is_correct": false
+      },
+      {
+        "text": "A degree in law",
+        "is_correct": false
+      },
+      {
+        "text": "A master's in literature",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "Most chemists require at least a bachelor's degree in chemistry or a related field to qualify for their roles.",
+      "steps": [
+        "Consider the educational pathways for scientific careers.",
+        "Recognize that higher education is essential for specialized fields like chemistry."
+      ]
+    },
+    "hint": "What level of education do you usually need for a science job?",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:49:48.083837+00:00",
+      "updated_at": "2025-01-22 19:49:48.083837+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "chemist_careers_introduction_to_chemistry_medium_1",
+    "text": "What is one potential career path for a chemist?",
+    "topic": "chemist_careers",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "medium",
+    "tags": [
+      "career",
+      "chemist"
+    ],
+    "choices": [
+      {
+        "text": "Pharmaceutical chemist",
+        "is_correct": true
+      },
+      {
+        "text": "Software engineer",
+        "is_correct": false
+      },
+      {
+        "text": "Graphic designer",
+        "is_correct": false
+      },
+      {
+        "text": "Civil engineer",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "A pharmaceutical chemist specializes in the development of drugs and medications.",
+      "steps": [
+        "Identify various fields a chemist can work in.",
+        "Understand that pharmaceutical chemistry is a specialized area of chemistry."
+      ]
+    },
+    "hint": "Think about jobs related to medicine and drugs.",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:49:48.083837+00:00",
+      "updated_at": "2025-01-22 19:49:48.083837+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "chemist_careers_introduction_to_chemistry_medium_2",
+    "text": "What skills are important for a chemist to possess?",
+    "topic": "chemist_careers",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "medium",
+    "tags": [
+      "skills",
+      "chemist"
+    ],
+    "choices": [
+      {
+        "text": "Analytical thinking and attention to detail",
+        "is_correct": true
+      },
+      {
+        "text": "Artistic skills",
+        "is_correct": false
+      },
+      {
+        "text": "Athletic abilities",
+        "is_correct": false
+      },
+      {
+        "text": "Public speaking",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "Chemists need strong analytical thinking skills and attention to detail to conduct experiments accurately.",
+      "steps": [
+        "Consider the types of tasks chemists perform.",
+        "Identify the skills necessary for those tasks."
+      ]
+    },
+    "hint": "What kind of thinking is needed for solving scientific problems?",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:49:48.083837+00:00",
+      "updated_at": "2025-01-22 19:49:48.083837+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "chemist_careers_introduction_to_chemistry_medium_3",
+    "text": "Why might a chemist choose to work in environmental science?",
+    "topic": "chemist_careers",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "medium",
+    "tags": [
+      "environment",
+      "chemist"
+    ],
+    "choices": [
+      {
+        "text": "To study chemical processes affecting the environment",
+        "is_correct": true
+      },
+      {
+        "text": "To create new software technologies",
+        "is_correct": false
+      },
+      {
+        "text": "To design clothing",
+        "is_correct": false
+      },
+      {
+        "text": "To build structures",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "Chemists in environmental science study the effects of chemicals on ecosystems and work to mitigate pollution.",
+      "steps": [
+        "Identify the role of chemists in addressing environmental issues.",
+        "Understand that they analyze chemical interactions in nature."
+      ]
+    },
+    "hint": "Think about how chemistry can help the planet.",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:49:48.083837+00:00",
+      "updated_at": "2025-01-22 19:49:48.083837+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "chemist_careers_introduction_to_chemistry_hard_1",
+    "text": "What advanced degree may a chemist pursue for research positions?",
+    "topic": "chemist_careers",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "hard",
+    "tags": [
+      "advanced degree",
+      "chemist"
+    ],
+    "choices": [
+      {
+        "text": "PhD in Chemistry",
+        "is_correct": true
+      },
+      {
+        "text": "Bachelor's in Arts",
+        "is_correct": false
+      },
+      {
+        "text": "Diploma in Business",
+        "is_correct": false
+      },
+      {
+        "text": "Certificate in Education",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "A PhD in Chemistry is typically required for advanced research positions in the field.",
+      "steps": [
+        "Consider what educational qualifications are necessary for research.",
+        "Recognize that a PhD represents a high level of expertise."
+      ]
+    },
+    "hint": "What degree is necessary for high-level research jobs?",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:49:48.083837+00:00",
+      "updated_at": "2025-01-22 19:49:48.083837+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "chemist_careers_introduction_to_chemistry_hard_2",
+    "text": "Which of the following best describes the work of an analytical chemist?",
+    "topic": "chemist_careers",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "hard",
+    "tags": [
+      "analytical chemistry",
+      "chemist"
+    ],
+    "choices": [
+      {
+        "text": "They analyze substances to determine their composition",
+        "is_correct": true
+      },
+      {
+        "text": "They create new materials",
+        "is_correct": false
+      },
+      {
+        "text": "They manage laboratory teams",
+        "is_correct": false
+      },
+      {
+        "text": "They sell chemical products",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "Analytical chemists specialize in analyzing substances to understand their chemical composition and properties.",
+      "steps": [
+        "Identify the main functions of analytical chemists.",
+        "Understand the focus on composition and properties."
+      ]
+    },
+    "hint": "What do analytical chemists focus on in their work?",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:49:48.083837+00:00",
+      "updated_at": "2025-01-22 19:49:48.083837+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "chemist_careers_introduction_to_chemistry_hard_3",
+    "text": "What is the significance of internships for chemistry students?",
+    "topic": "chemist_careers",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "hard",
+    "tags": [
+      "internship",
+      "chemist"
+    ],
+    "choices": [
+      {
+        "text": "They provide practical experience and networking opportunities",
+        "is_correct": true
+      },
+      {
+        "text": "They are unnecessary for a chemistry career",
+        "is_correct": false
+      },
+      {
+        "text": "They only focus on theory",
+        "is_correct": false
+      },
+      {
+        "text": "They are only for students with high grades",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "Internships are crucial for chemistry students as they offer hands-on experience and help build professional networks.",
+      "steps": [
+        "Recognize the importance of practical experience in education.",
+        "Understand how networking can benefit future career opportunities."
+      ]
+    },
+    "hint": "How can students gain real-world experience in their field?",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:49:48.083837+00:00",
+      "updated_at": "2025-01-22 19:49:48.083837+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  }
+]

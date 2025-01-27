@@ -43,6 +43,11 @@ INSTALLED_APPS = [
     "course_ware",
     "rest_framework",
     "corsheaders",
+    "course_ware_ext",
+    "django_json_widget",
+    "webhooks",
+    "oauth2_provider",
+    "oauth_clients",
 ]
 
 # TODO : csrf protection vs authentication
@@ -169,10 +174,10 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-COURSE_DATABASE_NAME_MAPPING = {
-    "course-v1:VirtuEducate+100+2024course-v1:VirtuEducate+100+2024": "mathematics_problems"
-}
 # TODO : thinking of using getattr when accessing this. Food for thought
 NO_SQL_DATABASE_NAME = config("NO_SQL_DATABASE_NAME")
 MINIMUM_QUESTIONS_THRESHOLD = 9
 COMPLETION_THRESHOLD = 2 / 3
+
+ENCRYPTION_KEY = "gk79FsqK0sTh03Xo6MFkQW6g44-bk4cXj3gFvmpk8kA="
+LTI_LAUNCH_URL = "https://vault.virtueducate.edly.io/lti/launch/"

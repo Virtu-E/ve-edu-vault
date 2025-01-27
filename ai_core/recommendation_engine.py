@@ -19,7 +19,7 @@ from exceptions import (
     InsufficientQuestionsError,
     QuestionFetchError,
 )
-from nosql_database_engine import NoSqLDatabaseEngineInterface
+from no_sql_database.nosql_database_engine import NoSqLDatabaseEngineInterface
 
 # Type variables for generics
 T = TypeVar("T")

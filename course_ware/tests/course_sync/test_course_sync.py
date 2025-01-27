@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from course_ware.course_sync import CourseSync
+from course_sync import CourseSync
 from course_ware.models import Category, Topic
 from exceptions import DatabaseQueryError, DatabaseUpdateError
 

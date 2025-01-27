@@ -3,7 +3,7 @@ import threading
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import certifi
 from pymongo import MongoClient
@@ -39,6 +39,16 @@ class NoSqLDatabaseEngineInterface(ABC):
         database_name: str,
         timestamp: bool = True,
     ) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def run_aggregation(
+        self,
+        collection_name: str,
+        database_name: str,
+        pipeline: List[Dict],
+    ) -> Any:
+        """Run an aggregation pipeline on the database."""
         raise NotImplementedError
 
     @abstractmethod
@@ -178,6 +188,39 @@ class MongoDatabaseEngine(NoSqLDatabaseEngineInterface):
         except Exception as e:
             self.logger.error(f"Error fetching from {collection_name}: {str(e)}")
             raise MongoDbOperationError(f"Failed to fetch data: {str(e)}")
+
+    def run_aggregation(
+        self,
+        collection_name: str,
+        database_name: str,
+        pipeline: List[Dict],
+    ) -> list:
+        """
+        Execute an aggregation pipeline on a MongoDB collection.
+
+        Args:
+            collection_name: Name of the collection
+            database_name: Name of the database
+            pipeline: Aggregation pipeline as a list of stages
+
+        Returns:
+            list: List of documents resulting from the aggregation pipeline
+
+        Raises:
+            MongoDbOperationError: If the aggregation operation fails
+        """
+        try:
+            with self.get_collection(collection_name, database_name) as collection:
+                result = list(collection.aggregate(pipeline))
+                self.logger.debug(
+                    f"Aggregation query executed on {collection_name}: {pipeline}"
+                )
+                return result
+        except Exception as e:
+            self.logger.error(
+                f"Error running aggregation on {collection_name}: {str(e)}"
+            )
+            raise MongoDbOperationError(f"Failed to execute aggregation: {str(e)}")
 
     def write_to_db(
         self,

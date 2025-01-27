@@ -7,13 +7,14 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from django.http import JsonResponse
 from django.shortcuts import redirect
-from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from pylti1p3.contrib.django import (
     DjangoDbToolConf,
     DjangoMessageLaunch,
     DjangoOIDCLogin,
 )
+
+from edu_vault.settings import common
 
 tool_conf_2 = DjangoDbToolConf()
 
@@ -25,20 +26,10 @@ def lti_login(request):
     """
     try:
         oidc_login = DjangoOIDCLogin(request, tool_conf_2)
-        get_launch_url(request)
-        return oidc_login.redirect("https://vault.virtueducate.edly.io/lti/launch/")
+        return oidc_login.redirect(getattr(common, "LTI_LAUNCH_URL", ""))
     except Exception as e:
         print(e)
         return JsonResponse({"error": str(e)}, status=400)
-
-
-def get_launch_url(request) -> str:
-    """
-    Constructs the LTI launch URL to which the OIDC login flow will redirect.
-    """
-    # TODO : Need to dynamically get the target uri from the platform tool here
-    launch_url = request.build_absolute_uri(reverse("lti_launch"))
-    return launch_url
 
 
 @csrf_exempt
@@ -51,16 +42,20 @@ def lti_launch(request):
         launch = DjangoMessageLaunch(request, tool_conf_2)
 
         launch_data = launch.get_launch_data()
-
-        print(launch_data)
+        resource_link = launch_data[
+            "https://purl.imsglobal.org/spec/lti/claim/resource_link"
+        ]
+        print()  # resource link that links to our block ID
+        print(
+            launch_data["https://purl.imsglobal.org/spec/lti/claim/context"]
+        )  # claim context that contains the course ID
 
         # Example: You can store or process payload data here
         return redirect(
-            "https://virtueducate.edly.io/assesment/block-v1:VirtuEducate+100+2024+type@lti_consumer+block@e8fdb7a5189d4802a4c4ae8de231425d"
+            f"https://virtueducate.edly.io/assesment/{resource_link.get("id","")}/"
         )
 
     except Exception as e:
-        print(e, " here is an error message")
         return JsonResponse({"error": str(e)}, status=400)
 
 
@@ -91,7 +86,7 @@ def generate_kid(public_key: RSAPublicKey) -> str:
     return kid
 
 
-# TODO : dont make it hard coded
+# TODO : dont make it hard coded -- Might deprecate it in future as well
 def jwks_view(request):
     """
     Expose the public key in JWKS format.
@@ -123,16 +118,7 @@ def jwks_view(request):
     kid = generate_kid(public_key)
 
     # Construct the JWK (JSON Web Key)
-    jwk = {
-        "e": e,
-        "kid": kid,
-        "kty": "RSA",
-        "n": n,
-        "alg": "RS256",
-        "use": "sig",
-    }
-
-    # Wrap the JWK in a JSON Web Key Set (JWKS)
+    jwk = {}
     jwks = {"keys": [jwk]}
 
     # Return the JWKS as a JSON response
