@@ -4,6 +4,7 @@ from django.db import transaction
 
 from data_types.course_ware_models import EdxUserData
 from exceptions import DatabaseUpdateError
+
 from .models import (
     Category,
     User,
