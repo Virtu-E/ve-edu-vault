@@ -1,6 +1,6 @@
 import pytest
 
-from course_ware.course_sync import CourseSync
+from course_sync import CourseSync
 from course_ware.tests.course_ware_factory import (
     AcademicClassFactory,
     CategoryFactory,

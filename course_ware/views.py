@@ -14,14 +14,15 @@ from ai_core.performance_engine import PerformanceEngine
 from course_ware.mixins import RetrieveUserAndResourcesMixin
 from course_ware.models import Topic, User, UserQuestionAttempts
 from course_ware.serializers import (
-    GetQuestionSerializer,
+    GetSingleQuestionSerializer,
     PostQuestionAttemptSerializer,
     QueryParamsSerializer,
+    UserQuestionAttemptSerializer,
 )
 from data_types.questions import Question, QuestionAttemptData
-from edu_vault.settings.common import COURSE_DATABASE_NAME_MAPPING, NO_SQL_DATABASE_NAME
+from edu_vault.settings.common import NO_SQL_DATABASE_NAME
 from exceptions import ParsingError, QuestionNotFoundError
-from nosql_database_engine import NoSqLDatabaseEngineInterface
+from no_sql_database.nosql_database_engine import NoSqLDatabaseEngineInterface
 
 log = logging.getLogger(__name__)
 
@@ -103,7 +104,7 @@ class DatabaseQuestionViewBase(QuestionViewBase):
             raise ValidationError("Invalid topic instance")
 
         course_id = topic.category.course.course_key
-        collection_name = COURSE_DATABASE_NAME_MAPPING.get(course_id, None)
+        collection_name = course_id
         if not collection_name:
             log.error(
                 f"could not find database collection associated with the course ID {course_id}"
@@ -265,10 +266,10 @@ class PostQuestionAttemptView(DatabaseQuestionViewBase):
         )
 
 
-class GetQuestionAttemptView(QuestionViewBase):
-    """Retrieve a question attempt for a user."""
+class GetSingleQuestionAttemptView(QuestionViewBase):
+    """Retrieve a  question attempt for a user in regards to a single question ID"""
 
-    serializer_class = GetQuestionSerializer
+    serializer_class = GetSingleQuestionSerializer
 
     @QuestionViewBase.handle_response
     def get(self, request, username, block_id, question_id):
@@ -303,6 +304,20 @@ class GetQuestionAttemptView(QuestionViewBase):
                 total_incorrect_count=user_question_attempt.get_incorrect_questions_count,
             ).model_dump()
         )
+
+
+class GetQuestionAttemptView(APIView):
+    def get(self, request, username, block_id):
+        user = get_object_or_404(User, username=username)
+        topic = get_object_or_404(Topic, block_id=block_id)
+
+        attempt, _ = UserQuestionAttempts.objects.get_or_create(
+            user=user,
+            topic=topic,
+        )
+
+        serializer = UserQuestionAttemptSerializer(attempt)
+        return Response(serializer.data)
 
 
 class QuizCompletionView(DatabaseQuestionViewBase):

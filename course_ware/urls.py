@@ -5,7 +5,7 @@ from course_ware.factory_views import (
     get_questions_view_factory,
     post_question_attempt_view_factory,
 )
-from course_ware.views import GetQuestionAttemptView
+from course_ware.views import GetQuestionAttemptView, GetSingleQuestionAttemptView
 
 app_name = "course_ware"
 
@@ -22,6 +22,11 @@ urlpatterns = [
     ),
     path(
         "get_question_attempt/<str:username>/<str:block_id>/<str:question_id>/",
+        GetSingleQuestionAttemptView.as_view(),
+        name="get_single_question_attempt_view",
+    ),
+    path(
+        "get_question_attempt/<str:username>/<str:block_id>/",
         GetQuestionAttemptView.as_view(),
         name="get_question_attempt_view",
     ),

@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class SkillsConfig(AppConfig):
+class OauthClientsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "skills"
+    name = "oauth_clients"

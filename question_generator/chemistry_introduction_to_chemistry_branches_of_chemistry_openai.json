@@ -1,0 +1,426 @@
+[
+  {
+    "question_id": "branches_of_chemistry_easy_1",
+    "text": "What branch of chemistry focuses on the study of substances and their properties?",
+    "topic": "branches_of_chemistry",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "easy",
+    "tags": [
+      "basic concepts",
+      "chemistry branches"
+    ],
+    "choices": [
+      {
+        "text": "Biochemistry",
+        "is_correct": false
+      },
+      {
+        "text": "Organic Chemistry",
+        "is_correct": false
+      },
+      {
+        "text": "Inorganic Chemistry",
+        "is_correct": false
+      },
+      {
+        "text": "Physical Chemistry",
+        "is_correct": true
+      }
+    ],
+    "solution": {
+      "explanation": "Physical chemistry deals with understanding the properties and behaviors of matter.",
+      "steps": [
+        "Identify the branch of chemistry in question.",
+        "Determine which branch focuses on properties and behavior."
+      ]
+    },
+    "hint": "Think about how substances interact and change.",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:42:04.368115+00:00",
+      "updated_at": "2025-01-22 19:42:04.368115+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "branches_of_chemistry_easy_2",
+    "text": "Which branch of chemistry studies the structure and properties of carbon-containing compounds?",
+    "topic": "branches_of_chemistry",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "easy",
+    "tags": [
+      "organic chemistry",
+      "carbon compounds"
+    ],
+    "choices": [
+      {
+        "text": "Analytical Chemistry",
+        "is_correct": false
+      },
+      {
+        "text": "Organic Chemistry",
+        "is_correct": true
+      },
+      {
+        "text": "Inorganic Chemistry",
+        "is_correct": false
+      },
+      {
+        "text": "Environmental Chemistry",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "Organic chemistry is specifically concerned with carbon compounds.",
+      "steps": [
+        "Recognize that organic compounds primarily contain carbon.",
+        "Identify the branch that focuses on these compounds."
+      ]
+    },
+    "hint": "Consider the compounds that make up living organisms.",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:42:04.368115+00:00",
+      "updated_at": "2025-01-22 19:42:04.368115+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "branches_of_chemistry_easy_3",
+    "text": "What is the primary focus of analytical chemistry?",
+    "topic": "branches_of_chemistry",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "easy",
+    "tags": [
+      "analytical techniques",
+      "substance analysis"
+    ],
+    "choices": [
+      {
+        "text": "Studying chemical reactions",
+        "is_correct": false
+      },
+      {
+        "text": "Determining the composition of substances",
+        "is_correct": true
+      },
+      {
+        "text": "Exploring the nature of matter",
+        "is_correct": false
+      },
+      {
+        "text": "Investigating environmental chemistry",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "Analytical chemistry is dedicated to analyzing substances to determine their composition.",
+      "steps": [
+        "Understand the goals of analytical chemistry.",
+        "Identify how it applies to substance analysis."
+      ]
+    },
+    "hint": "Think about how scientists test substances in a lab.",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:42:04.368115+00:00",
+      "updated_at": "2025-01-22 19:42:04.368115+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "branches_of_chemistry_medium_1",
+    "text": "Which branch of chemistry would be most concerned with the study of environmental pollutants?",
+    "topic": "branches_of_chemistry",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "medium",
+    "tags": [
+      "environmental chemistry",
+      "pollution"
+    ],
+    "choices": [
+      {
+        "text": "Organic Chemistry",
+        "is_correct": false
+      },
+      {
+        "text": "Inorganic Chemistry",
+        "is_correct": false
+      },
+      {
+        "text": "Environmental Chemistry",
+        "is_correct": true
+      },
+      {
+        "text": "Biochemistry",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "Environmental chemistry focuses on chemical processes occurring in the environment and the effects of pollutants.",
+      "steps": [
+        "Identify the branch that studies environmental issues.",
+        "Recognize the impact of pollutants on the environment."
+      ]
+    },
+    "hint": "Consider how chemicals affect air and water quality.",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:42:04.368115+00:00",
+      "updated_at": "2025-01-22 19:42:04.368115+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "branches_of_chemistry_medium_2",
+    "text": "What does physical chemistry primarily study?",
+    "topic": "branches_of_chemistry",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "medium",
+    "tags": [
+      "physical chemistry",
+      "thermodynamics"
+    ],
+    "choices": [
+      {
+        "text": "Chemical reactions",
+        "is_correct": false
+      },
+      {
+        "text": "Matter and energy",
+        "is_correct": true
+      },
+      {
+        "text": "Biological processes",
+        "is_correct": false
+      },
+      {
+        "text": "Environmental impacts",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "Physical chemistry studies the relationship between matter and energy and how they interact.",
+      "steps": [
+        "Understand the focus of physical chemistry.",
+        "Identify its relationship to matter and energy."
+      ]
+    },
+    "hint": "Think about how energy affects chemical reactions.",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:42:04.368115+00:00",
+      "updated_at": "2025-01-22 19:42:04.368115+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "branches_of_chemistry_medium_3",
+    "text": "Which branch of chemistry deals with the study of the structure, properties, and reactions of inorganic compounds?",
+    "topic": "branches_of_chemistry",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "medium",
+    "tags": [
+      "inorganic chemistry",
+      "chemical properties"
+    ],
+    "choices": [
+      {
+        "text": "Organic Chemistry",
+        "is_correct": false
+      },
+      {
+        "text": "Analytical Chemistry",
+        "is_correct": false
+      },
+      {
+        "text": "Inorganic Chemistry",
+        "is_correct": true
+      },
+      {
+        "text": "Physical Chemistry",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "Inorganic chemistry is focused on the study of inorganic compounds and their properties.",
+      "steps": [
+        "Identify which compounds are classified as inorganic.",
+        "Recognize the branch that studies these compounds."
+      ]
+    },
+    "hint": "Consider compounds that do not primarily contain carbon.",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:42:04.368115+00:00",
+      "updated_at": "2025-01-22 19:42:04.368115+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "branches_of_chemistry_hard_1",
+    "text": "What is the role of biochemistry in understanding living organisms?",
+    "topic": "branches_of_chemistry",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "hard",
+    "tags": [
+      "biochemistry",
+      "living organisms"
+    ],
+    "choices": [
+      {
+        "text": "Studying non-living matter",
+        "is_correct": false
+      },
+      {
+        "text": "Understanding chemical processes in organisms",
+        "is_correct": true
+      },
+      {
+        "text": "Analyzing pollutants",
+        "is_correct": false
+      },
+      {
+        "text": "Exploring inorganic compounds",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "Biochemistry focuses on the chemical processes and substances within living organisms.",
+      "steps": [
+        "Identify the scope of biochemistry.",
+        "Understand its application to living systems."
+      ]
+    },
+    "hint": "Think about how cells function chemically.",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:42:04.368115+00:00",
+      "updated_at": "2025-01-22 19:42:04.368115+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "branches_of_chemistry_hard_2",
+    "text": "In what way does physical chemistry differ from other branches of chemistry?",
+    "topic": "branches_of_chemistry",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "hard",
+    "tags": [
+      "physical chemistry",
+      "differences"
+    ],
+    "choices": [
+      {
+        "text": "It only studies organic compounds",
+        "is_correct": false
+      },
+      {
+        "text": "It focuses on the energy changes during reactions",
+        "is_correct": true
+      },
+      {
+        "text": "It has no application in real-world problems",
+        "is_correct": false
+      },
+      {
+        "text": "It is the same as analytical chemistry",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "Physical chemistry emphasizes studying energy changes and their effects on chemical reactions, unlike other branches that may focus on composition or properties.",
+      "steps": [
+        "Identify the unique focus of physical chemistry.",
+        "Differentiate it from other branches based on its emphasis."
+      ]
+    },
+    "hint": "Consider how energy influences chemical processes.",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:42:04.368115+00:00",
+      "updated_at": "2025-01-22 19:42:04.368115+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  },
+  {
+    "question_id": "branches_of_chemistry_hard_3",
+    "text": "Describe the relationship between organic chemistry and biochemistry.",
+    "topic": "branches_of_chemistry",
+    "category": "introduction_to_chemistry",
+    "academic_class": "Form 1",
+    "examination_level": "JCE",
+    "difficulty": "hard",
+    "tags": [
+      "organic chemistry",
+      "biochemistry",
+      "relationship"
+    ],
+    "choices": [
+      {
+        "text": "They are completely unrelated",
+        "is_correct": false
+      },
+      {
+        "text": "Biochemistry is a subset of organic chemistry",
+        "is_correct": true
+      },
+      {
+        "text": "Organic chemistry studies only inorganic compounds",
+        "is_correct": false
+      },
+      {
+        "text": "They focus on the same chemical processes",
+        "is_correct": false
+      }
+    ],
+    "solution": {
+      "explanation": "Biochemistry is considered a branch of organic chemistry, as it deals with the chemical processes within living organisms, which are primarily made up of organic compounds.",
+      "steps": [
+        "Identify the components of biochemistry.",
+        "Recognize its relation to organic chemistry."
+      ]
+    },
+    "hint": "Think about the chemicals that are vital for life.",
+    "metadata": {
+      "created_by": "openai:gpt-4o-mini",
+      "created_at": "2025-01-22 19:42:04.368115+00:00",
+      "updated_at": "2025-01-22 19:42:04.368115+00:00",
+      "time_estimate": {
+        "$numberInt": "3"
+      }
+    }
+  }
+]

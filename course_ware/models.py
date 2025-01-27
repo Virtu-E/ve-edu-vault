@@ -1,9 +1,11 @@
 import re
 from typing import Any
 
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from ai_core.performance_calculators import log
+from edu_vault.settings import common
 from exceptions import VersionParsingError
 
 # TODO : update the documentation below after alpha release --> things might have changes
@@ -37,6 +39,9 @@ EXAMINATION_LEVELS = [
     ("JCE", "JCE"),
     ("IGCSE", "IGCSE"),
 ]
+
+
+# TODO : formalize academic classes -- how they should look etc
 
 DEFAULT_VERSION = "v1.0.0"
 VERSION_PATTERN = re.compile(r"v(\d+)\.(\d+)\.(\d+)")
@@ -89,6 +94,28 @@ class Course(models.Model):
         return self.name
 
 
+class CoreElement(models.Model):
+    """
+    Core curriculum element representing a subject area or theme (e.g. Algebra, Geometry)
+    """
+
+    name = models.CharField(max_length=255, unique=True)
+    tags = models.JSONField(default=dict)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order", "name"]
+        verbose_name = "Core Element"
+        verbose_name_plural = "Core Elements"
+
+    def __str__(self):
+        return self.name
+
+
 class Category(models.Model):
     """
     Represents a unique question category within an academic class, course and examination level.
@@ -96,7 +123,6 @@ class Category(models.Model):
     """
 
     name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
     examination_level = models.CharField(
         choices=EXAMINATION_LEVELS, max_length=20, default="MSCE"
     )
@@ -104,15 +130,23 @@ class Category(models.Model):
     academic_class = models.ForeignKey(AcademicClass, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    course = models.OneToOneField(Course, on_delete=models.CASCADE)
+    course = models.ForeignKey(
+        Course, on_delete=models.CASCADE, related_name="category"
+    )
+    core_element = models.ForeignKey(
+        CoreElement,
+        on_delete=models.SET_NULL,
+        related_name="core_element",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
-        verbose_name = "Question Category"
-        verbose_name_plural = "Question Categories"
-        unique_together = ("examination_level", "academic_class", "course")
+        verbose_name = "Skill"
+        verbose_name_plural = "Skills"
 
     def __str__(self):
-        return self.name
+        return f"{self.name} - {self.academic_class}"
 
 
 class Topic(models.Model):
@@ -127,63 +161,100 @@ class Topic(models.Model):
     block_id = models.TextField(
         unique=True, db_index=True, null=False, blank=False
     )  # edx block ID associated with the topic
-    # TODO : add the below topic ID to the database
-    # topic_id  = models.CharField(max_length=255, unique=True, db_index=True)
-    description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    # This does not make sense, it has to be deleted
-    is_completed = models.BooleanField(default=False)
 
     class Meta:
-        verbose_name = "Question Topic"
+        verbose_name = "Learning Objective"
+        verbose_name_plural = "Learning Objectives"
 
     def __str__(self):
-        return f"{self.category.name} - {self.name}"
+        return f"{self.category.name} - {self.name} - {self.category.academic_class}"
 
 
-class UserQuestionSet(models.Model):
+class BaseQuestionSet(models.Model):
+    """Base abstract model for question sets."""
+
+    topic = models.OneToOneField(Topic, on_delete=models.CASCADE)
     """
-    Represents a user's set of questions related to a specific topic.
-    The question set IDs are stored in MongoDB and referenced here.
+    Array of question reference objects
+    Example:
+    [
+       {"id": "mongo_question_id_1"},
+       {"id": "mongo_question_id_2"},
+       {"id": "mongo_question_id_3"}
+    ]
     """
-
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="question_sets"
-    )
-    topic = models.OneToOneField(
-        Topic, on_delete=models.CASCADE, related_name="question_sets"
-    )
-    # Example of data stored in the field
-    # [
-    #     {"id": "question_id_1"},
-    #     {"id": "question_id_2"},
-    #     {"id": "question_id_3"}
-    # ]
     question_list_ids = models.JSONField(
         help_text="References to MongoDB question IDs."
     )
 
     class Meta:
-        verbose_name = "User Question Set"
-        verbose_name_plural = "User Question Sets"
+        abstract = True
 
     @property
     def get_question_set_ids(self) -> set[str]:
-        """
-        Retrieve a set of question set IDs as strings.
-
-        This property processes the `question_set_ids` attribute,
-        which is expected to be a list of dictionaries containing an "id" key,
-        and returns a set of the "id" values as strings.
-
-        Returns:
-            set[str]: A set of question set IDs in string format.
-        """
         return {str(item["id"]) for item in self.question_list_ids}
+
+    def clean_question_list_ids(self):
+        if len(self.question_list_ids) != getattr(
+            common, "MINIMUM_QUESTIONS_THRESHOLD", 9
+        ):
+            raise ValidationError(
+                f"Question set must contain exactly 9 questions. Current count: {len(self.question_list_ids)}"
+            )
+        return self.question_list_ids
+
+    def clean(self):
+        cleaned_data = super().clean()
+        self.clean_question_list_ids()
+        return cleaned_data
+
+
+class UserQuestionSet(BaseQuestionSet):
+    """User-specific question set."""
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="question_sets"
+    )
+
+    class Meta:
+        verbose_name = "User Question Set"
+        verbose_name_plural = "User Question Sets"
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(
+                    question_list_ids__len=getattr(
+                        common, "MINIMUM_QUESTIONS_THRESHOLD", 9
+                    )
+                ),
+                name="user_question_list_length_check",
+            )
+        ]
 
     def __str__(self):
         return f"{self.user.username} - {self.topic.name}"
+
+
+class DefaultQuestionSet(BaseQuestionSet):
+    """Default question set for new users."""
+
+    class Meta:
+        verbose_name = "Default Question Set"
+        verbose_name_plural = "Default Question Sets"
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(
+                    question_list_ids__len=getattr(
+                        common, "MINIMUM_QUESTIONS_THRESHOLD", 9
+                    )
+                ),
+                name="default_question_list_length_check",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.topic.name} Default Question Set"
 
 
 class UserQuestionAttempts(models.Model):
@@ -207,6 +278,16 @@ class UserQuestionAttempts(models.Model):
     question_metadata = models.JSONField(
         help_text="Metadata for questions attempted by the user.",
         default={"v1.0.0": {}},
+    )
+
+    question_metadata_description = models.JSONField(
+        help_text="Stores status information and guidance for questions",
+        default={
+            "v1.0.0": {
+                "status": "Not Started",
+                "guidance": "Complete the practice set to assess your knowledge level",
+            }
+        },
     )
 
     class Meta:
