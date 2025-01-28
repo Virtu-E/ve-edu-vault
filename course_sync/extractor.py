@@ -56,9 +56,5 @@ class StructureExtractor:
         objectives = []
         for obj in chapter.objectives:
             if obj.get("id"):
-                objectives.append(
-                    ObjectiveData(
-                        id=obj["id"], name=obj["display_name"], category_id=chapter.id
-                    )
-                )
+                objectives.append(ObjectiveData(id=obj["id"], name=obj["display_name"]))
         return objectives

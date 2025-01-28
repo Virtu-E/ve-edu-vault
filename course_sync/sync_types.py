@@ -90,7 +90,6 @@ class TopicSync(DatabaseSync):
                 for objective in objectives:
                     topic_instance, created = Topic.objects.update_or_create(
                         block_id=objective.id,
-                        category__course=self.course,
                         defaults={
                             "name": objective.name,
                             "category": category,

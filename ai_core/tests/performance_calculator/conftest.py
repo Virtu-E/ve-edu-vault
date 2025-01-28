@@ -1,6 +1,8 @@
 import pytest
 
-from ai_core.performance_calculators import AttemptBasedDifficultyRankerCalculator
+from ai_core.performance.calculators.performance_calculators import (
+    AttemptBasedDifficultyRankerCalculator,
+)
 from course_ware.tests.course_ware_factory import QuestionMetadataFactory
 
 

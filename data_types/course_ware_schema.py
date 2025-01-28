@@ -1,6 +1,6 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, conint
+from pydantic import BaseModel
 
 
 class QuestionMetadata(BaseModel):
@@ -9,10 +9,10 @@ class QuestionMetadata(BaseModel):
     """
 
     question_id: str  # this is the mongo question ID
-    attempt_number: conint(ge=0, le=3)  # Minimum 1, Maximum 3
+    attempt_number: int  # the maximum attempt number will be based on the users current learning mode : (Normal, reinforcement or recovery )
     is_correct: bool
     topic: str
-    difficulty: str
+    difficulty: Literal["easy", "medium", "hard"]
 
 
 class UserQuestionAttemptsSchema(BaseModel):

@@ -3,14 +3,14 @@ from typing import Any, Dict, Optional, Set, Tuple
 
 from bson import ObjectId
 from decouple import config
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ai_core.performance_calculators import AttemptBasedDifficultyRankerCalculator
-from ai_core.performance_engine import PerformanceEngine
 from course_ware.mixins import RetrieveUserAndResourcesMixin
 from course_ware.models import Topic, User, UserQuestionAttempts
 from course_ware.serializers import (
@@ -402,14 +402,14 @@ class QuizCompletionView(DatabaseQuestionViewBase):
         )
 
         # we have to calculate the performance
-        performance_calculator_instance = AttemptBasedDifficultyRankerCalculator()
-        performance_engine = PerformanceEngine(
-            topic_id=topic.id,
-            user_id=user.id,
-            performance_calculator=performance_calculator_instance,
-        )
-        performance_stats = performance_engine.get_topic_performance_stats()
-        return Response(performance_stats.model_dump(), status.HTTP_200_OK)
+        # performance_calculator_instance = AttemptBasedDifficultyRankerCalculator()
+        # performance_engine = PerformanceEngine(
+        #     topic_id=topic.id,
+        #     user_id=user.id,
+        #     performance_calculator=performance_calculator_instance,
+        # )
+        # performance_stats = performance_engine.get_topic_performance_stats()
+        # return Response(performance_stats.model_dump(), status.HTTP_200_OK)
 
         # what do we do during examination complete process ?
         # we get the quiz details
@@ -422,3 +422,43 @@ class QuizCompletionView(DatabaseQuestionViewBase):
         # we award them a completion badge and then turn the topic to just practice only
         # where they can select the level of questions and they just randomly practice
         # choose quiz difficulty, practice questions etc
+
+
+@api_view(["GET"])
+def iframe_id_given_topic_id(request, topic_id):
+    """
+    Get the first vertical (unit) ID for a given sequential (topic) ID.
+    """
+
+    def _get_iframe_id_from_outline(topic_id, outline):
+        course_structure = outline.get("course_structure", {})
+
+        def find_sequential(structure):
+            if structure.get("id") == topic_id:
+                children = structure.get("child_info", {}).get("children", [])
+                if children:
+                    return children[0].get("id")
+                return None
+
+            child_info = structure.get("child_info", {})
+            if child_info:
+                children = child_info.get("children", [])
+                for child in children:
+                    result = find_sequential(child)
+                    if result:
+                        return result
+            return None
+
+        return find_sequential(course_structure)
+
+    if request.method == "GET":
+        topic = get_object_or_404(Topic, block_id=topic_id)
+        course = topic.category.course
+        course_outline = course.course_outline
+
+        iframe_id = _get_iframe_id_from_outline(topic_id, course_outline)
+
+        if not iframe_id:
+            raise Http404("No vertical found for this sequential")
+
+        return Response({"iframe_id": iframe_id})

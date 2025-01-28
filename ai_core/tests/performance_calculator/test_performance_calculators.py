@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from ai_core.performance_calculators import DifficultyStatus
+from ai_core.performance.calculators.performance_calculators import DifficultyStatus
 from course_ware.tests.course_ware_factory import QuestionMetadataFactory
 from data_types.ai_core import PerformanceStats
 

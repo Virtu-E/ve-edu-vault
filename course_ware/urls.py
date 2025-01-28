@@ -5,7 +5,11 @@ from course_ware.factory_views import (
     get_questions_view_factory,
     post_question_attempt_view_factory,
 )
-from course_ware.views import GetQuestionAttemptView, GetSingleQuestionAttemptView
+from course_ware.views import (
+    GetQuestionAttemptView,
+    GetSingleQuestionAttemptView,
+    iframe_id_given_topic_id,
+)
 
 app_name = "course_ware"
 
@@ -34,5 +38,10 @@ urlpatterns = [
         "complete_quiz/",
         complete_quiz_view_factory(),
         name="complete_quiz",
+    ),
+    path(
+        "get_iframe_id/<str:topic_id>/",
+        iframe_id_given_topic_id,
+        name="get_iframe_id",
     ),
 ]

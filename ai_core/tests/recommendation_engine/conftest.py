@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ai_core.recommendation_engine import RecommendationEngine
+from ai_core.recommendation.recommendation_engine import RecommendationEngine
 from course_ware.tests.course_ware_factory import TopicFactory
 from data_types.ai_core import RecommendationEngineConfig
 

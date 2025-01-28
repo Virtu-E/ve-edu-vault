@@ -26,4 +26,3 @@ class ObjectiveData:
 
     id: str
     name: str
-    category_id: str

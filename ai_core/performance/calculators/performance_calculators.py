@@ -1,128 +1,122 @@
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Literal, Union
+from typing import Dict, List, Literal
 
 import pandas as pd
 
 from data_types.ai_core import PerformanceStats
 from data_types.course_ware_schema import QuestionMetadata
-from edu_vault.settings.common import COMPLETION_THRESHOLD
 
 log = logging.getLogger(__name__)
 
 
-class DifficultyStatus(Enum):
-    """Enum for difficulty completion status."""
-
-    COMPLETED = "completed"
-    INCOMPLETE = "incomplete"
+class LearningMode(Enum):
+    NORMAL = "normal"
+    RECOVERY = "recovery"
+    REINFORCEMENT = "reinforcement"
 
 
 class PerformanceCalculatorInterface(ABC):
     @abstractmethod
     def calculate_performance(
-        self, question_data: dict[str, QuestionMetadata]
+        self, question_data: Dict[str, QuestionMetadata]
     ) -> PerformanceStats:
-        """
-        Abstract method to calculate user's performance on a topic.
-
-        Args:
-            question_data: Dictionary containing question metadata
-
-        Returns:
-            PerformanceStats: Calculated performance statistics
-        """
         raise NotImplementedError
 
 
-class AttemptBasedDifficultyRankerCalculator(PerformanceCalculatorInterface):
+class BasePerformanceCalculator(PerformanceCalculatorInterface):
+    def __init__(self):
+        self.required_correct_questions = 0
+        self.difficulties = ["easy", "medium", "hard"]
 
     def calculate_performance(
-        self, question_data: dict[str, QuestionMetadata]
+        self, question_data: Dict[str, QuestionMetadata]
     ) -> PerformanceStats:
-        """
-        Calculate performance based on question attempts and difficulty levels of a particular topic.
-
-        Args:
-            question_data: Dictionary containing question metadata
-
-        Returns:
-            PerformanceStats: Contains ranked difficulties and their completion status
-        """
         if not question_data:
-            log.info("No question metadata found, skipping performance calculation.")
-            return PerformanceStats(ranked_difficulties=[], difficulty_status={})
-        # dumping the data to JSON due to the way pandas work. If Pydantic model is sent,
-        # it won't be able to see all the available data fields
+            return self._create_empty_stats()
+
         df = pd.DataFrame([data.model_dump() for data in question_data.values()])
         difficulty_groups = df.groupby("difficulty")
 
         difficulty_status = self._calculate_difficulty_status(difficulty_groups)
-        incomplete_difficulties = [
-            diff
-            for diff, status in difficulty_status.items()
-            if status == DifficultyStatus.INCOMPLETE.value
-        ]
-
-        ranked_difficulties = self._rank_incomplete_difficulties(
-            difficulty_groups, incomplete_difficulties
-        )
+        ranked_difficulties = self._rank_difficulties(difficulty_groups)
 
         return PerformanceStats(
             ranked_difficulties=ranked_difficulties, difficulty_status=difficulty_status
         )
 
-    @staticmethod
     def _calculate_difficulty_status(
-        difficulty_groups: pd.core.groupby.GroupBy,
-    ) -> Union[
-        dict[Literal["easy", "medium", "hard"], Literal["incomplete", "completed"]], {}
-    ]:
-        """
-        Calculate completion status for each difficulty level.
-
-        Args:
-            difficulty_groups: Grouped DataFrame by difficulty
-
-        Returns:
-            Dict mapping difficulty levels to their completion status
-        """
+        self, difficulty_groups: pd.core.groupby.GroupBy
+    ) -> Dict[Literal["easy", "medium", "hard"], Literal["incomplete", "completed"]]:
         difficulty_status = {}
 
-        for difficulty, group in difficulty_groups:
-            total_questions = len(group)
-            completed_questions = group["is_correct"].value_counts().get(True, 0)
+        # Initialize all difficulties as incomplete
+        for diff in self.difficulties:
+            difficulty_status[diff] = "incomplete"
 
-            status = (
-                DifficultyStatus.COMPLETED
-                if completed_questions >= COMPLETION_THRESHOLD * total_questions
-                else DifficultyStatus.INCOMPLETE
-            )
-            difficulty_status[difficulty] = status.value
+        for difficulty, group in difficulty_groups:
+            correct_questions = len(group[group["is_correct"] == True])
+            if correct_questions >= self.required_correct_questions:
+                difficulty_status[difficulty] = "completed"
 
         return difficulty_status
 
+    def _rank_difficulties(
+        self, difficulty_groups: pd.core.groupby.GroupBy
+    ) -> List[tuple[Literal["easy", "medium", "hard"], float]]:
+        avg_attempts = {}
+
+        # Calculate average attempts for all difficulties
+        for difficulty in self.difficulties:
+            group = (
+                difficulty_groups.get_group(difficulty)
+                if difficulty in difficulty_groups.groups
+                else pd.DataFrame()
+            )
+            avg_attempts[difficulty] = (
+                group["attempt_number"].mean() if not group.empty else 0.0
+            )
+
+        # Sort by average attempts in ascending order
+        return sorted(avg_attempts.items(), key=lambda x: x[1])
+
+    def _create_empty_stats(self) -> PerformanceStats:
+        return PerformanceStats(
+            ranked_difficulties=[(diff, 0.0) for diff in self.difficulties],
+            difficulty_status={diff: "incomplete" for diff in self.difficulties},
+        )
+
+
+class NormalModeCalculator(BasePerformanceCalculator):
+    def __init__(self):
+        super().__init__()
+        self.required_correct_questions = 2  # Need 2 correct questions PER difficulty
+
+
+class RecoveryModeCalculator(BasePerformanceCalculator):
+    def __init__(self):
+        super().__init__()
+        self.required_correct_questions = 4  # Need 4 correct questions PER difficulty
+
+
+class ReinforcementModeCalculator(BasePerformanceCalculator):
+    def __init__(self):
+        super().__init__()
+        self.required_correct_questions = 3  # 3/3 questions need to be correct / all questions on the difficulty cleared
+
+
+class PerformanceCalculatorFactory:
     @staticmethod
-    def _rank_incomplete_difficulties(
-        difficulty_groups: pd.core.groupby.GroupBy,
-        incomplete_difficulties: list[str],
-    ) -> list[tuple[Literal["hard", "medium", "easy"], float]]:
-        """
-        Rank incomplete difficulties based on average attempts.
-
-        Args:
-            difficulty_groups: Grouped DataFrame by difficulty
-            incomplete_difficulties: List of difficulties marked as incomplete
-
-        Returns:
-            List of tuples containing difficulty and average attempts, sorted by attempts
-            in descending order. Returns an empty list if no matching difficulties are found.
-        """
-        avg_attempts = {
-            difficulty: group["attempt_number"].mean()
-            for difficulty, group in difficulty_groups
-            if difficulty in incomplete_difficulties
+    def create_calculator(mode: LearningMode) -> PerformanceCalculatorInterface:
+        calculators = {
+            LearningMode.NORMAL: NormalModeCalculator,
+            LearningMode.RECOVERY: RecoveryModeCalculator,
+            LearningMode.REINFORCEMENT: ReinforcementModeCalculator,
         }
 
-        return sorted(avg_attempts.items(), key=lambda x: x[1], reverse=True)
+        calculator_class = calculators.get(mode)
+        if not calculator_class:
+            raise ValueError(f"Unsupported learning mode: {mode}")
+
+        return calculator_class()

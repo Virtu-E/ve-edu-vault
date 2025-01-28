@@ -1,7 +1,9 @@
 import pytest
 
-from ai_core.performance_calculators import PerformanceCalculatorInterface
-from ai_core.performance_engine import PerformanceEngine
+from ai_core.performance.calculators.performance_calculators import (
+    PerformanceCalculatorInterface,
+)
+from ai_core.performance.performance_engine import PerformanceEngine
 from course_ware.tests.course_ware_factory import TopicFactory
 from data_types.ai_core import PerformanceStats
 

@@ -1,10 +1,10 @@
 import re
-from typing import Any
+from typing import Any, Literal
 
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from ai_core.performance_calculators import log
+from ai_core.performance.calculators.performance_calculators import log
 from edu_vault.settings import common
 from exceptions import VersionParsingError
 
@@ -172,6 +172,17 @@ class Topic(models.Model):
         return f"{self.category.name} - {self.name} - {self.category.academic_class}"
 
 
+class TopicIframeID(models.Model):
+    """
+    Model that holds the topic unique iframe identifier.
+    """
+
+    identifier = models.CharField(max_length=255, unique=True, db_index=True)
+    topic = models.OneToOneField(
+        Topic, on_delete=models.CASCADE, related_name="iframe_id"
+    )
+
+
 class BaseQuestionSet(models.Model):
     """Base abstract model for question sets."""
 
@@ -286,6 +297,8 @@ class UserQuestionAttempts(models.Model):
             "v1.0.0": {
                 "status": "Not Started",
                 "guidance": "Complete the practice set to assess your knowledge level",
+                "learning_mode": "normal",
+                "mode_guidance": "Answer and complete 2 out of 3 questions for each difficulty level (easy, medium, and hard) to finish the section.",
             }
         },
     )
@@ -293,6 +306,13 @@ class UserQuestionAttempts(models.Model):
     class Meta:
         verbose_name = "User Question Attempt"
         verbose_name_plural = "User Questions Attempts"
+
+    @property
+    def get_learning_mode(
+        self,
+    ) -> Literal["normal", "recovery", "reinforcement", "mastered"]:
+        latest_version = self.get_current_version
+        return self.question_metadata_description[latest_version]["learning_mode"]
 
     @staticmethod
     def _parse_version(version: str) -> tuple:
@@ -329,7 +349,7 @@ class UserQuestionAttempts(models.Model):
 
         Returns:
             Dictionary containing the question metadata (
-               -> Top-level key: Question ID,
+               -> Top-level key: Question ID,ƒ
                -> Second-level key: QuestionMetadata )
         """
         return self.question_metadata[self.get_current_version]

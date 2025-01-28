@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
 
-from course_ware.models import Topic, User, UserQuestionSet
+from course_ware.models import DefaultQuestionSet, Topic, User, UserQuestionSet
 
 
 class RetrieveUserAndResourcesMixin:
@@ -59,4 +59,11 @@ class RetrieveUserAndResourcesMixin:
         Returns:
             UserQuestionSet: The retrieved UserQuestionSet object.
         """
-        return get_object_or_404(UserQuestionSet, user=user, topic=topic)
+        # the first requirement is for the default question set to exist
+        default_question_set = get_object_or_404(DefaultQuestionSet, topic=topic)
+        user_question_set, created = UserQuestionSet.objects.get_or_create(
+            user=user,
+            topic=topic,
+            defaults={"question_list_ids": default_question_set.question_list_ids},
+        )
+        return user_question_set

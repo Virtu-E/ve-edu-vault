@@ -72,5 +72,5 @@ class OAuthClient:
 
         url = f"{endpoint}"
         response = requests.request(method, url, headers=headers, **kwargs)
-        response.raise_for_status()
+        # response.raise_for_status()
         return response

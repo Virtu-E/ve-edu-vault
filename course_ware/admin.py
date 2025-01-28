@@ -10,6 +10,7 @@ from .models import (
     Course,
     DefaultQuestionSet,
     Topic,
+    TopicIframeID,
     User,
     UserCategoryProgress,
     UserQuestionAttempts,
@@ -192,3 +193,9 @@ class UserCategoryProgressAdmin(admin.ModelAdmin):
 class AcademicClassAdmin(admin.ModelAdmin):
     list_display = ["name"]
     search_fields = ["name"]
+
+
+@admin.register(TopicIframeID)
+class TopicIframeIDAdmin(admin.ModelAdmin):
+    list_display = ["identifier", "topic"]
+    search_fields = ["identifier"]

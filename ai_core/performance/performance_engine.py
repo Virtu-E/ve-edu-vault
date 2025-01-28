@@ -2,7 +2,9 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Dict, Tuple, Union
 
-from ai_core.performance_calculators import PerformanceCalculatorInterface
+from ai_core.performance.calculators.performance_calculators import (
+    PerformanceCalculatorInterface,
+)
 from course_ware.models import UserQuestionAttempts
 from data_types.ai_core import PerformanceStats
 from data_types.course_ware_schema import QuestionMetadata, UserQuestionAttemptsSchema

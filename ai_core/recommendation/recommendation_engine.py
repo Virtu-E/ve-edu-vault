@@ -4,7 +4,7 @@ import logging
 from functools import lru_cache
 from typing import List, Literal, Set, TypeVar
 
-from ai_core.performance_engine import PerformanceEngineInterface
+from ai_core.performance.performance_engine import PerformanceEngineInterface
 from ai_core.utils import fetch_from_model
 from course_ware.models import UserQuestionAttempts, UserQuestionSet
 from data_types.ai_core import (
@@ -12,7 +12,6 @@ from data_types.ai_core import (
     RecommendationQuestionMetadata,
 )
 from data_types.questions import Question
-from edu_vault.settings.common import MINIMUM_QUESTIONS_THRESHOLD
 from exceptions import (
     DatabaseQueryError,
     DatabaseUpdateError,
@@ -40,6 +39,7 @@ class RecommendationEngine:
         performance_engine: PerformanceEngineInterface,
         database_engine: NoSqLDatabaseEngineInterface,
         config: RecommendationEngineConfig,
+        question_threshold: int,
     ):
         """
         Initialize the recommendation engine.
@@ -48,10 +48,12 @@ class RecommendationEngine:
             performance_engine: Engine for calculating user performance metrics
             database_engine: NoSQL database interface
             config: Configuration parameters
+            question_threshold: Threshold for question recommendations
         """
         self.performance_engine = performance_engine
         self.database_engine = database_engine
         self.config = config
+        self.question_threshold = question_threshold
 
         # Initialize database attributes
         self._init_database_attributes()
@@ -226,7 +228,7 @@ class RecommendationEngine:
             recommended_questions, current_ids
         )
 
-        if len(filtered_questions) < MINIMUM_QUESTIONS_THRESHOLD:
+        if len(filtered_questions) < self.question_threshold:
             log.warning(f"Insufficient questions for user {self.user_id}")
             raise InsufficientQuestionsError(
                 "Insufficient questions available. Consider AI-based generation."

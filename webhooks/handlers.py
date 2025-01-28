@@ -140,7 +140,7 @@ class CourseUpdatedHandler(WebhookHandler):
 
     def handle(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Handles course update webhook with improved error handling and response tracking.
+        Handles course update webhook.
 
         Args:
             payload: The webhook payload
