@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from course_ware.mixins import RetrieveUserAndResourcesMixin
-from course_ware.models import Topic, User, UserQuestionAttempts
+from course_ware.models import Course, Topic, User, UserQuestionAttempts
 from course_ware.serializers import (
     GetSingleQuestionSerializer,
     PostQuestionAttemptSerializer,
@@ -174,13 +174,13 @@ class PostQuestionAttemptView(DatabaseQuestionViewBase):
         if metadata["is_correct"]:
             return Response(
                 {"message": "Question already correctly answered"},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_409_CONFLICT,
             )
 
         if metadata["attempt_number"] >= self.MAX_ATTEMPTS:
             return Response(
                 {"message": f"Maximum attempts ({self.MAX_ATTEMPTS}) reached"},
-                status=status.HTTP_403_FORBIDDEN,
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
         return None
@@ -462,3 +462,90 @@ def iframe_id_given_topic_id(request, topic_id):
             raise Http404("No vertical found for this sequential")
 
         return Response({"iframe_id": iframe_id})
+
+
+class CourseOutlinePathView(APIView):
+    """
+    APIView to get the hierarchical path of a sequential block in a course outline
+    Returns data in a nested dictionary structure by block category
+    """
+
+    def find_sequential_path(self, outline_data, sequential_id, current_path=None):
+        """
+        Recursively find the path to a sequential block in the course outline
+
+        Args:
+            outline_data (dict): Course outline data
+            sequential_id (str): ID of the sequential block to find
+            current_path (dict): Current path being built (used in recursion)
+
+        Returns:
+            dict: Dictionary containing block information organized by category
+        """
+        if current_path is None:
+            current_path = {}
+
+        if outline_data.get("id") and outline_data.get("display_name"):
+            block_type = outline_data["category"]
+            block_info = {
+                "id": outline_data["id"],
+                "name": outline_data["display_name"],
+                "type": block_type,
+            }
+            current_path[block_type] = block_info
+
+        if outline_data.get("id") == sequential_id:
+            return current_path
+
+        if outline_data.get("child_info") and outline_data["child_info"].get(
+            "children"
+        ):
+            for child in outline_data["child_info"]["children"]:
+                # Create a new dictionary for each recursive call
+                new_path = current_path.copy()
+                result = self.find_sequential_path(child, sequential_id, new_path)
+                if result:
+                    return result
+
+        return None
+
+    def get(self, request, course_id, sequential_id):
+        """
+        GET handler to retrieve the path to a sequential block
+
+        Args:
+            course_id (str): ID of the course
+            sequential_id (str): ID of the sequential block
+
+        Returns:
+            Response: Path information as nested dictionaries or error message
+        """
+        try:
+            course = get_object_or_404(Course, course_key=course_id)
+            outline_data = course.course_outline
+
+            path = self.find_sequential_path(
+                outline_data["course_structure"], sequential_id
+            )
+
+            if path:
+                return Response({"path": path, "status": "success"})
+            else:
+                return Response(
+                    {
+                        "error": "Sequential block not found in course outline",
+                        "status": "error",
+                    },
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        except Course.DoesNotExist:
+            return Response(
+                {"error": "Course not found", "status": "error"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e), "status": "error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

@@ -48,13 +48,13 @@ def lti_launch(request):
         resource_link = launch_data[
             "https://purl.imsglobal.org/spec/lti/claim/resource_link"
         ]
-        # claim_context = launch_data["https://purl.imsglobal.org/spec/lti/claim/context"]
-        # course_id = claim_context.get("id", "")
+        claim_context = launch_data["https://purl.imsglobal.org/spec/lti/claim/context"]
+        course_id = claim_context.get("id", "")
         iframe_id = get_object_or_404(
             TopicIframeID, identifier=resource_link.get("id", "")
         )
         return redirect(
-            f"{config("FRONT_END_URL")}/assessment/{iframe_id.topic.block_id}/"
+            f"{config("FRONT_END_URL")}/assessment/{course_id}/{iframe_id.topic.block_id}/"
         )
 
     except Exception as e:

@@ -1,5 +1,5 @@
 import re
-from typing import Any, Literal
+from typing import Any, Literal, Union
 
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -401,6 +401,32 @@ class UserQuestionAttempts(models.Model):
         except Exception as e:
             log.error(f"Version parsing error: {str(e)}")
             raise VersionParsingError(f"Version parsing error: {str(e)}")
+
+    @property
+    def get_questions_by_status(self) -> list[dict[str, Union[str, int]]]:
+        """
+        Returns a list of questions with their status (correct, incorrect, or unattempted)
+        and question text from the latest question metadata.
+
+        Returns:
+            List of dictionaries, each containing:
+            - id: Question ID (number)
+            - status: Status of the question (correct/incorrect/unattempted)
+            - text: Question text
+        """
+        question_metadata = self.get_latest_question_metadata
+        questions_list = []
+
+        for question_id, metadata in question_metadata.items():
+            questions_list.append(
+                {
+                    "id": str(question_id),
+                    "status": "correct" if metadata.get("is_correct") else "incorrect",
+                    "question_pos": 10,
+                }
+            )
+
+        return questions_list
 
     def __str__(self):
         return f"{self.user.username} - {self.topic.name} Attempts"

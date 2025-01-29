@@ -6,6 +6,7 @@ from course_ware.factory_views import (
     post_question_attempt_view_factory,
 )
 from course_ware.views import (
+    CourseOutlinePathView,
     GetQuestionAttemptView,
     GetSingleQuestionAttemptView,
     iframe_id_given_topic_id,
@@ -43,5 +44,10 @@ urlpatterns = [
         "get_iframe_id/<str:topic_id>/",
         iframe_id_given_topic_id,
         name="get_iframe_id",
+    ),
+    path(
+        "outline/<str:course_id>/sequential/<str:sequential_id>/path/",
+        CourseOutlinePathView.as_view(),
+        name="course-sequential-path",
     ),
 ]
