@@ -9,7 +9,6 @@ from exceptions import DatabaseQueryError, DatabaseUpdateError
 
 
 class TestCourseSync:
-
     def test_get_existing_ids_empty_db(self, course_sync):
         """Test getting IDs when database is empty"""
         categories, topics = course_sync._get_existing_ids()
@@ -30,9 +29,7 @@ class TestCourseSync:
         with pytest.raises(DatabaseQueryError) as exc_info:
             course_sync._get_existing_ids()
 
-        assert "Error getting course related categories and topics" in str(
-            exc_info.value
-        )
+        assert "Error getting course related categories and topics" in str(exc_info.value)
 
     def test_get_outline_ids(self, course_sync):
         """Test extracting IDs from outline data"""
@@ -50,9 +47,7 @@ class TestCourseSync:
 
     def test_has_changes_structural_difference(self, course, academic_class):
         """Test change detection with structural differences"""
-        new_outline = {
-            "chapter1": {"type": "chapter", "display_name": "Chapter 1", "children": []}
-        }
+        new_outline = {"chapter1": {"type": "chapter", "display_name": "Chapter 1", "children": []}}
         sync = CourseSync(course, academic_class, new_outline)
         assert sync._has_changes()
 

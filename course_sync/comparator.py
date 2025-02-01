@@ -27,9 +27,7 @@ class StructureComparator:
             return False
 
         try:
-            return any(
-                detector.detect_changes(stored, new) for detector in self.detectors
-            )
+            return any(detector.detect_changes(stored, new) for detector in self.detectors)
         except Exception as e:
             log.error(f"Error checking for changes: {e}")
             return True

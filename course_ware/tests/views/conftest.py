@@ -24,7 +24,6 @@ def api_client():
 
 @pytest.fixture
 def mock_db_client():
-
     mock_client = Mock(spec=MongoDatabaseEngine)
     mock_client.disconnect.side_effect = lambda: None
 
@@ -60,9 +59,7 @@ def user_question_attempts(user, topic):
 
     question_metadata = factory.LazyFunction(generate_question_metadata)
 
-    return UserQuestionAttemptsFactory(
-        user=user, topic=topic, question_metadata=question_metadata
-    )
+    return UserQuestionAttemptsFactory(user=user, topic=topic, question_metadata=question_metadata)
 
 
 @pytest.fixture

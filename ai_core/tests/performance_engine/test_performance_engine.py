@@ -9,10 +9,7 @@ from exceptions import DatabaseQueryError
 
 
 class TestPerformanceEngine:
-
-    def test_get_topic_performance_stats_with_data(
-        self, performance_engine, user, topic
-    ):
+    def test_get_topic_performance_stats_with_data(self, performance_engine, user, topic):
         """Test getting performance stats when data exists"""
         UserQuestionAttemptsFactory(
             user=user,
@@ -33,15 +30,11 @@ class TestPerformanceEngine:
         assert stats.ranked_difficulties == []
         assert stats.difficulty_status == {}
 
-    def test_get_user_attempt_question_metadata_success(
-        self, performance_engine, user, topic
-    ):
+    def test_get_user_attempt_question_metadata_success(self, performance_engine, user, topic):
         """Test successfully retrieving question metadata"""
         UserQuestionAttemptsFactory(user=user, topic=topic)
 
-        result, user_question_attempt_instance = (
-            performance_engine._get_user_attempt_question_metadata()
-        )
+        result, user_question_attempt_instance = performance_engine._get_user_attempt_question_metadata()
         assert isinstance(result, dict)
         assert isinstance(user_question_attempt_instance, UserQuestionAttempts)
         assert "v1.0.0" in result

@@ -51,9 +51,7 @@ def mock_database_engine():
             "examination_level": "Intermediate",
             "difficulty": "easy",
             "tags": ["math", "algebra", "practice"],
-            "choices": [
-                {"text": f"Choice {j}", "is_correct": j == 0} for j in range(4)
-            ],
+            "choices": [{"text": f"Choice {j}", "is_correct": j == 0} for j in range(4)],
             "solution": {
                 "explanation": f"Explanation for question {i}",
                 "steps": [f"Step 1 for question {i}", f"Step 2 for question {i}"],

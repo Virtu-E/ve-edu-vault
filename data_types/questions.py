@@ -28,9 +28,7 @@ class Metadata(BaseModel):
 
 class Question(BaseModel):
     id: str = Field(..., alias="_id")
-    question_id: (
-        str  # why am i including this here ? I feel like it will just create confusion
-    )
+    question_id: str  # why am i including this here ? I feel like it will just create confusion
     text: str
     topic: str
     category: str

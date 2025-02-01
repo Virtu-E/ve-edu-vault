@@ -57,22 +57,13 @@ class PerformanceEngine(PerformanceEngineInterface):
         Returns:
             PerformanceStats containing performance metrics
         """
-        question_attempt_data, question_attempt_instance = (
-            self._get_user_attempt_question_metadata()
-        )
+        question_attempt_data, question_attempt_instance = self._get_user_attempt_question_metadata()
 
         if not question_attempt_data and not question_attempt_instance:
             log.info("No question attempt data for topic {}".format(self.topic_id))
             return PerformanceStats(ranked_difficulties=[], difficulty_status={})
-        question_metadata_current_version = (
-            question_attempt_instance.get_latest_question_metadata
-        )
-        return self.performance_calculator.calculate_performance(
-            {
-                key: QuestionMetadata(**value)
-                for key, value in question_metadata_current_version.items()
-            }
-        )
+        question_metadata_current_version = question_attempt_instance.get_latest_question_metadata
+        return self.performance_calculator.calculate_performance({key: QuestionMetadata(**value) for key, value in question_metadata_current_version.items()})
 
     def _get_user_attempt_question_metadata(
         self,
@@ -92,20 +83,12 @@ class PerformanceEngine(PerformanceEngineInterface):
             DatabaseQueryError: If an unexpected error occurs.
         """
         try:
-            question_attempt_instance = UserQuestionAttempts.objects.get(
-                user_id=self.user_id, topic_id=self.topic_id
-            )
-            schema = UserQuestionAttemptsSchema.model_validate(
-                question_attempt_instance
-            )
+            question_attempt_instance = UserQuestionAttempts.objects.get(user_id=self.user_id, topic_id=self.topic_id)
+            schema = UserQuestionAttemptsSchema.model_validate(question_attempt_instance)
             return schema.question_metadata, question_attempt_instance
         except UserQuestionAttempts.DoesNotExist:
-            log.info(
-                f"No question attempts found for user_id={self.user_id}, topic_id={self.topic_id}."
-            )
+            log.info(f"No question attempts found for user_id={self.user_id}, topic_id={self.topic_id}.")
             return {}, None
         except Exception as e:
-            log.error(
-                f"Error retrieving question metadata for user_id={self.user_id}, topic_id={self.topic_id}: {e}"
-            )
+            log.error(f"Error retrieving question metadata for user_id={self.user_id}, topic_id={self.topic_id}: {e}")
             raise DatabaseQueryError(f"An unexpected error occurred: {e}")

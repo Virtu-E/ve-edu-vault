@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("course_ware", "0011_userquestionattempts_question_metadata_description"),
     ]

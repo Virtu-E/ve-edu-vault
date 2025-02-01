@@ -13,6 +13,5 @@ class UniqueValidator(ABC):
 
 # TODO : finish implementing this
 class WebhookUniqueValidator(UniqueValidator):
-
     def __init__(self, event_id: str):
         pass

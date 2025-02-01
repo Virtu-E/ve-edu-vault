@@ -11,9 +11,7 @@ class TopicExt(models.Model):
     learning objectives, resources, and other pedagogical information.
     """
 
-    topic = models.OneToOneField(
-        Topic, on_delete=models.CASCADE, related_name="extension"
-    )
+    topic = models.OneToOneField(Topic, on_delete=models.CASCADE, related_name="extension")
 
     description = models.TextField(help_text="Description of the topic")
 
@@ -32,9 +30,7 @@ class TopicExt(models.Model):
         null=True,
     )
 
-    teacher_notes = models.TextField(
-        blank=True, null=True, help_text="Notes and guidance for teachers"
-    )
+    teacher_notes = models.TextField(blank=True, null=True, help_text="Notes and guidance for teachers")
 
     assessment_criteria = models.JSONField(
         help_text="Criteria for assessing topic mastery",
@@ -92,9 +88,7 @@ class BaseResource(models.Model):
     Abstract base class for all educational resources
     """
 
-    topic_ext = models.ForeignKey(
-        TopicExt, on_delete=models.CASCADE, related_name="%(class)s"
-    )
+    topic_ext = models.ForeignKey(TopicExt, on_delete=models.CASCADE, related_name="%(class)s")
 
     title = models.CharField(max_length=255, help_text="Title of the resource")
 
@@ -103,9 +97,7 @@ class BaseResource(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    is_featured = models.BooleanField(
-        default=False, help_text="Featured resources appear prominently in the UI"
-    )
+    is_featured = models.BooleanField(default=False, help_text="Featured resources appear prominently in the UI")
 
     metadata = models.JSONField(
         default=dict,
@@ -145,9 +137,7 @@ class VideoResource(BaseResource):
         help_text="Indicates if the video requires a platform subscription",
     )
 
-    transcript_available = models.BooleanField(
-        default=False, help_text="Indicates if a transcript is available"
-    )
+    transcript_available = models.BooleanField(default=False, help_text="Indicates if a transcript is available")
 
     class Meta:
         verbose_name = _("Video Resource")
@@ -160,22 +150,16 @@ class BookResource(BaseResource):
     """
 
     author = models.CharField(max_length=255)
-    isbn = models.CharField(
-        max_length=13, blank=True, help_text="International Standard Book Number"
-    )
+    isbn = models.CharField(max_length=13, blank=True, help_text="International Standard Book Number")
     url = models.URLField(validators=[URLValidator()], help_text="URL to the book")
 
-    publication_year = models.PositiveIntegerField(
-        validators=[MinValueValidator(1900), MaxValueValidator(2100)]
-    )
+    publication_year = models.PositiveIntegerField(validators=[MinValueValidator(1900), MaxValueValidator(2100)])
 
     publisher = models.CharField(max_length=255, blank=True)
 
     edition = models.CharField(max_length=50, blank=True)
 
-    pages = models.PositiveIntegerField(
-        validators=[MinValueValidator(1)], help_text="Number of pages in the book"
-    )
+    pages = models.PositiveIntegerField(validators=[MinValueValidator(1)], help_text="Number of pages in the book")
 
     format = models.CharField(
         max_length=20,
@@ -203,13 +187,9 @@ class ArticleResource(BaseResource):
 
     publication_date = models.DateField()
 
-    source = models.CharField(
-        max_length=255, help_text="Source/publisher of the article"
-    )
+    source = models.CharField(max_length=255, help_text="Source/publisher of the article")
 
-    is_peer_reviewed = models.BooleanField(
-        default=False, help_text="Indicates if the article is peer-reviewed"
-    )
+    is_peer_reviewed = models.BooleanField(default=False, help_text="Indicates if the article is peer-reviewed")
 
     reading_time = models.PositiveIntegerField(
         help_text="Estimated reading time in minutes",
@@ -227,9 +207,7 @@ class CategoryExt(models.Model):
     mastery points, and learning path information.
     """
 
-    category = models.OneToOneField(
-        Category, on_delete=models.CASCADE, related_name="extension"
-    )
+    category = models.OneToOneField(Category, on_delete=models.CASCADE, related_name="extension")
 
     description = models.TextField(
         help_text="Comprehensive description of the category and its importance",
@@ -248,13 +226,9 @@ class CategoryExt(models.Model):
         help_text="Additional bonus points available for exceptional performance",
     )
 
-    estimated_hours = models.PositiveIntegerField(
-        default=0, help_text="Estimated hours to achieve mastery"
-    )
+    estimated_hours = models.PositiveIntegerField(default=0, help_text="Estimated hours to achieve mastery")
 
-    teacher_guide = models.TextField(
-        blank=True, null=True, help_text="Guidance for teachers on category instruction"
-    )
+    teacher_guide = models.TextField(blank=True, null=True, help_text="Guidance for teachers on category instruction")
 
     minimum_mastery_percentage = models.PositiveIntegerField(
         default=0,
@@ -281,25 +255,15 @@ class UserCategoryMastery(models.Model):
     including points earned, achievements, and mastery status.
     """
 
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="category_masteries"
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="category_masteries")
 
-    category = models.ForeignKey(
-        Category, on_delete=models.CASCADE, related_name="user_masteries"
-    )
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="user_masteries")
 
-    points_earned = models.PositiveIntegerField(
-        default=0, help_text="Total points earned in this category"
-    )
+    points_earned = models.PositiveIntegerField(default=0, help_text="Total points earned in this category")
 
-    bonus_points_earned = models.PositiveIntegerField(
-        default=0, help_text="Bonus points earned through exceptional performance"
-    )
+    bonus_points_earned = models.PositiveIntegerField(default=0, help_text="Bonus points earned through exceptional performance")
 
-    mastery_achievements = models.JSONField(
-        default=list, help_text="List of specific achievements earned in this category"
-    )
+    mastery_achievements = models.JSONField(default=list, help_text="List of specific achievements earned in this category")
 
     # Progress tracking
     started_at = models.DateTimeField(auto_now_add=True)
@@ -316,26 +280,16 @@ class UserCategoryMastery(models.Model):
         ("advanced_mastery", "Advanced Mastery"),
     ]
 
-    mastery_status = models.CharField(
-        max_length=20, choices=MASTERY_STATUS_CHOICES, default="not_started"
-    )
+    mastery_status = models.CharField(max_length=20, choices=MASTERY_STATUS_CHOICES, default="not_started")
 
     # Performance metrics
-    attempts_count = models.PositiveIntegerField(
-        default=0, help_text="Number of question attempts in this category"
-    )
+    attempts_count = models.PositiveIntegerField(default=0, help_text="Number of question attempts in this category")
 
-    correct_answers = models.PositiveIntegerField(
-        default=0, help_text="Number of correct answers in this category"
-    )
+    correct_answers = models.PositiveIntegerField(default=0, help_text="Number of correct answers in this category")
 
-    streak_count = models.PositiveIntegerField(
-        default=0, help_text="Current streak of correct answers"
-    )
+    streak_count = models.PositiveIntegerField(default=0, help_text="Current streak of correct answers")
 
-    best_streak = models.PositiveIntegerField(
-        default=0, help_text="Best streak of correct answers"
-    )
+    best_streak = models.PositiveIntegerField(default=0, help_text="Best streak of correct answers")
 
     class Meta:
         verbose_name = "User Skill Mastery"
@@ -379,10 +333,7 @@ class UserCategoryMastery(models.Model):
 
         if self.total_points == 0:
             self.mastery_status = "not_started"
-        elif (
-            self.total_points >= total_possible
-            and self.accuracy_percentage >= category_ext.minimum_mastery_percentage
-        ):
+        elif self.total_points >= total_possible and self.accuracy_percentage >= category_ext.minimum_mastery_percentage:
             self.mastery_status = "advanced_mastery"
         elif self.points_earned >= category_ext.base_mastery_points:
             self.mastery_status = "mastered"
@@ -393,3 +344,4 @@ class UserCategoryMastery(models.Model):
 
 
 # last accessed unit and content will be created here
+# TODO : create a topic mastery table

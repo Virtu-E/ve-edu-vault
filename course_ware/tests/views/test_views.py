@@ -24,12 +24,8 @@ class TestDatabaseQuestionViewBase:
         with pytest.raises(ValueError, match="database_client is required"):
             TestQuestionManagementBase()
 
-        with pytest.raises(
-            ValueError, match="Please use a valid database engine instance"
-        ):
-            TestQuestionManagementBase(
-                no_sql_database_client=MagicMock()
-            )  # Invalid client
+        with pytest.raises(ValueError, match="Please use a valid database engine instance"):
+            TestQuestionManagementBase(no_sql_database_client=MagicMock())  # Invalid client
 
     def test_serializer_class_validation(self, mock_db_client):
         class TestQuestionManagementBase(DatabaseQuestionViewBase):
@@ -43,20 +39,14 @@ class TestDatabaseQuestionViewBase:
             common.COURSE_DATABASE_NAME_MAPPING,
             {topic.category.course.course_key: "test_collection"},
         ):
-            collection_name = DatabaseQuestionViewBase._get_collection_name_from_topic(
-                topic
-            )
+            collection_name = DatabaseQuestionViewBase._get_collection_name_from_topic(topic)
             assert collection_name == "test_collection"
 
         with patch.dict(common.COURSE_DATABASE_NAME_MAPPING, {}):
-            with pytest.raises(
-                ParsingError, match="could not find database collection"
-            ):
+            with pytest.raises(ParsingError, match="could not find database collection"):
                 DatabaseQuestionViewBase._get_collection_name_from_topic(topic)
 
-    def test_validate_and_get_resources(
-        self, question_management_base, user, topic, user_question_set
-    ):
+    def test_validate_and_get_resources(self, question_management_base, user, topic, user_question_set):
         serializer_mock = MagicMock()
         serializer_mock.is_valid.return_value = True
         serializer_mock.data = {}
@@ -85,16 +75,12 @@ class TestDatabaseQuestionViewBase:
                             common.COURSE_DATABASE_NAME_MAPPING,
                             {topic.category.course.course_key: "test_collection"},
                         ):
-                            result = (
-                                question_management_base.validate_and_get_resources({})
-                            )
+                            result = question_management_base.validate_and_get_resources({})
                             assert len(result) == 4
 
     def test_validate_question_exists(self):
         with pytest.raises(QuestionNotFoundError, match="Question ID '123' not found"):
-            DatabaseQuestionViewBase.validate_question_exists(
-                "123", {"456"}, "test_user"
-            )
+            DatabaseQuestionViewBase.validate_question_exists("123", {"456"}, "test_user")
 
 
 def test_get_questions_view(api_client, user, mock_db_client, topic, user_question_set):
@@ -217,35 +203,27 @@ def test_get_questions_view(api_client, user, mock_db_client, topic, user_questi
     course_mapping = {topic.category.course.course_key: "test_collection"}
 
     for case in test_cases:
-        with patch(
-            "course_ware.factory_views.MongoDatabaseEngine",
-            return_value=mock_db_client,
-        ), patch.dict(common.COURSE_DATABASE_NAME_MAPPING, course_mapping):
-
-            user_question_set.question_list_ids = [
-                {"id": id} for id in case["question_ids"]
-            ]
+        with (
+            patch(
+                "course_ware.factory_views.MongoDatabaseEngine",
+                return_value=mock_db_client,
+            ),
+            patch.dict(common.COURSE_DATABASE_NAME_MAPPING, course_mapping),
+        ):
+            user_question_set.question_list_ids = [{"id": id} for id in case["question_ids"]]
             user_question_set.save()
 
             mock_db_client.fetch_from_db.return_value = case["mock_questions"]
-            url = reverse(
-                "course_ware:get_questions_view", args=[user.username, topic.block_id]
-            )
+            url = reverse("course_ware:get_questions_view", args=[user.username, topic.block_id])
 
             response = api_client.get(url)
             assert response.status_code == case["expected_status"]
 
             if case["expected_status"] == 200:
                 assert len(response.data["questions"]) == case["expected_questions"]
-                assert all(
-                    "is_correct" not in str(q["choices"])
-                    for q in response.data["questions"]
-                )
+                assert all("is_correct" not in str(q["choices"]) for q in response.data["questions"])
                 if case["question_ids"]:
-                    assert (
-                        response.data["questions"][0]["_id"]
-                        in user_question_set.get_question_set_ids
-                    )
+                    assert response.data["questions"][0]["_id"] in user_question_set.get_question_set_ids
             else:
                 assert case["expected_message"] == response.data["message"]
 
@@ -279,9 +257,7 @@ class TestPostQuestionAttemptView:
             ),
         ],
     )
-    def test_handle_existing_attempt_correct_answer(
-        self, mock_db_client, metadata, expected_status, expected_message
-    ):
+    def test_handle_existing_attempt_correct_answer(self, mock_db_client, metadata, expected_status, expected_message):
         """Test handling of attempts for already correctly answered questions"""
         view = PostQuestionAttemptView(no_sql_database_client=mock_db_client)
         response = view._handle_existing_attempt(metadata)
@@ -296,9 +272,7 @@ class TestPostQuestionAttemptView:
             (5, 3),
         ],
     )
-    def test_handle_existing_attempt_max_attempts(
-        self, mock_db_client, attempt_number, max_attempts
-    ):
+    def test_handle_existing_attempt_max_attempts(self, mock_db_client, attempt_number, max_attempts):
         """Test handling of attempts when max attempts are reached"""
         metadata = {"is_correct": False, "attempt_number": attempt_number}
         view = PostQuestionAttemptView(no_sql_database_client=mock_db_client)
@@ -323,13 +297,9 @@ class TestPostQuestionAttemptView:
             ),
         ],
     )
-    def test_update_question_metadata(
-        self, metadata, is_correct, attempt_number, expected
-    ):
+    def test_update_question_metadata(self, metadata, is_correct, attempt_number, expected):
         """Test question metadata updates preserve existing fields"""
-        updated_metadata = PostQuestionAttemptView._update_question_metadata(
-            metadata, is_correct=is_correct, attempt_number=attempt_number
-        )
+        updated_metadata = PostQuestionAttemptView._update_question_metadata(metadata, is_correct=is_correct, attempt_number=attempt_number)
         assert updated_metadata == expected
 
     def test_is_choice_answer_correct(self, mock_db_client):
@@ -353,9 +323,7 @@ class TestPostQuestionAttemptView:
         assert view._is_choice_answer_correct(0, question_id, "test_collection") is True
 
         # Test incorrect choice
-        assert (
-            view._is_choice_answer_correct(1, question_id, "test_collection") is False
-        )
+        assert view._is_choice_answer_correct(1, question_id, "test_collection") is False
 
     def test_post_first_attempt_incorrect(
         self,
@@ -381,14 +349,15 @@ class TestPostQuestionAttemptView:
 
         url = reverse("course_ware:post_question_attempt_view")
 
-        with patch(
-            "course_ware.views.PostQuestionAttemptView._is_choice_answer_correct",
-            return_value=False,
-        ), patch.dict(
-            common.COURSE_DATABASE_NAME_MAPPING,
-            {
-                user_question_attempts.topic.category.course.course_key: "test_collection"
-            },
+        with (
+            patch(
+                "course_ware.views.PostQuestionAttemptView._is_choice_answer_correct",
+                return_value=False,
+            ),
+            patch.dict(
+                common.COURSE_DATABASE_NAME_MAPPING,
+                {user_question_attempts.topic.category.course.course_key: "test_collection"},
+            ),
         ):
             response = api_client.post(url, data=request_data)
 
@@ -421,17 +390,13 @@ class TestPostQuestionAttemptView:
         # Mock dependencies
         with patch.dict(
             common.COURSE_DATABASE_NAME_MAPPING,
-            {
-                user_question_attempts.topic.category.course.course_key: "test_collection"
-            },
+            {user_question_attempts.topic.category.course.course_key: "test_collection"},
         ):
             # Act & Assert
             with pytest.raises(QuestionNotFoundError):
                 api_client.post(url, data=request_data)
 
-    def test_post_nonexistent_user(
-        self, api_client, mock_db_client, user_question_attempts, topic
-    ):
+    def test_post_nonexistent_user(self, api_client, mock_db_client, user_question_attempts, topic):
         """Test attempt with non-existent user"""
         request_data = {
             "question_id": str(ObjectId()),
@@ -501,9 +466,7 @@ class TestPostQuestionAttemptView:
 
         with patch.dict(
             common.COURSE_DATABASE_NAME_MAPPING,
-            {
-                user_question_attempts.topic.category.course.course_key: "test_collection"
-            },
+            {user_question_attempts.topic.category.course.course_key: "test_collection"},
         ):
             response = api_client.post(url, data=request_data)
 
@@ -565,9 +528,7 @@ class TestGetQuestionAttemptView:
         assert "total_correct_count" in response_data
         assert "total_incorrect_count" in response_data
 
-    def test_get_non_existing_question_attempt(
-        self, api_client, user, user_question_attempts, user_question_set, url_params
-    ):
+    def test_get_non_existing_question_attempt(self, api_client, user, user_question_attempts, user_question_set, url_params):
         """
         Test retrieving a question attempt data that doesn't exist
         """
@@ -591,9 +552,7 @@ class TestGetQuestionAttemptView:
         assert "total_correct_count" in response_data
         assert "total_incorrect_count" in response_data
 
-    def test_get_attempt_nonexistent_user(
-        self, api_client, user_question_attempts, topic
-    ):
+    def test_get_attempt_nonexistent_user(self, api_client, user_question_attempts, topic):
         """
         Test retrieving attempt for non-existent user
         """
@@ -623,9 +582,7 @@ class TestGetQuestionAttemptView:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_get_attempt_invalid_question_id(
-        self, api_client, user, user_question_attempts, user_question_set, topic
-    ):
+    def test_get_attempt_invalid_question_id(self, api_client, user, user_question_attempts, user_question_set, topic):
         """
         Test retrieving attempt with invalid question ID
         """
@@ -639,9 +596,7 @@ class TestGetQuestionAttemptView:
         with pytest.raises(QuestionNotFoundError):
             api_client.get(url)
 
-    def test_get_attempt_question_not_in_set(
-        self, api_client, user, user_question_attempts, user_question_set, url_params
-    ):
+    def test_get_attempt_question_not_in_set(self, api_client, user, user_question_attempts, user_question_set, url_params):
         """
         Test retrieving attempt for question not in question set
         """

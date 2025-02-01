@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("course_ware_ext", "0005_bookresource_url"),
     ]
@@ -40,9 +39,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="categoryext",
             name="estimated_hours",
-            field=models.PositiveIntegerField(
-                default=0, help_text="Estimated hours to achieve mastery"
-            ),
+            field=models.PositiveIntegerField(default=0, help_text="Estimated hours to achieve mastery"),
         ),
         migrations.AlterField(
             model_name="categoryext",

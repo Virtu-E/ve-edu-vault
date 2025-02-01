@@ -15,22 +15,12 @@ class PerformanceStats(BaseModel):
 
     ranked_difficulties: List[tuple[Literal["easy", "medium", "hard"], float]] = Field(
         ...,
-        description=(
-            "A list of tuples where each tuple contains a difficulty level (easy, medium, hard) "
-            "and the corresponding average number of attempts for that difficulty, "
-            "ordered by the average attempts in ascending order."
-        ),
+        description=("A list of tuples where each tuple contains a difficulty level (easy, medium, hard) and the corresponding average number of attempts for that difficulty, ordered by the average attempts in ascending order."),
     )
 
-    difficulty_status: Dict[
-        Literal["easy", "medium", "hard"], Literal["incomplete", "completed"]
-    ] = Field(
+    difficulty_status: Dict[Literal["easy", "medium", "hard"], Literal["incomplete", "completed"]] = Field(
         ...,
-        description=(
-            "A dictionary mapping each difficulty level to its completion status. "
-            "'incomplete' means the user has not yet completed questions for that difficulty, "
-            "while 'completed' means they have completed all required questions for that difficulty."
-        ),
+        description=("A dictionary mapping each difficulty level to its completion status. 'incomplete' means the user has not yet completed questions for that difficulty, while 'completed' means they have completed all required questions for that difficulty."),
     )
 
     # def __init__(self, **kwargs):
@@ -73,7 +63,5 @@ class RecommendationQuestionMetadata(BaseModel):
         """Pydantic configuration."""
 
         use_enum_values = True  # Ensure Enum or Literal values are used directly
-        anystr_strip_whitespace = (
-            True  # Automatically strip whitespace from string fields
-        )
+        anystr_strip_whitespace = True  # Automatically strip whitespace from string fields
         validate_assignment = True  # Allow runtime validation on assignment

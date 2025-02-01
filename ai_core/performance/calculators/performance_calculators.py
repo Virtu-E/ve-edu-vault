@@ -19,9 +19,7 @@ class LearningMode(Enum):
 
 class PerformanceCalculatorInterface(ABC):
     @abstractmethod
-    def calculate_performance(
-        self, question_data: Dict[str, QuestionMetadata]
-    ) -> PerformanceStats:
+    def calculate_performance(self, question_data: Dict[str, QuestionMetadata]) -> PerformanceStats:
         raise NotImplementedError
 
 
@@ -30,9 +28,7 @@ class BasePerformanceCalculator(PerformanceCalculatorInterface):
         self.required_correct_questions = 0
         self.difficulties = ["easy", "medium", "hard"]
 
-    def calculate_performance(
-        self, question_data: Dict[str, QuestionMetadata]
-    ) -> PerformanceStats:
+    def calculate_performance(self, question_data: Dict[str, QuestionMetadata]) -> PerformanceStats:
         if not question_data:
             return self._create_empty_stats()
 
@@ -42,13 +38,9 @@ class BasePerformanceCalculator(PerformanceCalculatorInterface):
         difficulty_status = self._calculate_difficulty_status(difficulty_groups)
         ranked_difficulties = self._rank_difficulties(difficulty_groups)
 
-        return PerformanceStats(
-            ranked_difficulties=ranked_difficulties, difficulty_status=difficulty_status
-        )
+        return PerformanceStats(ranked_difficulties=ranked_difficulties, difficulty_status=difficulty_status)
 
-    def _calculate_difficulty_status(
-        self, difficulty_groups: pd.core.groupby.GroupBy
-    ) -> Dict[Literal["easy", "medium", "hard"], Literal["incomplete", "completed"]]:
+    def _calculate_difficulty_status(self, difficulty_groups: pd.core.groupby.GroupBy) -> Dict[Literal["easy", "medium", "hard"], Literal["incomplete", "completed"]]:
         difficulty_status = {}
 
         # Initialize all difficulties as incomplete
@@ -62,21 +54,13 @@ class BasePerformanceCalculator(PerformanceCalculatorInterface):
 
         return difficulty_status
 
-    def _rank_difficulties(
-        self, difficulty_groups: pd.core.groupby.GroupBy
-    ) -> List[tuple[Literal["easy", "medium", "hard"], float]]:
+    def _rank_difficulties(self, difficulty_groups: pd.core.groupby.GroupBy) -> List[tuple[Literal["easy", "medium", "hard"], float]]:
         avg_attempts = {}
 
         # Calculate average attempts for all difficulties
         for difficulty in self.difficulties:
-            group = (
-                difficulty_groups.get_group(difficulty)
-                if difficulty in difficulty_groups.groups
-                else pd.DataFrame()
-            )
-            avg_attempts[difficulty] = (
-                group["attempt_number"].mean() if not group.empty else 0.0
-            )
+            group = difficulty_groups.get_group(difficulty) if difficulty in difficulty_groups.groups else pd.DataFrame()
+            avg_attempts[difficulty] = group["attempt_number"].mean() if not group.empty else 0.0
 
         # Sort by average attempts in ascending order
         return sorted(avg_attempts.items(), key=lambda x: x[1])

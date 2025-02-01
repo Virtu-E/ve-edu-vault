@@ -16,10 +16,7 @@ class StructuralChangeDetector(ChangeDetector):
     def detect_changes(self, stored: Dict, new: Dict) -> bool:
         stored_struct = StructureExtractor.extract(stored)
         new_struct = StructureExtractor.extract(new)
-        return (
-            stored_struct.categories != new_struct.categories
-            or stored_struct.topics != new_struct.topics
-        )
+        return stored_struct.categories != new_struct.categories or stored_struct.topics != new_struct.topics
 
 
 class NameChangeDetector(ChangeDetector):
@@ -31,21 +28,9 @@ class NameChangeDetector(ChangeDetector):
 
 class CategoryNameChangeDetector(ChangeDetector):
     def detect_changes(self, stored: Dict, new: Dict) -> bool:
-        stored_chapters = {
-            chapter["id"]: chapter["display_name"]
-            for chapter in stored.get("course_structure", {})
-            .get("child_info", {})
-            .get("children", [])
-            if chapter.get("id")
-        }
+        stored_chapters = {chapter["id"]: chapter["display_name"] for chapter in stored.get("course_structure", {}).get("child_info", {}).get("children", []) if chapter.get("id")}
 
-        new_chapters = {
-            chapter["id"]: chapter["display_name"]
-            for chapter in new.get("course_structure", {})
-            .get("child_info", {})
-            .get("children", [])
-            if chapter.get("id")
-        }
+        new_chapters = {chapter["id"]: chapter["display_name"] for chapter in new.get("course_structure", {}).get("child_info", {}).get("children", []) if chapter.get("id")}
 
         return stored_chapters != new_chapters
 

@@ -61,14 +61,10 @@ def test_initialize_edu_vault_user_duplicate_user(edx_user_data, course, categor
 
 
 @pytest.mark.skip(reason="Needs fixing, broken tests")
-def test_initialize_edu_vault_user_transaction_rollback(
-    edx_user_data, course, category, topics, mocker
-):
+def test_initialize_edu_vault_user_transaction_rollback(edx_user_data, course, category, topics, mocker):
     """Test transaction rollback on failure"""
     # Mock UserQuestionSet.objects.create to raise an exception
-    mocker.patch(
-        "models.UserQuestionSet.objects.create", side_effect=Exception("Test error")
-    )
+    mocker.patch("models.UserQuestionSet.objects.create", side_effect=Exception("Test error"))
 
     with pytest.raises(DatabaseUpdateError):
         initialize_edu_vault_user(edx_user_data)

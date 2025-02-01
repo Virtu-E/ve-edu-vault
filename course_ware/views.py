@@ -51,9 +51,7 @@ class QuestionViewBase(RetrieveUserAndResourcesMixin, APIView):
         return user, topic, user_question_set_instance.get_question_set_ids
 
     @staticmethod
-    def validate_question_exists(
-        question_id: str, question_set: set[str], username: str
-    ) -> bool:
+    def validate_question_exists(question_id: str, question_set: set[str], username: str) -> bool:
         if question_id not in question_set:
             error_msg = f"Question ID '{question_id}' not found in question set for user '{username}'"
             log.error(error_msg)
@@ -106,12 +104,8 @@ class DatabaseQuestionViewBase(QuestionViewBase):
         course_id = topic.category.course.course_key
         collection_name = course_id
         if not collection_name:
-            log.error(
-                f"could not find database collection associated with the course ID {course_id}"
-            )
-            raise ParsingError(
-                f"could not find database collection associated with the course ID {course_id}"
-            )
+            log.error(f"could not find database collection associated with the course ID {course_id}")
+            raise ParsingError(f"could not find database collection associated with the course ID {course_id}")
         return collection_name
 
     def validate_and_get_resources(self, data) -> Tuple[User, Topic, Set[str], str]:
@@ -128,10 +122,8 @@ class GetQuestionsView(DatabaseQuestionViewBase):
 
     @QuestionViewBase.handle_response
     def get(self, request, username, block_id):
-        user, topic, question_set_ids, collection_name = (
-            self.validate_and_get_resources(
-                data=({"username": username, "block_id": block_id}),
-            )
+        user, topic, question_set_ids, collection_name = self.validate_and_get_resources(
+            data=({"username": username, "block_id": block_id}),
         )
 
         object_ids = [ObjectId(id) for id in question_set_ids if ObjectId.is_valid(id)]
@@ -143,16 +135,9 @@ class GetQuestionsView(DatabaseQuestionViewBase):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        docs = self.no_sql_database_client.fetch_from_db(
-            collection_name, NO_SQL_DATABASE_NAME, {"_id": {"$in": object_ids}}
-        )
+        docs = self.no_sql_database_client.fetch_from_db(collection_name, NO_SQL_DATABASE_NAME, {"_id": {"$in": object_ids}})
 
-        questions = [
-            Question(**{**doc, "_id": str(doc["_id"])}).model_dump(
-                by_alias=True, exclude={"choices": {"is_correct"}}
-            )
-            for doc in docs
-        ]
+        questions = [Question(**{**doc, "_id": str(doc["_id"])}).model_dump(by_alias=True, exclude={"choices": {"is_correct"}}) for doc in docs]
 
         return Response(
             {
@@ -189,38 +174,26 @@ class PostQuestionAttemptView(DatabaseQuestionViewBase):
     def _is_choice_correct(question_instance: Question, choice_id: int) -> bool:
         return question_instance.choices[choice_id].is_correct
 
-    def _is_choice_answer_correct(
-        self, choice_id: int, question_id: str, collection_name: str
-    ) -> bool:
-        result_lists = self.no_sql_database_client.fetch_from_db(
-            collection_name, NO_SQL_DATABASE_NAME, {"_id": ObjectId(question_id)}
-        )
+    def _is_choice_answer_correct(self, choice_id: int, question_id: str, collection_name: str) -> bool:
+        result_lists = self.no_sql_database_client.fetch_from_db(collection_name, NO_SQL_DATABASE_NAME, {"_id": ObjectId(question_id)})
         # TODO : simplify this by removing the need pf checking the data structure
         result = result_lists[0] if isinstance(result_lists, list) else result_lists
         question_instance = Question(**{**result, "_id": str(question_id)})
         return self._is_choice_correct(question_instance, choice_id)
 
     @staticmethod
-    def _update_question_metadata(
-        metadata: Dict[str, Any], is_correct: bool, attempt_number: int
-    ) -> Dict[str, Any]:
+    def _update_question_metadata(metadata: Dict[str, Any], is_correct: bool, attempt_number: int) -> Dict[str, Any]:
         """Update the metadata for a question attempt."""
         return {**metadata, "is_correct": is_correct, "attempt_number": attempt_number}
 
     @QuestionViewBase.handle_response
     def post(self, request):
-        user, topic, question_set_ids, collection_name = (
-            self.validate_and_get_resources(request.data)
-        )
+        user, topic, question_set_ids, collection_name = self.validate_and_get_resources(request.data)
 
         question_id = self.serializer.validated_data["question_id"]
-        self.validate_question_exists(
-            question_id, question_set_ids, self.serializer.validated_data["username"]
-        )
+        self.validate_question_exists(question_id, question_set_ids, self.serializer.validated_data["username"])
 
-        user_question_attempt = get_object_or_404(
-            UserQuestionAttempts, user=user, topic=topic
-        )
+        user_question_attempt = get_object_or_404(UserQuestionAttempts, user=user, topic=topic)
         question_metadata = user_question_attempt.get_latest_question_metadata
         question_metadata_instance = question_metadata.get(question_id)
 
@@ -251,9 +224,7 @@ class PostQuestionAttemptView(DatabaseQuestionViewBase):
                 "question_id": question_id,
             }
 
-        question_metadata[question_id]["choice_id"] = self.serializer.validated_data[
-            "choice_id"
-        ]
+        question_metadata[question_id]["choice_id"] = self.serializer.validated_data["choice_id"]
         user_question_attempt.save()
 
         return Response(
@@ -274,19 +245,13 @@ class GetSingleQuestionAttemptView(QuestionViewBase):
     @QuestionViewBase.handle_response
     def get(self, request, username, block_id, question_id):
         user, topic, question_set_ids = self.validate_and_get_resources(
-            data=(
-                {"username": username, "block_id": block_id, "question_id": question_id}
-            ),
+            data=({"username": username, "block_id": block_id, "question_id": question_id}),
         )
 
         question_id = self.serializer.validated_data["question_id"]
-        self.validate_question_exists(
-            question_id, question_set_ids, self.serializer.validated_data["username"]
-        )
+        self.validate_question_exists(question_id, question_set_ids, self.serializer.validated_data["username"])
 
-        user_question_attempt = get_object_or_404(
-            UserQuestionAttempts, user=user, topic=topic
-        )
+        user_question_attempt = get_object_or_404(UserQuestionAttempts, user=user, topic=topic)
         response = user_question_attempt.get_latest_question_metadata.get(question_id)
         if not response:
             # means that the question does not yet have an entry in the question attempt metadata
@@ -354,24 +319,14 @@ class QuizCompletionView(DatabaseQuestionViewBase):
         question_data_list = self.no_sql_database_client.fetch_from_db(
             collection_name,
             NO_SQL_DATABASE_NAME,
-            {
-                "_id": {
-                    "$in": [
-                        ObjectId(question_id) for question_id in missing_question_ids
-                    ]
-                }
-            },
+            {"_id": {"$in": [ObjectId(question_id) for question_id in missing_question_ids]}},
         )
 
-        fetched_question_ids = {
-            str(question_data["_id"]) for question_data in question_data_list
-        }
+        fetched_question_ids = {str(question_data["_id"]) for question_data in question_data_list}
 
         missing_questions = missing_question_ids - fetched_question_ids
         if missing_questions:
-            raise ValueError(
-                f"Questions with IDs {', '.join(missing_questions)} not found in the database."
-            )
+            raise ValueError(f"Questions with IDs {', '.join(missing_questions)} not found in the database.")
 
         for question_data in question_data_list:
             question_id = str(question_data["_id"])
@@ -389,17 +344,11 @@ class QuizCompletionView(DatabaseQuestionViewBase):
 
     def post(self, request):
         #   TODO : the naming here already shows that my function is doing two things. Change that
-        user, topic, question_set_ids, collection_name = (
-            self.validate_and_get_resources(request.data)
-        )
+        user, topic, question_set_ids, collection_name = self.validate_and_get_resources(request.data)
         # we have to create a filler for all unattempted questions that the user has been assigned in the question set
-        user_question_attempt = get_object_or_404(
-            UserQuestionAttempts, user=user, topic=topic
-        )
+        user_question_attempt = get_object_or_404(UserQuestionAttempts, user=user, topic=topic)
 
-        self._ensure_user_question_attempts_exist(
-            question_set_ids, user_question_attempt, collection_name
-        )
+        self._ensure_user_question_attempts_exist(question_set_ids, user_question_attempt, collection_name)
 
         # we have to calculate the performance
         # performance_calculator_instance = AttemptBasedDifficultyRankerCalculator()
@@ -497,9 +446,7 @@ class CourseOutlinePathView(APIView):
         if outline_data.get("id") == sequential_id:
             return current_path
 
-        if outline_data.get("child_info") and outline_data["child_info"].get(
-            "children"
-        ):
+        if outline_data.get("child_info") and outline_data["child_info"].get("children"):
             for child in outline_data["child_info"]["children"]:
                 # Create a new dictionary for each recursive call
                 new_path = current_path.copy()
@@ -524,9 +471,7 @@ class CourseOutlinePathView(APIView):
             course = get_object_or_404(Course, course_key=course_id)
             outline_data = course.course_outline
 
-            path = self.find_sequential_path(
-                outline_data["course_structure"], sequential_id
-            )
+            path = self.find_sequential_path(outline_data["course_structure"], sequential_id)
 
             if path:
                 return Response({"path": path, "status": "success"})

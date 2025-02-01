@@ -118,12 +118,7 @@ LOGGING = {
             "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
             "style": "{",
         },
-        "detailed": {
-            "format": (
-                "%(asctime)s [%(levelname)s] %(name)s (%(filename)s:%(lineno)d) "
-                "%(message)s"
-            )
-        },
+        "detailed": {"format": ("%(asctime)s [%(levelname)s] %(name)s (%(filename)s:%(lineno)d) %(message)s")},
         "simple": {"format": "%(asctime)s::%(name)s::%(levelname)s::%(message)s"},
     },
     "handlers": {

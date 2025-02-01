@@ -93,27 +93,16 @@ class TestPerformanceCalculators:
             ),
         ],
     )
-    def test_completion_threshold_boundaries(
-        self, calculator, difficulty, is_correct, expected_status
-    ):
+    def test_completion_threshold_boundaries(self, calculator, difficulty, is_correct, expected_status):
         """Test various completion rates around the threshold"""
-        questions = {
-            f"q{i}": QuestionMetadataFactory(
-                difficulty=difficulty, is_correct=is_correct[i], attempt_number=1
-            )
-            for i in range(len(is_correct))
-        }
+        questions = {f"q{i}": QuestionMetadataFactory(difficulty=difficulty, is_correct=is_correct[i], attempt_number=1) for i in range(len(is_correct))}
 
         result = calculator.calculate_performance(questions)
         assert result.difficulty_status[difficulty] == expected_status
 
     def test_edge_case_single_question(self, calculator):
         """Test behavior with a single question"""
-        questions = {
-            "q1": QuestionMetadataFactory(
-                difficulty="easy", is_correct="true", attempt_number=1
-            )
-        }
+        questions = {"q1": QuestionMetadataFactory(difficulty="easy", is_correct="true", attempt_number=1)}
 
         result = calculator.calculate_performance(questions)
         assert "easy" in result.difficulty_status

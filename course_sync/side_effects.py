@@ -106,16 +106,11 @@ def get_question_list_ids(results: List[Dict[str, Any]]) -> List[Dict[str, str]]
     """
     question_list_ids = []
     for difficulty_level in ["easy", "medium", "hard"]:
-        question_list_ids.extend(
-            {"id": str(question["_id"])}
-            for question in results[0].get(difficulty_level, [])
-        )
+        question_list_ids.extend({"id": str(question["_id"])} for question in results[0].get(difficulty_level, []))
     return question_list_ids
 
 
-def create_default_question_set(
-    topic: Topic, question_list_ids: List[Dict[str, str]]
-) -> None:
+def create_default_question_set(topic: Topic, question_list_ids: List[Dict[str, str]]) -> None:
     """
     Create or update the DefaultQuestionSet for a topic.
 
@@ -123,9 +118,7 @@ def create_default_question_set(
         topic (Topic): The topic instance
         question_list_ids (List[Dict[str, str]]): List of question IDs
     """
-    DefaultQuestionSet.objects.update_or_create(
-        topic=topic, defaults={"question_list_ids": question_list_ids}
-    )
+    DefaultQuestionSet.objects.update_or_create(topic=topic, defaults={"question_list_ids": question_list_ids})
 
 
 def create_topic_iframe_id(topic: Topic, course_blocks: Dict[str, Any]) -> None:
@@ -139,9 +132,7 @@ def create_topic_iframe_id(topic: Topic, course_blocks: Dict[str, Any]) -> None:
     if course_blocks:
         iframe_id = get_first_lti_consumer_id(course_blocks)
         if iframe_id:
-            TopicIframeID.objects.update_or_create(
-                topic=topic, defaults={"identifier": iframe_id}
-            )
+            TopicIframeID.objects.update_or_create(topic=topic, defaults={"identifier": iframe_id})
 
 
 class TopicCreationSideEffect(CreationSideEffect):

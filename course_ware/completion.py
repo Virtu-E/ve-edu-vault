@@ -17,12 +17,8 @@ class ProgressUpdater:
         Args:
             question_data (QuestionAttemptData): The user's question data attempts.
         """
-        self.user_question_attempt_instance = UserQuestionAttempts.objects.get(
-            topic__id=question_data.topic_id
-        )
-        self.user_category_progress_instance = UserCategoryProgress.objects.get(
-            category__id=question_data.category_id
-        )
+        self.user_question_attempt_instance = UserQuestionAttempts.objects.get(topic__id=question_data.topic_id)
+        self.user_category_progress_instance = UserCategoryProgress.objects.get(category__id=question_data.category_id)
         self.topic_instance = Topic.objects.get(id=question_data.topic_id)
         self.question_id = question_data.question_id
         self.question_data = question_data
@@ -40,26 +36,20 @@ class ProgressUpdater:
         question_data_instance = question_metadata.get(self.question_data.question_id)
         if question_data_instance is None:
             # TODO : need to fix this
-            raise Exception(
-                f"Question metadata {self.question_data.question_id} does not exist"
-            )
+            raise Exception(f"Question metadata {self.question_data.question_id} does not exist")
 
         # Update the question metadata if the question has never been answered correctly
         if not question_data_instance.get("is_correct", False):
             if self.question_data.is_correct:
                 question_data_instance["is_correct"] = True
             else:
-                question_data_instance["in_correct_count"] = (
-                    question_data_instance.get("in_correct_count", 0) + 1
-                )
+                question_data_instance["in_correct_count"] = question_data_instance.get("in_correct_count", 0) + 1
 
         self.user_question_attempt_instance.save()
 
         # Check if the topic is cleared by verifying all
         # questions in the metadata are marked as correct
-        topic_cleared = all(
-            value.get("is_correct", False) for value in question_metadata.values()
-        )
+        topic_cleared = all(value.get("is_correct", False) for value in question_metadata.values())
 
         return topic_cleared
 

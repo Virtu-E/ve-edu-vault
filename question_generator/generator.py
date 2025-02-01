@@ -24,9 +24,7 @@ class QuestionAPIGenerator:
             "time_estimate": {"minutes": "3"},
         }
 
-    def create_prompt(
-        self, subject: str, topic_data: Dict, model_name: str
-    ) -> List[Dict]:
+    def create_prompt(self, subject: str, topic_data: Dict, model_name: str) -> List[Dict]:
         metadata = self.create_metadata(model_name)
         return [
             {
@@ -54,12 +52,12 @@ class QuestionAPIGenerator:
             },
             {
                 "role": "user",
-                "content": f"""Generate {topic_data['num_questions']} multiple-choice questions for {subject} with these specifications:
-Topic: {topic_data['topic']}
-Category: {topic_data['category']}
-Academic Class: {topic_data['academic_class']}
-Examination Level: {topic_data['examination_level']}
-Difficulty Distribution: {json.dumps(topic_data['difficulty_distribution'])}
+                "content": f"""Generate {topic_data["num_questions"]} multiple-choice questions for {subject} with these specifications:
+Topic: {topic_data["topic"]}
+Category: {topic_data["category"]}
+Academic Class: {topic_data["academic_class"]}
+Examination Level: {topic_data["examination_level"]}
+Difficulty Distribution: {json.dumps(topic_data["difficulty_distribution"])}
 
 Important: Ensure questions align with Malawian curriculum context and utilize the specified teaching activities and resources. How ever, do not include them in the generated response. The response must be a valid JSON array containing question objects that exactly match the structure provided.""",
             },
@@ -111,7 +109,7 @@ Important: Ensure questions align with Malawian curriculum context and utilize t
 
             except Exception as e:
                 print(f"Error with {model}: {str(e)}")
-                print(f"Full error details: ", e)
+                print("Full error details: ", e)
                 results[model] = []
 
         return results
@@ -126,9 +124,7 @@ Important: Ensure questions align with Malawian curriculum context and utilize t
 
 
 def main():
-    client = ai.Client(
-        provider_configs={"openai": {"api_key": config("OPENAI_API_KEY")}}
-    )
+    client = ai.Client(provider_configs={"openai": {"api_key": config("OPENAI_API_KEY")}})
     generator = QuestionAPIGenerator(client)
 
     topic_data = {

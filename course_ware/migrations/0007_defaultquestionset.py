@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("course_ware", "0006_remove_category_description_remove_topic_description"),
     ]

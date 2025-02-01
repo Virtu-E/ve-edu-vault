@@ -30,15 +30,11 @@ class TestRecommendationEngine:
 
     async def test_get_questions_list_from_database(self, recommendation_engine):
         """Test fetching questions from database"""
-        questions = await recommendation_engine._get_questions_list_from_database(
-            "easy"
-        )
+        questions = await recommendation_engine._get_questions_list_from_database("easy")
         assert len(questions) == 10
         assert all(isinstance(q, Question) for q in questions)
 
-    async def test_get_questions_list_database_error(
-        self, recommendation_engine, mock_database_engine
-    ):
+    async def test_get_questions_list_database_error(self, recommendation_engine, mock_database_engine):
         """Test handling database errors when fetching questions"""
         mock_database_engine.fetch_from_db.side_effect = Exception("Database error")
 
@@ -46,9 +42,7 @@ class TestRecommendationEngine:
             await recommendation_engine._get_questions_list_from_database("easy")
 
     @pytest.mark.skip(reason="not implemented")
-    async def test_set_users_recommended_questions_success(
-        self, recommendation_engine, mock_performance_engine
-    ):
+    async def test_set_users_recommended_questions_success(self, recommendation_engine, mock_performance_engine):
         """Test successful setting of recommended questions"""
         # Create test data
         await sync_to_async(UserQuestionSetFactory)(
@@ -74,9 +68,7 @@ class TestRecommendationEngine:
         assert all(isinstance(q["id"], str) for q in question_ids)
 
     @pytest.mark.skip(reason="not implemented")
-    async def test_insufficient_questions(
-        self, recommendation_engine, mock_database_engine
-    ):
+    async def test_insufficient_questions(self, recommendation_engine, mock_database_engine):
         """Test handling insufficient questions scenario"""
         # Mock database to return fewer questions than the minimum threshold
         collection = AsyncMock()
@@ -91,9 +83,7 @@ class TestRecommendationEngine:
                 "examination_level": "Intermediate",
                 "difficulty": "easy",
                 "tags": ["math", "algebra", "practice"],
-                "choices": [
-                    {"text": f"Choice {j}", "is_correct": j == 0} for j in range(4)
-                ],
+                "choices": [{"text": f"Choice {j}", "is_correct": j == 0} for j in range(4)],
                 "solution": {"explanation": f"Explanation for question {i}"},
                 "hint": f"Hint for question {i}",
                 "metadata": {
@@ -241,15 +231,11 @@ class TestRecommendationEngine:
                 ),
             ),
         ]
-        filtered = recommendation_engine._exclude_current_users_questions(
-            questions, current_ids
-        )
+        filtered = recommendation_engine._exclude_current_users_questions(questions, current_ids)
         assert len(filtered) == 2
         assert all(q.question_id not in current_ids for q in filtered)
 
-    async def test_database_update_error(
-        self, recommendation_engine, mock_database_engine
-    ):
+    async def test_database_update_error(self, recommendation_engine, mock_database_engine):
         """Test handling database update errors"""
         mock_database_engine.fetch_from_db.side_effect = Exception("Update failed")
 

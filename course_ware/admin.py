@@ -60,20 +60,14 @@ class CategoryAdmin(admin.ModelAdmin):
     def skill_augments(self, obj):
         try:
             if hasattr(obj, "extension"):
-                url = reverse(
-                    "admin:course_ware_ext_categoryext_change", args=[obj.extension.id]
-                )
+                url = reverse("admin:course_ware_ext_categoryext_change", args=[obj.extension.id])
                 return format_html('<a href="{}">View Skill Augment</a>', url)
 
             create_url = reverse("admin:course_ware_ext_categoryext_add")
-            return format_html(
-                '<a href="{}?category={}">Create Augment</a>', create_url, obj.id
-            )
+            return format_html('<a href="{}?category={}">Create Augment</a>', create_url, obj.id)
         except Exception:
             create_url = reverse("admin:course_ware_ext_categoryext_add")
-            return format_html(
-                '<a href="{}?category={}">Create Augment</a>', create_url, obj.id
-            )
+            return format_html('<a href="{}?category={}">Create Augment</a>', create_url, obj.id)
 
     view_objectives.short_description = "Learning Objectives"
     skill_augments.short_description = "Skill Augment"
@@ -99,37 +93,22 @@ class TopicAdmin(admin.ModelAdmin):
     def topic_augments(self, obj):
         try:
             if hasattr(obj, "extension"):
-                url = reverse(
-                    "admin:course_ware_ext_topicext_change", args=[obj.extension.id]
-                )
+                url = reverse("admin:course_ware_ext_topicext_change", args=[obj.extension.id])
                 return format_html('<a href="{}">View Topic Augment</a>', url)
 
             create_url = reverse("admin:course_ware_ext_topicext_add")
-            return format_html(
-                '<a href="{}?topic={}">Create Augment</a>', create_url, obj.id
-            )
+            return format_html('<a href="{}?topic={}">Create Augment</a>', create_url, obj.id)
         except Exception:
             create_url = reverse("admin:course_ware_ext_topicext_add")
-            return format_html(
-                '<a href="{}?topic={}">Create Augment</a>', create_url, obj.id
-            )
+            return format_html('<a href="{}?topic={}">Create Augment</a>', create_url, obj.id)
 
     def resource_counts(self, obj):
         if not hasattr(obj, "extension"):
             return "No resources"
 
-        videos_url = (
-            reverse("admin:course_ware_ext_videoresource_add")
-            + f"?topic_ext={obj.extension.id}"
-        )
-        books_url = (
-            reverse("admin:course_ware_ext_bookresource_add")
-            + f"?topic_ext={obj.extension.id}"
-        )
-        articles_url = (
-            reverse("admin:course_ware_ext_articleresource_add")
-            + f"?topic_ext={obj.extension.id}"
-        )
+        videos_url = reverse("admin:course_ware_ext_videoresource_add") + f"?topic_ext={obj.extension.id}"
+        books_url = reverse("admin:course_ware_ext_bookresource_add") + f"?topic_ext={obj.extension.id}"
+        articles_url = reverse("admin:course_ware_ext_articleresource_add") + f"?topic_ext={obj.extension.id}"
 
         video_count = obj.extension.videoresource.count()
         book_count = obj.extension.bookresource.count()

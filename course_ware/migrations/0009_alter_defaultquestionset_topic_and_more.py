@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         (
             "course_ware",
@@ -17,15 +16,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="defaultquestionset",
             name="topic",
-            field=models.OneToOneField(
-                on_delete=django.db.models.deletion.CASCADE, to="course_ware.topic"
-            ),
+            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to="course_ware.topic"),
         ),
         migrations.AlterField(
             model_name="userquestionset",
             name="topic",
-            field=models.OneToOneField(
-                on_delete=django.db.models.deletion.CASCADE, to="course_ware.topic"
-            ),
+            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to="course_ware.topic"),
         ),
     ]

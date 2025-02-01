@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("course_ware", "0005_coreelement_alter_category_options_and_more"),
     ]

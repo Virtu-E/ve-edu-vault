@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("course_ware", "0009_alter_defaultquestionset_topic_and_more"),
     ]

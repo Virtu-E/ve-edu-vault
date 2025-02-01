@@ -9,9 +9,7 @@ class OAuthClient:
         if config_name:
             self.config = OAuthClientConfig.objects.get(name=config_name)
         elif service_type:
-            self.config = OAuthClientConfig.objects.get(
-                service_type=service_type, is_active=True
-            )
+            self.config = OAuthClientConfig.objects.get(service_type=service_type, is_active=True)
         else:
             raise ValueError("Either service_type or config_name must be provided")
 

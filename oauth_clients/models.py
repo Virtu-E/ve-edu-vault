@@ -45,13 +45,9 @@ class OAuthClientConfig(models.Model):
 
     def clean(self):
         if self.is_active:
-            active_configs = OAuthClientConfig.objects.filter(
-                service_type=self.service_type, is_active=True
-            ).exclude(pk=self.pk)
+            active_configs = OAuthClientConfig.objects.filter(service_type=self.service_type, is_active=True).exclude(pk=self.pk)
             if active_configs.exists():
-                raise ValidationError(
-                    f"There can only be one active configuration per service type."
-                )
+                raise ValidationError("There can only be one active configuration per service type.")
 
     def save(self, *args, **kwargs):
         self.full_clean()

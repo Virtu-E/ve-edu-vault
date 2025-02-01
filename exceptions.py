@@ -138,9 +138,7 @@ class QuestionNotFoundError(ValidationError):
     def __init__(self, question_id, username, message="Question not found"):
         self.question_id = question_id
         self.username = username
-        self.message = (
-            f"{message}: Question ID '{question_id}' not found for user '{username}'"
-        )
+        self.message = f"{message}: Question ID '{question_id}' not found for user '{username}'"
         super().__init__(self.message)
 
 

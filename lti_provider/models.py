@@ -13,9 +13,7 @@ class ToolConsumer(models.Model):
     auth_login_url = models.URLField(blank=True, null=True)
     auth_token_url = models.URLField(blank=True, null=True)
     key_set_url = models.URLField(blank=True, null=True)
-    private_key = models.TextField(
-        blank=True, null=True
-    )  # TODO : find a smart way of storing the keys here
+    private_key = models.TextField(blank=True, null=True)  # TODO : find a smart way of storing the keys here
     public_key = models.TextField(blank=True, null=True)
     # TODO : same thing with this field. Need to be encrypted and secure
     name = models.CharField(max_length=255)
