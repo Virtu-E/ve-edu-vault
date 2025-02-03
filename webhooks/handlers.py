@@ -8,7 +8,6 @@ from course_ware.utils import (
     academic_class_from_course_id,
     get_examination_level_from_course_id,
 )
-from webhooks.edx_requests import get_course_outline
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +146,8 @@ class CourseUpdatedHandler(WebhookHandler):
 
         course_id = payload["course"]["course_key"]
 
-        course_outline = get_course_outline(course_id)
+        # course_outline = get_course_outline(course_id)
+        course_outline = payload["course"]["course_outline"]
 
         course_instance, created = self._get_or_update_course(course_id, course_outline)
 

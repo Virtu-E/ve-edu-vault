@@ -7,6 +7,6 @@ format.indent-style = "space"
 format.skip-magic-trailing-comma = false
 format.line-ending = "auto"
 
-[isort]
+[lint.isort]
 combine-as-imports = true
 force-wrap-aliases = true

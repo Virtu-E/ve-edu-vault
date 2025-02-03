@@ -3,6 +3,8 @@ from typing import Dict, List
 from pydantic import BaseModel, Field, constr
 from typing_extensions import Literal
 
+LearningMode = Literal["normal", "reinforcement", "recovery", "reset", "mastered"]
+
 
 class PerformanceStats(BaseModel):
     """
@@ -65,3 +67,69 @@ class RecommendationQuestionMetadata(BaseModel):
         use_enum_values = True  # Ensure Enum or Literal values are used directly
         anystr_strip_whitespace = True  # Automatically strip whitespace from string fields
         validate_assignment = True  # Allow runtime validation on assignment
+
+
+class Attempt(BaseModel):
+    success: bool
+    timeSpent: int  # in minutes
+    attemptNumber: int
+
+
+class QuestionAIContext(BaseModel):
+    id: str = Field(..., alias="_id")
+    difficulty: str
+    tags: List[str]
+    attempts: Attempt
+
+
+class DifficultyStats(BaseModel):
+    totalAttempts: int
+    successRate: float
+    averageTime: float
+    failedTags: List[str]
+
+    # Attempt-based stats
+    firstAttemptSuccessRate: float  # Success rate on first attempts
+    secondAttemptSuccessRate: float  # Success rate on second attempts
+    thirdAttemptSuccessRate: float  # Success rate on third attempts
+    averageAttemptsToSuccess: float  # Average number of attempts needed for success
+
+    # Completion stats
+    completionRate: float  # Percentage of questions completed successfully
+    incompleteRate: float  # Percentage of questions not completed after all attempts
+    earlyAbandonment: float  # Percentage of questions abandoned before using all attempts
+
+    # Time-based stats
+    averageFirstAttemptTime: float  # Average time spent on first attempts
+    averageSecondAttemptTime: float  # Average time spent on second attempts
+    averageThirdAttemptTime: float  # Average time spent on third attempts
+    timeDistribution: Dict[str, float]  # Distribution of time spent across attempts
+
+
+class ModeData(BaseModel):
+    questions: List[QuestionAIContext]
+    difficultyStats: Dict[str, DifficultyStats]
+
+
+class LearningDefaults(BaseModel):
+    userId: str
+    block_id: str
+    modeHistory: Dict[LearningMode, List[ModeData]]
+
+    model_config = {"json_schema_extra": {"examples": [{}]}}
+
+
+class LearningHistory(LearningDefaults):
+    """
+    Tracks a user's learning history including question attempts and difficulty statistics.
+    Can include data for normal, reinforcement, mastered , reset and recovery modes.
+    """
+
+    modeHistory: Dict[LearningMode, List[ModeData]]  # Must have at least one mode
+
+    model_config = {"extra": "forbid"}
+
+    @property
+    def active_modes(self) -> List[LearningMode]:
+        """Returns a list of active learning modes in the history"""
+        return list(self.modeHistory.keys())

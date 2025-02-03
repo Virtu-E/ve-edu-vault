@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
 
-from course_ware.models import DefaultQuestionSet, Topic, User, UserQuestionSet
+from course_ware.models import DefaultQuestionSet, Topic, EdxUser, UserQuestionSet
 
 
 class RetrieveUserAndResourcesMixin:
@@ -11,7 +11,7 @@ class RetrieveUserAndResourcesMixin:
     """
 
     @staticmethod
-    def get_user_from_validated_data(serializer) -> User:
+    def get_user_from_validated_data(serializer) -> EdxUser:
         """
         Retrieve a User object based on 'username' from validated serializer data.
 
@@ -26,7 +26,7 @@ class RetrieveUserAndResourcesMixin:
         """
         if "username" not in serializer.validated_data:
             raise ValidationError({"username": "Username is required."})
-        return get_object_or_404(User, username=serializer.validated_data["username"])
+        return get_object_or_404(EdxUser, username=serializer.validated_data["username"])
 
     # TODO : i have to provide more data like category, course etc
     @staticmethod

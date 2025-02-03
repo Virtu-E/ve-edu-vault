@@ -7,7 +7,6 @@ from django.db.models import Model
 from course_ware.models import DefaultQuestionSet, Topic, TopicIframeID
 from edu_vault.settings import common
 from no_sql_database.nosql_database_engine import NoSqLDatabaseEngineInterface
-from webhooks.edx_requests import get_course_blocks
 
 log = logging.getLogger(__name__)
 
@@ -160,8 +159,8 @@ class TopicCreationSideEffect(CreationSideEffect):
             question_list_ids = get_question_list_ids(results)
             create_default_question_set(topic, question_list_ids)
 
-            course_blocks = get_course_blocks(topic.block_id)
-            create_topic_iframe_id(topic, course_blocks)
+            # course_blocks = get_course_blocks(topic.block_id)
+            # create_topic_iframe_id(topic, course_blocks)
 
         except Exception as e:
             log.exception(f"Failed to create topic creation side effect due to: {e}")

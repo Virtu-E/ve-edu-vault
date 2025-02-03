@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from course_ware.mixins import RetrieveUserAndResourcesMixin
-from course_ware.models import Course, Topic, User, UserQuestionAttempts
+from course_ware.models import Course, Topic, EdxUser, UserQuestionAttempts
 from course_ware.serializers import (
     GetSingleQuestionSerializer,
     PostQuestionAttemptSerializer,
@@ -38,7 +38,7 @@ class QuestionViewBase(RetrieveUserAndResourcesMixin, APIView):
             raise Exception("serializer_class must be set on the view")
         self.serializer = None
 
-    def validate_and_get_resources(self, data) -> Tuple[User, Topic, Set[str]]:
+    def validate_and_get_resources(self, data) -> Tuple[EdxUser, Topic, Set[str]]:
         """Common validation and resource retrieval logic."""
         self.serializer = self.serializer_class(data=data)
         if not self.serializer.is_valid():
@@ -108,7 +108,7 @@ class DatabaseQuestionViewBase(QuestionViewBase):
             raise ParsingError(f"could not find database collection associated with the course ID {course_id}")
         return collection_name
 
-    def validate_and_get_resources(self, data) -> Tuple[User, Topic, Set[str], str]:
+    def validate_and_get_resources(self, data) -> Tuple[EdxUser, Topic, Set[str], str]:
         """Extended validation that includes collection name."""
         user, topic, question_set_ids = super().validate_and_get_resources(data)
         collection_name = self._get_collection_name_from_topic(topic)
@@ -273,7 +273,7 @@ class GetSingleQuestionAttemptView(QuestionViewBase):
 
 class GetQuestionAttemptView(APIView):
     def get(self, request, username, block_id):
-        user = get_object_or_404(User, username=username)
+        user = get_object_or_404(EdxUser, username=username)
         topic = get_object_or_404(Topic, block_id=block_id)
 
         attempt, _ = UserQuestionAttempts.objects.get_or_create(

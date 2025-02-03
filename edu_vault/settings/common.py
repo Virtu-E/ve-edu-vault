@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     "course_ware_ext",
     "django_json_widget",
     "webhooks",
-    "oauth2_provider",
+    # "oauth2_provider",
     "oauth_clients",
 ]
 
@@ -176,3 +176,4 @@ COMPLETION_THRESHOLD = 2 / 3
 
 ENCRYPTION_KEY = "gk79FsqK0sTh03Xo6MFkQW6g44-bk4cXj3gFvmpk8kA="
 LTI_LAUNCH_URL = "https://vault.virtueducate.edly.io/lti/launch/"
+LEARNING_HISTORY_COLLECTION_NAME = "learning_history"

@@ -10,9 +10,11 @@ from course_ware.models import (
     Category,
     Course,
     Topic,
-    User,
     UserQuestionAttempts,
     UserQuestionSet,
+    EdxUser,
+    ExaminationLevel,
+    CoreElement,
 )
 from data_types.course_ware_schema import QuestionMetadata
 from data_types.questions import Choice, Metadata, Question, Solution
@@ -20,7 +22,7 @@ from data_types.questions import Choice, Metadata, Question, Solution
 
 class UserFactory(DjangoModelFactory):
     class Meta:
-        model = User
+        model = EdxUser
 
     username = Faker("user_name")
     email = Faker("email")
@@ -56,14 +58,32 @@ class CourseFactory(DjangoModelFactory):
     }
 
 
+class ExaminationLevelFactory(DjangoModelFactory):
+    class Meta:
+        model = ExaminationLevel
+
+    name = Faker("word")
+
+
+class CoreElementFactory(DjangoModelFactory):
+    class Meta:
+        model = CoreElement
+
+    name = Faker("word")
+
+
 class CategoryFactory(DjangoModelFactory):
     class Meta:
         model = Category
 
+    name = Faker("word")
     course = SubFactory(CourseFactory)
     academic_class = SubFactory(AcademicClassFactory)
+    examination_level = SubFactory(ExaminationLevelFactory)
+    core_element = SubFactory(CoreElementFactory)
     block_id = factory.Sequence(lambda n: f"chapter{n}")
-    description = factory.Sequence(lambda n: f"Description {n}")
+    created_at = factory.LazyFunction(datetime.utcnow)
+    updated_at = factory.LazyFunction(datetime.utcnow)
 
 
 class TopicFactory(DjangoModelFactory):
@@ -71,10 +91,8 @@ class TopicFactory(DjangoModelFactory):
         model = Topic
 
     name = Faker("word")
-    is_completed = Faker("boolean")
     category = SubFactory(CategoryFactory)
     block_id = factory.Sequence(lambda n: f"chapter{n}")
-    description = factory.Sequence(lambda n: f"Description {n}")
 
 
 class QuestionMetadataFactory(Factory):

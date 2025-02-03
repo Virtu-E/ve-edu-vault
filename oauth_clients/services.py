@@ -6,17 +6,23 @@ from .models import OAuthClientConfig
 
 class OAuthClient:
     def __init__(self, service_type=None, config_name=None):
-        if config_name:
-            self.config = OAuthClientConfig.objects.get(name=config_name)
-        elif service_type:
-            self.config = OAuthClientConfig.objects.get(service_type=service_type, is_active=True)
-        else:
-            raise ValueError("Either service_type or config_name must be provided")
+        self.config = self.get_config(config_name, service_type)
 
         self.base_url = self.config.base_url
         self.client_id = self.config.client_id
         self.client_secret = self.config.client_secret
         self.service_type = self.config.service_type
+
+        self.config = self.get_config(service_type)
+
+    @staticmethod
+    def get_config(config_name=None, service_type=None):
+        if config_name:
+            return OAuthClientConfig.objects.get(name=config_name)
+        elif service_type:
+            return OAuthClientConfig.objects.get(service_type=service_type, is_active=True)
+        else:
+            raise ValueError("Either service_type or config_name must be provided")
 
     def _get_cache_key(self):
         return f"oauth_token_{self.config.name}"

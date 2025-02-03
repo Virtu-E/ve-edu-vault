@@ -1,5 +1,5 @@
 import re
-from typing import Any, Literal, Union
+from typing import Any, Union
 
 from django.db import models
 
@@ -8,6 +8,18 @@ from exceptions import VersionParsingError
 
 DEFAULT_VERSION = "v1.0.0"
 VERSION_PATTERN = re.compile(r"v(\d+)\.(\d+)\.(\d+)")
+LEARNING_MODES = [("Normal", "normal"), ("Reinforcement", "reinforcement"), ("Recovery", "recovery"), ("Reset", "reset"), ("Mastered", "mastered")]
+CLASS_CHOICES = [
+    ("Form 1", "Form 1"),
+    ("Form 2", "Form 2"),
+    ("Form 3", "Form 3"),
+    ("Form 4", "Form 4"),
+]
+LEVEL_CHOICES = [
+    ("MSCE", "MSCE"),
+    ("JCE", "JCE"),
+    ("IGSCE", "IGSCE"),
+]
 
 
 # TODO : move to a separate django app
@@ -30,13 +42,6 @@ class EdxUser(models.Model):
 
 
 class AcademicClass(models.Model):
-    CLASS_CHOICES = [
-        ("Form 1", "Form 1"),
-        ("Form 2", "Form 2"),
-        ("Form 3", "Form 3"),
-        ("Form 4", "Form 4"),
-    ]
-
     name = models.CharField(max_length=255, choices=CLASS_CHOICES, unique=True)
 
     def __str__(self):
@@ -82,12 +87,6 @@ class ExaminationLevel(models.Model):
     """
     Stores Examination Levels related to the Malawian School system
     """
-
-    LEVEL_CHOICES = [
-        ("MSCE", "MSCE"),
-        ("JCE", "JCE"),
-        ("IGSCE", "IGSCE"),
-    ]
 
     name = models.CharField(max_length=255, choices=LEVEL_CHOICES, unique=True)
 
@@ -217,6 +216,7 @@ class UserQuestionAttempts(models.Model):
         help_text="Metadata for questions attempted by the user.",
         default={"v1.0.0": {}},
     )
+    current_learning_mode = models.CharField(choices=LEARNING_MODES, default="normal", max_length=255)
 
     question_metadata_description = models.JSONField(
         help_text="Stores status information and guidance for questions",
@@ -233,13 +233,6 @@ class UserQuestionAttempts(models.Model):
     class Meta:
         verbose_name = "User Question Attempt"
         verbose_name_plural = "User Questions Attempts"
-
-    @property
-    def get_learning_mode(
-        self,
-    ) -> Literal["normal", "recovery", "reinforcement", "mastered"]:
-        latest_version = self.get_current_version
-        return self.question_metadata_description[latest_version]["learning_mode"]
 
     @staticmethod
     def _parse_version(version: str) -> tuple:

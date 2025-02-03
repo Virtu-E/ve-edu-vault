@@ -11,7 +11,7 @@ from .models import (
     DefaultQuestionSet,
     Topic,
     TopicIframeID,
-    User,
+    EdxUser,
     UserCategoryProgress,
     UserQuestionAttempts,
     UserQuestionSet,
@@ -154,7 +154,7 @@ class UserQuestionAttemptsAdmin(JsonWidgetModelAdmin):
     raw_id_fields = ["user", "topic"]
 
 
-@admin.register(User)
+@admin.register(EdxUser)
 class UserAdmin(admin.ModelAdmin):
     list_display = ["username", "email", "active"]
     search_fields = ["username", "email"]

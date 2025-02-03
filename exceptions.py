@@ -142,6 +142,15 @@ class QuestionNotFoundError(ValidationError):
         super().__init__(self.message)
 
 
+class InvalidQuestionConfiguration(VirtuEducateError):
+    """Raised when we cant find question attempt data in the metadata"""
+
+    def __init__(self, parameter, message="Invalid parameter"):
+        self.parameter = parameter
+        self.message = f"{message}: '{parameter}'"
+        super().__init__(self.message)
+
+
 class InvalidParameterError(VirtuEducateError):
     """Raised when there are missing or invalid parameters in a request."""
 
