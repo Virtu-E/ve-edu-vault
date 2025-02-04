@@ -2,10 +2,12 @@ import logging
 from abc import abstractmethod, ABC
 
 from ai_core.contextual_analyzer.context_builder import QuestionContextBuilderInterface
-from ai_core.contextual_analyzer.stats.stats_calculator import DifficultyStatsCalculatorInterface
+from ai_core.contextual_analyzer.stats.stats_calculator import (
+    DifficultyStatsCalculatorInterface,
+)
 from course_ware.models import Topic, EdxUser, UserQuestionAttempts, UserQuestionSet
 from data_types.ai_core import LearningHistory, ModeData
-from repository.ai_core import LearningHistoryRepository
+from repository.ai_core.learning_history import LearningHistoryRepository
 from repository.shared import QuestionRepository
 
 logger = logging.getLogger(__name__)
@@ -21,7 +23,17 @@ class ContextEngineInterface(ABC):
 class ContextEngine(ContextEngineInterface):
     """Primary context processor engine that coordinates the construction of learning history context for AI application."""
 
-    def __init__(self, user: EdxUser, topic: Topic, user_question_attempt: UserQuestionAttempts, user_question_set: UserQuestionSet, question_repository: QuestionRepository, learning_history_repository: LearningHistoryRepository, context_builder: QuestionContextBuilderInterface, stats_calculator: DifficultyStatsCalculatorInterface):
+    def __init__(
+        self,
+        user: EdxUser,
+        topic: Topic,
+        user_question_attempt: UserQuestionAttempts,
+        user_question_set: UserQuestionSet,
+        question_repository: QuestionRepository,
+        learning_history_repository: LearningHistoryRepository,
+        context_builder: QuestionContextBuilderInterface,
+        stats_calculator: DifficultyStatsCalculatorInterface,
+    ):
         self.user = user
         self.topic = topic
         self.user_question_attempt = user_question_attempt
@@ -39,7 +51,10 @@ class ContextEngine(ContextEngineInterface):
             learning_history = self.learning_history_repository.get_learning_history(self.user.id, self.topic.block_id)
 
             # Build question contexts using injected context builder
-            question_contexts = self.context_builder.build_question_context(self.user_question_set.question_list_ids, self.user_question_attempt.get_latest_question_metadata)
+            question_contexts = self.context_builder.build_question_context(
+                self.user_question_set.question_list_ids,
+                self.user_question_attempt.get_latest_question_metadata,
+            )
 
             # Calculate difficulty stats
             difficulty_stats = {}

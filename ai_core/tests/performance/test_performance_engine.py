@@ -12,13 +12,24 @@ from exceptions import DatabaseQueryError
 @pytest.fixture
 def mock_performance_calculator():
     calculator = Mock()
-    calculator.calculate_performance.return_value = PerformanceStats(ranked_difficulties=[("easy", 1.5), ("medium", 2.3), ("hard", 4.0)], difficulty_status={"easy": "completed", "medium": "completed", "hard": "incomplete"})
+    calculator.calculate_performance.return_value = PerformanceStats(
+        ranked_difficulties=[("easy", 1.5), ("medium", 2.3), ("hard", 4.0)],
+        difficulty_status={
+            "easy": "completed",
+            "medium": "completed",
+            "hard": "incomplete",
+        },
+    )
     return calculator
 
 
 @pytest.fixture
 def performance_engine(mock_performance_calculator, user, topic):
-    return PerformanceEngine(topic_id=topic.id, user_id=user.id, performance_calculator=mock_performance_calculator)
+    return PerformanceEngine(
+        topic_id=topic.id,
+        user_id=user.id,
+        performance_calculator=mock_performance_calculator,
+    )
 
 
 class TestPerformanceEngine:
@@ -31,8 +42,16 @@ class TestPerformanceEngine:
         result = performance_engine.get_topic_performance_stats()
 
         assert isinstance(result, PerformanceStats)
-        assert result.ranked_difficulties == [("easy", 1.5), ("medium", 2.3), ("hard", 4.0)]
-        assert result.difficulty_status == {"easy": "completed", "medium": "completed", "hard": "incomplete"}
+        assert result.ranked_difficulties == [
+            ("easy", 1.5),
+            ("medium", 2.3),
+            ("hard", 4.0),
+        ]
+        assert result.difficulty_status == {
+            "easy": "completed",
+            "medium": "completed",
+            "hard": "incomplete",
+        }
 
     def test_get_topic_performance_stats_no_data(self, performance_engine):
         result = performance_engine.get_topic_performance_stats()

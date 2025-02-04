@@ -1,10 +1,22 @@
 from abc import abstractmethod, ABC
 from typing import List
 
-from ai_core.contextual_analyzer.stats.attempts_calculator import AttemptStatsCalculator, IAttemptStatsCalculator
-from ai_core.contextual_analyzer.stats.completion_analyzer import CompletionAnalyzer, ICompletionAnalyzer
-from ai_core.contextual_analyzer.stats.question_filter import QuestionFilter, IQuestionFilter
-from ai_core.contextual_analyzer.stats.tags_collector import FailedTagsCollector, IFailedTagsCollector
+from ai_core.contextual_analyzer.stats.attempts_calculator import (
+    AttemptStatsCalculator,
+    IAttemptStatsCalculator,
+)
+from ai_core.contextual_analyzer.stats.completion_analyzer import (
+    CompletionAnalyzer,
+    ICompletionAnalyzer,
+)
+from ai_core.contextual_analyzer.stats.question_filter import (
+    QuestionFilter,
+    IQuestionFilter,
+)
+from ai_core.contextual_analyzer.stats.tags_collector import (
+    FailedTagsCollector,
+    IFailedTagsCollector,
+)
 from ai_core.contextual_analyzer.stats.time_analyzer import TimeAnalyzer, ITimeAnalyzer
 from data_types.ai_core import QuestionAIContext, DifficultyStats
 
@@ -32,7 +44,14 @@ class DifficultyStatsCalculator(DifficultyStatsCalculatorInterface):
     Calculates statistical data based on question attempts and difficulty levels using injected dependencies.
     """
 
-    def __init__(self, question_filter: IQuestionFilter, attempt_calculator: IAttemptStatsCalculator, time_analyzer: ITimeAnalyzer, completion_analyzer: ICompletionAnalyzer, tags_collector: IFailedTagsCollector):
+    def __init__(
+        self,
+        question_filter: IQuestionFilter,
+        attempt_calculator: IAttemptStatsCalculator,
+        time_analyzer: ITimeAnalyzer,
+        completion_analyzer: ICompletionAnalyzer,
+        tags_collector: IFailedTagsCollector,
+    ):
         """
         Initialize the calculator with the required dependencies.
 
@@ -107,7 +126,27 @@ class DifficultyStatsCalculator(DifficultyStatsCalculatorInterface):
         Returns:
             DifficultyStats: An object representing empty values for all stats fields.
         """
-        return DifficultyStats(totalAttempts=0, successRate=0.0, averageTime=0.0, failedTags=[], firstAttemptSuccessRate=0.0, secondAttemptSuccessRate=0.0, thirdAttemptSuccessRate=0.0, averageAttemptsToSuccess=0.0, completionRate=0.0, incompleteRate=0.0, earlyAbandonment=0.0, averageFirstAttemptTime=0.0, averageSecondAttemptTime=0.0, averageThirdAttemptTime=0.0, timeDistribution={"firstAttempt": 0.0, "secondAttempt": 0.0, "thirdAttempt": 0.0})
+        return DifficultyStats(
+            totalAttempts=0,
+            successRate=0.0,
+            averageTime=0.0,
+            failedTags=[],
+            firstAttemptSuccessRate=0.0,
+            secondAttemptSuccessRate=0.0,
+            thirdAttemptSuccessRate=0.0,
+            averageAttemptsToSuccess=0.0,
+            completionRate=0.0,
+            incompleteRate=0.0,
+            earlyAbandonment=0.0,
+            averageFirstAttemptTime=0.0,
+            averageSecondAttemptTime=0.0,
+            averageThirdAttemptTime=0.0,
+            timeDistribution={
+                "firstAttempt": 0.0,
+                "secondAttempt": 0.0,
+                "thirdAttempt": 0.0,
+            },
+        )
 
 
 def create_difficulty_stats_calculator() -> DifficultyStatsCalculator:
@@ -117,4 +156,10 @@ def create_difficulty_stats_calculator() -> DifficultyStatsCalculator:
     Returns:
         DifficultyStatsCalculator: An initialized instance of the calculator.
     """
-    return DifficultyStatsCalculator(question_filter=QuestionFilter(), attempt_calculator=AttemptStatsCalculator(), time_analyzer=TimeAnalyzer(), completion_analyzer=CompletionAnalyzer(), tags_collector=FailedTagsCollector())
+    return DifficultyStatsCalculator(
+        question_filter=QuestionFilter(),
+        attempt_calculator=AttemptStatsCalculator(),
+        time_analyzer=TimeAnalyzer(),
+        completion_analyzer=CompletionAnalyzer(),
+        tags_collector=FailedTagsCollector(),
+    )

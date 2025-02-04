@@ -2,6 +2,8 @@ from typing import Dict, List
 
 from pydantic import BaseModel, Field, constr
 from typing_extensions import Literal
+from pydantic.v1 import validator
+
 
 LearningMode = Literal["normal", "reinforcement", "recovery", "reset", "mastered"]
 
@@ -106,7 +108,7 @@ class ModeData(BaseModel):
 
 
 class LearningDefaults(BaseModel):
-    userId: str
+    userId: int
     block_id: str
     modeHistory: Dict[LearningMode, List[ModeData]]
 
@@ -127,3 +129,35 @@ class LearningHistory(LearningDefaults):
     def active_modes(self) -> List[LearningMode]:
         """Returns a list of active learning modes in the history"""
         return list(self.modeHistory.keys())
+
+    def get_failed_tags(self, mode: LearningMode) -> Dict[str, List[str]]:
+        failed_tags = {}
+        for mode_data in self.modeHistory.get(mode, []):
+            for difficulty, stats in mode_data.difficultyStats.items():
+                if difficulty not in failed_tags:
+                    failed_tags[difficulty] = []
+                failed_tags[difficulty].extend(tag for tag in stats.failedTags if tag not in failed_tags[difficulty])
+        return failed_tags
+
+
+class QuestionBank(BaseModel):
+    text: str
+    difficulty: str
+    id: str = Field(..., alias="_id")
+    tags: list[str]
+
+    class Config:
+        allow_population_by_field_name = True
+
+    @validator("_id", pre=True, always=True)
+    def ensure_string(cls, value):
+        return str(value)
+
+
+class QuestionPromptGeneratorConfig(BaseModel):
+    course_name: str
+    topic_name: str
+    difficulty: str
+    academic_level: str
+    syllabus: str
+    category: str

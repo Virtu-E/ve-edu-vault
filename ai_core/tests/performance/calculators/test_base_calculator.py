@@ -17,9 +17,37 @@ class TestBasePerformanceCalculator:
     @pytest.fixture
     def sample_question_data(self) -> Dict[str, QuestionMetadata]:
         """Fixture providing sample question data."""
-        questions = [QuestionMetadataFactory(question_id=f"q{i}", difficulty="easy", is_correct=True, attempt_number=1) for i in range(3)]
-        questions.extend([QuestionMetadataFactory(question_id=f"q{i}", difficulty="medium", is_correct=i < 2, attempt_number=2) for i in range(3, 6)])
-        questions.extend([QuestionMetadataFactory(question_id=f"q{i}", difficulty="hard", is_correct=False, attempt_number=3) for i in range(6, 9)])
+        questions = [
+            QuestionMetadataFactory(
+                question_id=f"q{i}",
+                difficulty="easy",
+                is_correct=True,
+                attempt_number=1,
+            )
+            for i in range(3)
+        ]
+        questions.extend(
+            [
+                QuestionMetadataFactory(
+                    question_id=f"q{i}",
+                    difficulty="medium",
+                    is_correct=i < 2,
+                    attempt_number=2,
+                )
+                for i in range(3, 6)
+            ]
+        )
+        questions.extend(
+            [
+                QuestionMetadataFactory(
+                    question_id=f"q{i}",
+                    difficulty="hard",
+                    is_correct=False,
+                    attempt_number=3,
+                )
+                for i in range(6, 9)
+            ]
+        )
 
         return {q.question_id: q for q in questions}
 
@@ -48,7 +76,11 @@ class TestBasePerformanceCalculator:
         assert len(stats.ranked_difficulties) == 3
         assert all(avg == 0.0 for _, avg in stats.ranked_difficulties)
 
-    def test_calculate_performance_complete_data(self, calculator: BasePerformanceCalculator, sample_question_data: Dict[str, QuestionMetadata]):
+    def test_calculate_performance_complete_data(
+        self,
+        calculator: BasePerformanceCalculator,
+        sample_question_data: Dict[str, QuestionMetadata],
+    ):
         """Test performance calculation with complete data."""
         stats = calculator.calculate_performance(sample_question_data)
 

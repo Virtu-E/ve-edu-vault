@@ -42,7 +42,9 @@ class AttemptStatsCalculator:
         return round((successful / len(questions)) * 100, 1)
 
     @staticmethod
-    def calculate_attempt_specific_rates(questions: List[QuestionAIContext]) -> Dict[str, float]:
+    def calculate_attempt_specific_rates(
+        questions: List[QuestionAIContext],
+    ) -> Dict[str, float]:
         """
         Calculates the success rates for each attempt (first, second, and third)
                 across all the given questions as a percentage.
@@ -59,5 +61,18 @@ class AttemptStatsCalculator:
             return {"first": 0.0, "second": 0.0, "third": 0.0}
 
         total = len(questions)
-        rates = {"first": round((sum(1 for q in questions if q.attempts.success and q.attempts.attemptNumber == 1) / total) * 100, 1), "second": round((sum(1 for q in questions if q.attempts.success and q.attempts.attemptNumber == 2) / total) * 100, 1), "third": round((sum(1 for q in questions if q.attempts.success and q.attempts.attemptNumber == 3) / total) * 100, 1)}
+        rates = {
+            "first": round(
+                (sum(1 for q in questions if q.attempts.success and q.attempts.attemptNumber == 1) / total) * 100,
+                1,
+            ),
+            "second": round(
+                (sum(1 for q in questions if q.attempts.success and q.attempts.attemptNumber == 2) / total) * 100,
+                1,
+            ),
+            "third": round(
+                (sum(1 for q in questions if q.attempts.success and q.attempts.attemptNumber == 3) / total) * 100,
+                1,
+            ),
+        }
         return rates

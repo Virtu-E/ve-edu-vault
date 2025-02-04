@@ -8,7 +8,13 @@ from exceptions import VersionParsingError
 
 DEFAULT_VERSION = "v1.0.0"
 VERSION_PATTERN = re.compile(r"v(\d+)\.(\d+)\.(\d+)")
-LEARNING_MODES = [("Normal", "normal"), ("Reinforcement", "reinforcement"), ("Recovery", "recovery"), ("Reset", "reset"), ("Mastered", "mastered")]
+LEARNING_MODES = [
+    ("Normal", "normal"),
+    ("Reinforcement", "reinforcement"),
+    ("Recovery", "recovery"),
+    ("Reset", "reset"),
+    ("Mastered", "mastered"),
+]
 CLASS_CHOICES = [
     ("Form 1", "Form 1"),
     ("Form 2", "Form 2"),

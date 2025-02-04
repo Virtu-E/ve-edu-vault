@@ -12,7 +12,7 @@ class QuestionContextBuilderInterface(ABC):
     @abstractmethod
     def build_question_context(self, question_ids: List[str], question_metadata: Dict) -> List[QuestionAIContext]:
         """Build question contexts for AI analysis"""
-        pass
+        raise NotImplementedError
 
 
 class QuestionContextBuilder(QuestionContextBuilderInterface):
@@ -40,9 +40,18 @@ class QuestionContextBuilder(QuestionContextBuilderInterface):
             if not attempt_data:
                 raise InvalidQuestionConfiguration(f"Question {question.id} not found in attempt data")
 
-            attempt = Attempt(success=attempt_data.is_correct, timeSpent=90, attemptNumber=attempt_data.attempt_number)
+            attempt = Attempt(
+                success=attempt_data.is_correct,
+                timeSpent=90,
+                attemptNumber=attempt_data.attempt_number,
+            )
 
-            context = QuestionAIContext(_id=question.id, difficulty=question.difficulty, tags=question.tags, attempts=attempt)
+            context = QuestionAIContext(
+                _id=question.id,
+                difficulty=question.difficulty,
+                tags=question.tags,
+                attempts=attempt,
+            )
 
             question_contexts.append(context)
 

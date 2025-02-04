@@ -13,11 +13,24 @@ class TestTimeAnalyzer:
     def test_empty_questions_list(self, analyzer):
         """Test analysis with empty questions list."""
         result = analyzer.analyze_time([])
-        assert result == {"averageTime": 0.0, "averageFirstAttemptTime": 0.0, "averageSecondAttemptTime": 0.0, "averageThirdAttemptTime": 0.0, "timeDistribution": {"firstAttempt": 0.0, "secondAttempt": 0.0, "thirdAttempt": 0.0}}
+        assert result == {
+            "averageTime": 0.0,
+            "averageFirstAttemptTime": 0.0,
+            "averageSecondAttemptTime": 0.0,
+            "averageThirdAttemptTime": 0.0,
+            "timeDistribution": {
+                "firstAttempt": 0.0,
+                "secondAttempt": 0.0,
+                "thirdAttempt": 0.0,
+            },
+        }
 
     def test_first_attempts_only(self, analyzer):
         """Test analysis when all questions are on their first attempt."""
-        questions = [QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=1, timeSpent=100)), QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=1, timeSpent=200))]
+        questions = [
+            QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=1, timeSpent=100)),
+            QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=1, timeSpent=200)),
+        ]
 
         result = analyzer.analyze_time(questions)
         assert result["averageFirstAttemptTime"] == 150.0  # (100 + 200) / 2
@@ -124,7 +137,10 @@ class TestTimeAnalyzer:
 
     def test_internal_time_grouping(self, analyzer):
         """Test the internal _group_time_by_attempt method."""
-        questions = [QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=1, timeSpent=100)), QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=2, timeSpent=300))]
+        questions = [
+            QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=1, timeSpent=100)),
+            QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=2, timeSpent=300)),
+        ]
 
         time_groups = analyzer._group_time_by_attempt(questions)
         # First attempt times should include all questions

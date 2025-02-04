@@ -3,7 +3,10 @@ from unittest.mock import Mock
 import pytest
 
 from ai_core.contextual_analyzer.context_builder import QuestionContextBuilder
-from course_ware.tests.course_ware_factory import QuestionFactory, QuestionMetadataFactory
+from course_ware.tests.course_ware_factory import (
+    QuestionFactory,
+    QuestionMetadataFactory,
+)
 from data_types.ai_core import QuestionAIContext
 from exceptions import InvalidQuestionConfiguration
 from repository.shared import QuestionRepository
@@ -19,9 +22,35 @@ class TestQuestionContextBuilder:
         self.q1_id = "679145a22c18aa8716206e9f"
         self.q2_id = "679145a22c18aa8716206ea5"
 
-        self.sample_questions = [QuestionFactory(_id=self.q1_id, question_id=self.q1_id, difficulty="easy", tags=["math", "algebra"]), QuestionFactory(_id=self.q2_id, question_id=self.q2_id, difficulty="hard", tags=["physics", "mechanics"])]
+        self.sample_questions = [
+            QuestionFactory(
+                _id=self.q1_id,
+                question_id=self.q1_id,
+                difficulty="easy",
+                tags=["math", "algebra"],
+            ),
+            QuestionFactory(
+                _id=self.q2_id,
+                question_id=self.q2_id,
+                difficulty="hard",
+                tags=["physics", "mechanics"],
+            ),
+        ]
 
-        self.sample_metadata = {self.q1_id: QuestionMetadataFactory(is_correct=True, attempt_number=1, difficulty="easy", question_id=self.q1_id), self.q2_id: QuestionMetadataFactory(is_correct=False, attempt_number=2, difficulty="hard", question_id=self.q2_id)}
+        self.sample_metadata = {
+            self.q1_id: QuestionMetadataFactory(
+                is_correct=True,
+                attempt_number=1,
+                difficulty="easy",
+                question_id=self.q1_id,
+            ),
+            self.q2_id: QuestionMetadataFactory(
+                is_correct=False,
+                attempt_number=2,
+                difficulty="hard",
+                question_id=self.q2_id,
+            ),
+        }
 
     def test_build_question_context_successful(self):
         """Test successful building of question context."""
@@ -53,7 +82,14 @@ class TestQuestionContextBuilder:
         """Test building question context with missing metadata."""
         question_ids = [self.q1_id, self.q2_id]
         self.question_repository.get_questions_by_ids.return_value = self.sample_questions
-        metadata = {self.q1_id: QuestionMetadataFactory(is_correct=True, attempt_number=1, difficulty="easy", question_id=self.q1_id)}  # Missing second question metadata
+        metadata = {
+            self.q1_id: QuestionMetadataFactory(
+                is_correct=True,
+                attempt_number=1,
+                difficulty="easy",
+                question_id=self.q1_id,
+            )
+        }  # Missing second question metadata
 
         with pytest.raises(InvalidQuestionConfiguration) as exc_info:
             self.question_context_builder.build_question_context(question_ids, metadata)
@@ -74,7 +110,14 @@ class TestQuestionContextBuilder:
     def test_build_question_context_with_different_attempt_data(self):
         """Test building question context with different attempt data."""
         question = QuestionFactory(_id=self.q1_id, question_id=self.q1_id, difficulty="easy", tags=["math"])
-        metadata = {self.q1_id: QuestionMetadataFactory(is_correct=False, attempt_number=3, difficulty="easy", question_id=self.q1_id)}
+        metadata = {
+            self.q1_id: QuestionMetadataFactory(
+                is_correct=False,
+                attempt_number=3,
+                difficulty="easy",
+                question_id=self.q1_id,
+            )
+        }
         self.question_repository.get_questions_by_ids.return_value = [question]
 
         result = self.question_context_builder.build_question_context([self.q1_id], metadata)
@@ -89,7 +132,14 @@ class TestQuestionContextBuilder:
         """Test building question context with an invalid question ID."""
         invalid_id = "679145a22c18aa8716206e99"
         self.question_repository.get_questions_by_ids.return_value = []
-        metadata = {invalid_id: QuestionMetadataFactory(is_correct=True, attempt_number=1, difficulty="easy", question_id=invalid_id)}
+        metadata = {
+            invalid_id: QuestionMetadataFactory(
+                is_correct=True,
+                attempt_number=1,
+                difficulty="easy",
+                question_id=invalid_id,
+            )
+        }
 
         result = self.question_context_builder.build_question_context([invalid_id], metadata)
 

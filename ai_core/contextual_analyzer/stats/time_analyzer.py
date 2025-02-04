@@ -19,7 +19,17 @@ class TimeAnalyzer:
             Dict[str, float]: A dictionary containing average time statistics and time distribution data.
         """
         if not questions:
-            return {"averageTime": 0.0, "averageFirstAttemptTime": 0.0, "averageSecondAttemptTime": 0.0, "averageThirdAttemptTime": 0.0, "timeDistribution": {"firstAttempt": 0.0, "secondAttempt": 0.0, "thirdAttempt": 0.0}}
+            return {
+                "averageTime": 0.0,
+                "averageFirstAttemptTime": 0.0,
+                "averageSecondAttemptTime": 0.0,
+                "averageThirdAttemptTime": 0.0,
+                "timeDistribution": {
+                    "firstAttempt": 0.0,
+                    "secondAttempt": 0.0,
+                    "thirdAttempt": 0.0,
+                },
+            }
 
         time_by_attempt = self._group_time_by_attempt(questions)
         averages = self._calculate_time_averages(time_by_attempt)
@@ -38,7 +48,11 @@ class TimeAnalyzer:
             Dict[str, List[int]]: A dictionary where keys are attempt types ("first", "second", "third")
                                   and values are lists of times spent on these attempts.
         """
-        return {"first": [q.attempts.timeSpent for q in questions if q.attempts.attemptNumber >= 1], "second": [q.attempts.timeSpent for q in questions if q.attempts.attemptNumber >= 2], "third": [q.attempts.timeSpent for q in questions if q.attempts.attemptNumber == 3]}
+        return {
+            "first": [q.attempts.timeSpent for q in questions if q.attempts.attemptNumber >= 1],
+            "second": [q.attempts.timeSpent for q in questions if q.attempts.attemptNumber >= 2],
+            "third": [q.attempts.timeSpent for q in questions if q.attempts.attemptNumber == 3],
+        }
 
     def _calculate_time_averages(self, time_by_attempt: Dict[str, List[int]]) -> Dict[str, float]:
         """

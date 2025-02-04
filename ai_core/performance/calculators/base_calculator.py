@@ -36,7 +36,10 @@ class BasePerformanceCalculator(PerformanceCalculatorInterface):
         """
         self.required_correct_questions: int = required_correct_questions
         self.difficulties: List[DifficultyLiteral] = ["easy", "medium", "hard"]
-        self.status_values: Dict[bool, StatusLiteral] = {True: "completed", False: "incomplete"}
+        self.status_values: Dict[bool, StatusLiteral] = {
+            True: "completed",
+            False: "incomplete",
+        }
 
     def validate_difficulty(self, difficulty: str) -> None:
         """
@@ -76,7 +79,10 @@ class BasePerformanceCalculator(PerformanceCalculatorInterface):
             difficulty_status = self._calculate_difficulty_status(difficulty_groups)
             ranked_difficulties = self._rank_difficulties(difficulty_groups)
 
-            return PerformanceStats(ranked_difficulties=ranked_difficulties, difficulty_status=difficulty_status)
+            return PerformanceStats(
+                ranked_difficulties=ranked_difficulties,
+                difficulty_status=difficulty_status,
+            )
 
         except Exception as e:
             log.error(f"Error calculating performance stats: {str(e)}")

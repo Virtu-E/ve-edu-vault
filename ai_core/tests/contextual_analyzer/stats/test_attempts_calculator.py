@@ -14,7 +14,16 @@ class TestAttemptStatsCalculator:
 
     def create_questions(self, configs: List[dict]) -> List[QuestionAIContext]:
         """Helper method to create questions based on configurations"""
-        return [QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=config.get("attempt_number", 1), success=config.get("success", False), timeSpent=90)) for config in configs]
+        return [
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(
+                    attemptNumber=config.get("attempt_number", 1),
+                    success=config.get("success", False),
+                    timeSpent=90,
+                )
+            )
+            for config in configs
+        ]
 
     def test_calculate_total_attempts_empty_list(self, calculator):
         """Test total attempts calculation with empty list"""
@@ -54,13 +63,26 @@ class TestAttemptStatsCalculator:
 
     def test_calculate_attempt_specific_rates_first_attempts(self, calculator):
         """Test attempt specific rates calculation with first attempt successes"""
-        questions = self.create_questions([{"attempt_number": 1, "success": True}, {"attempt_number": 1, "success": True}, {"attempt_number": 1, "success": False}])
+        questions = self.create_questions(
+            [
+                {"attempt_number": 1, "success": True},
+                {"attempt_number": 1, "success": True},
+                {"attempt_number": 1, "success": False},
+            ]
+        )
         expected = {"first": 66.7, "second": 0.0, "third": 0.0}
         assert calculator.calculate_attempt_specific_rates(questions) == expected
 
     def test_calculate_attempt_specific_rates_mixed_attempts(self, calculator):
         """Test attempt specific rates calculation with mixed attempt successes"""
-        questions = self.create_questions([{"attempt_number": 1, "success": True}, {"attempt_number": 2, "success": True}, {"attempt_number": 3, "success": True}, {"attempt_number": 1, "success": False}])
+        questions = self.create_questions(
+            [
+                {"attempt_number": 1, "success": True},
+                {"attempt_number": 2, "success": True},
+                {"attempt_number": 3, "success": True},
+                {"attempt_number": 1, "success": False},
+            ]
+        )
         expected = {"first": 25.0, "second": 25.0, "third": 25.0}
         assert calculator.calculate_attempt_specific_rates(questions) == expected
 
@@ -71,7 +93,12 @@ class TestAttemptStatsCalculator:
     @pytest.mark.parametrize("attempt_number", [1, 2, 3])
     def test_single_attempt_specific_rate(self, calculator, attempt_number):
         """Test specific attempt rates individually"""
-        questions = self.create_questions([{"attempt_number": attempt_number, "success": True}, {"attempt_number": attempt_number, "success": False}])
+        questions = self.create_questions(
+            [
+                {"attempt_number": attempt_number, "success": True},
+                {"attempt_number": attempt_number, "success": False},
+            ]
+        )
         rates = calculator.calculate_attempt_specific_rates(questions)
         expected_rate = 50.0 if attempt_number in [1, 2, 3] else 0.0
         assert rates[{1: "first", 2: "second", 3: "third"}[attempt_number]] == expected_rate

@@ -1,10 +1,17 @@
 import pytest
 
-from ai_core.performance.calculators.base_calculator import PerformanceCalculatorInterface
-from ai_core.performance.calculators.calculator_factory import PerformanceCalculatorFactory, CalculatorLearningMode
+from ai_core.performance.calculators.base_calculator import (
+    PerformanceCalculatorInterface,
+)
+from ai_core.performance.calculators.calculator_factory import (
+    PerformanceCalculatorFactory,
+    CalculatorLearningMode,
+)
 from ai_core.performance.calculators.normal_cal import NormalModeCalculator
 from ai_core.performance.calculators.recovery_cal import RecoveryModeCalculator
-from ai_core.performance.calculators.reinforcement_cal import ReinforcementModeCalculator
+from ai_core.performance.calculators.reinforcement_cal import (
+    ReinforcementModeCalculator,
+)
 
 
 class TestPerformanceCalculatorFactory:

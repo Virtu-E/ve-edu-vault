@@ -28,11 +28,19 @@ class CompletionAnalyzer:
         """
 
         if not questions:
-            return {"completionRate": 0.0, "incompleteRate": 0.0, "earlyAbandonment": 0.0}
+            return {
+                "completionRate": 0.0,
+                "incompleteRate": 0.0,
+                "earlyAbandonment": 0.0,
+            }
 
         total = len(questions)
         completed = sum(1 for q in questions if q.attempts.success)
         max_attempts_failed = sum(1 for q in questions if not q.attempts.success and q.attempts.attemptNumber == self.MAX_ATTEMPTS)
         early_abandoned = sum(1 for q in questions if not q.attempts.success and q.attempts.attemptNumber < self.MAX_ATTEMPTS)
 
-        return {"completionRate": round((completed / total) * 100, 1), "incompleteRate": round((max_attempts_failed / total) * 100, 1), "earlyAbandonment": round((early_abandoned / total) * 100, 1)}
+        return {
+            "completionRate": round((completed / total) * 100, 1),
+            "incompleteRate": round((max_attempts_failed / total) * 100, 1),
+            "earlyAbandonment": round((early_abandoned / total) * 100, 1),
+        }
