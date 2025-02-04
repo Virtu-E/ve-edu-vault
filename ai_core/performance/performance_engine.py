@@ -1,8 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Tuple, Union
 
-from ai_core.performance.calculators.performance_calculators import (
+from ai_core.performance.calculators.base_calculator import (
     PerformanceCalculatorInterface,
 )
 from course_ware.models import UserQuestionAttempts
@@ -27,7 +26,7 @@ class PerformanceEngineInterface(ABC):
 
 class PerformanceEngine(PerformanceEngineInterface):
     """
-    Responsible for calculating the user's performance on a topic.'
+    Responsible for calculating the user's performance on a topic.
     """
 
     def __init__(
@@ -40,10 +39,9 @@ class PerformanceEngine(PerformanceEngineInterface):
         Initialize the PerformanceEngine instance.
 
         Args:
-
-            topic_id: Topic ID associated with the topic ( Topic Database Instance )
-            user_id: User ID
-            performance_calculator: Calculator instance for performance metrics
+            topic_id (str): The ID of the topic for which performance is being calculated.
+            user_id (int): The ID of the user for whom performance is being calculated.
+            performance_calculator (PerformanceCalculatorInterface): An instance responsible for calculating performance metrics.
         """
 
         self.topic_id = topic_id
@@ -52,43 +50,40 @@ class PerformanceEngine(PerformanceEngineInterface):
 
     def get_topic_performance_stats(self) -> PerformanceStats:
         """
-        Main method to get user performance stats based on question attempts related to a topic.
+        Calculate and retrieve the user's performance statistics for the specified topic.
 
         Returns:
-            PerformanceStats containing performance metrics
-        """
-        question_attempt_data, question_attempt_instance = self._get_user_attempt_question_metadata()
+            PerformanceStats: Contains performance metrics such as ranked_difficulties and difficulty_status.
 
-        if not question_attempt_data and not question_attempt_instance:
+        If no question attempts are available for the topic, the method returns an empty PerformanceStats object.
+        """
+        question_attempt_instance = self._get_user_attempt_question_attempt_instance()
+
+        if not question_attempt_instance:
             log.info("No question attempt data for topic {}".format(self.topic_id))
             return PerformanceStats(ranked_difficulties=[], difficulty_status={})
         question_metadata_current_version = question_attempt_instance.get_latest_question_metadata
         return self.performance_calculator.calculate_performance({key: QuestionMetadata(**value) for key, value in question_metadata_current_version.items()})
 
-    def _get_user_attempt_question_metadata(
+    def _get_user_attempt_question_attempt_instance(
         self,
-    ) -> Union[
-        Tuple[Dict[str, Dict[str, "QuestionMetadata"]], "UserQuestionAttempts"],
-        Tuple[Dict, None],
-    ]:
+    ) -> UserQuestionAttempts | None:
         """
-        Retrieve user's question attempt data.
+        Retrieve the user's question attempt data for the specified topic.
 
         Returns:
-            Tuple:
-                - A dictionary containing question metadata and the question attempt instance.
-                - An empty dictionary and None if no data is found.
+            UserQuestionAttempts | None: The user's question attempt instance, or None if no data is found.
 
         Raises:
-            DatabaseQueryError: If an unexpected error occurs.
+            DatabaseQueryError: Raised if an unexpected error occurs while querying the database.
         """
         try:
             question_attempt_instance = UserQuestionAttempts.objects.get(user_id=self.user_id, topic_id=self.topic_id)
-            schema = UserQuestionAttemptsSchema.model_validate(question_attempt_instance)
-            return schema.question_metadata, question_attempt_instance
+            UserQuestionAttemptsSchema.model_validate(question_attempt_instance)
+            return question_attempt_instance
         except UserQuestionAttempts.DoesNotExist:
             log.info(f"No question attempts found for user_id={self.user_id}, topic_id={self.topic_id}.")
-            return {}, None
+            return None
         except Exception as e:
             log.error(f"Error retrieving question metadata for user_id={self.user_id}, topic_id={self.topic_id}: {e}")
             raise DatabaseQueryError(f"An unexpected error occurred: {e}")

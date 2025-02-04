@@ -1,8 +1,9 @@
-import pytest
 from unittest.mock import Mock
 
+import pytest
+
 from ai_core.contextual_analyzer.context_engine import ContextEngine
-from course_ware.tests.course_ware_factory import TopicFactory, UserQuestionAttemptsFactory, UserQuestionSetFactory
+from course_ware.tests.course_ware_factory import UserQuestionAttemptsFactory, UserQuestionSetFactory
 from data_types.ai_core import LearningHistory, ModeData, DifficultyStats, QuestionAIContext, Attempt
 from repository.ai_core import LearningHistoryRepository
 from repository.shared import QuestionRepository
@@ -35,11 +36,10 @@ def mock_builders(mock_difficulty_stats):
 
 
 @pytest.fixture
-def context_setup(user, mock_repositories, mock_builders):
+def context_setup(user, mock_repositories, mock_builders, topic):
     question_repo, learning_history_repo = mock_repositories
     context_builder, stats_calculator = mock_builders
 
-    topic = TopicFactory()
     question_attempt = UserQuestionAttemptsFactory(user=user, current_learning_mode="normal")
     question_set = UserQuestionSetFactory(user=user)
 
@@ -48,7 +48,6 @@ def context_setup(user, mock_repositories, mock_builders):
     return {"engine": context_engine, "repositories": (question_repo, learning_history_repo), "builders": (context_builder, stats_calculator), "question_set": question_set, "question_attempt": question_attempt}
 
 
-@pytest.mark.django_db
 class TestContextEngine:
     def test_generate_learning_history_success(self, context_setup):
         """

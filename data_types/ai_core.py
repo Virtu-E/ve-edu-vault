@@ -25,12 +25,6 @@ class PerformanceStats(BaseModel):
         description=("A dictionary mapping each difficulty level to its completion status. 'incomplete' means the user has not yet completed questions for that difficulty, while 'completed' means they have completed all required questions for that difficulty."),
     )
 
-    # def __init__(self, **kwargs):
-    #     super().__init__(**kwargs)
-    #
-    #     # Ensure ranked_difficulties is ordered by average attempts
-    #     self.ranked_difficulties.sort(key=lambda x: x[1])
-
 
 class RecommendationEngineConfig(BaseModel):
     database_name: str

@@ -3,7 +3,7 @@ from typing import Any, Union
 
 from django.db import models
 
-from ai_core.performance.calculators.performance_calculators import log
+from ai_core.performance.calculators.base_calculator import log
 from exceptions import VersionParsingError
 
 DEFAULT_VERSION = "v1.0.0"
