@@ -5,7 +5,7 @@ from ai_core.performance.calculators.base_calculator import (
 )
 from ai_core.performance.calculators.calculator_factory import (
     PerformanceCalculatorFactory,
-    CalculatorLearningMode,
+    LearningModeType,
 )
 from ai_core.performance.calculators.normal_cal import NormalModeCalculator
 from ai_core.performance.calculators.recovery_cal import RecoveryModeCalculator
@@ -19,28 +19,28 @@ class TestPerformanceCalculatorFactory:
 
     def test_create_normal_calculator(self):
         """Test creation of NormalModeCalculator."""
-        calculator = PerformanceCalculatorFactory.create_calculator(CalculatorLearningMode.NORMAL)
+        calculator = PerformanceCalculatorFactory.create_calculator(LearningModeType.NORMAL)
         assert isinstance(calculator, NormalModeCalculator)
         assert isinstance(calculator, PerformanceCalculatorInterface)
 
     def test_create_recovery_calculator(self):
         """Test creation of RecoveryModeCalculator."""
-        calculator = PerformanceCalculatorFactory.create_calculator(CalculatorLearningMode.RECOVERY)
+        calculator = PerformanceCalculatorFactory.create_calculator(LearningModeType.RECOVERY)
         assert isinstance(calculator, RecoveryModeCalculator)
         assert isinstance(calculator, PerformanceCalculatorInterface)
 
     def test_create_reinforcement_calculator(self):
         """Test creation of ReinforcementModeCalculator."""
-        calculator = PerformanceCalculatorFactory.create_calculator(CalculatorLearningMode.REINFORCEMENT)
+        calculator = PerformanceCalculatorFactory.create_calculator(LearningModeType.REINFORCEMENT)
         assert isinstance(calculator, ReinforcementModeCalculator)
         assert isinstance(calculator, PerformanceCalculatorInterface)
 
     @pytest.mark.parametrize(
         "mode,expected_class",
         [
-            (CalculatorLearningMode.NORMAL, NormalModeCalculator),
-            (CalculatorLearningMode.RECOVERY, RecoveryModeCalculator),
-            (CalculatorLearningMode.REINFORCEMENT, ReinforcementModeCalculator),
+            (LearningModeType.NORMAL, NormalModeCalculator),
+            (LearningModeType.RECOVERY, RecoveryModeCalculator),
+            (LearningModeType.REINFORCEMENT, ReinforcementModeCalculator),
         ],
     )
     def test_all_calculator_types(self, mode, expected_class):
@@ -51,11 +51,11 @@ class TestPerformanceCalculatorFactory:
 
     def test_calculator_uniqueness(self):
         """Test that each call creates a new instance."""
-        calc1 = PerformanceCalculatorFactory.create_calculator(CalculatorLearningMode.NORMAL)
-        calc2 = PerformanceCalculatorFactory.create_calculator(CalculatorLearningMode.NORMAL)
+        calc1 = PerformanceCalculatorFactory.create_calculator(LearningModeType.NORMAL)
+        calc2 = PerformanceCalculatorFactory.create_calculator(LearningModeType.NORMAL)
         assert calc1 is not calc2
 
     def test_type_validation(self):
-        """Test that non-CalculatorLearningMode values raise TypeError."""
+        """Test that non-LearningModeType values raise TypeError."""
         with pytest.raises(ValueError):
             PerformanceCalculatorFactory.create_calculator("NORMAL")

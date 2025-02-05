@@ -26,28 +26,24 @@ class TestBasePerformanceCalculator:
             )
             for i in range(3)
         ]
-        questions.extend(
-            [
-                QuestionMetadataFactory(
-                    question_id=f"q{i}",
-                    difficulty="medium",
-                    is_correct=i < 2,
-                    attempt_number=2,
-                )
-                for i in range(3, 6)
-            ]
-        )
-        questions.extend(
-            [
-                QuestionMetadataFactory(
-                    question_id=f"q{i}",
-                    difficulty="hard",
-                    is_correct=False,
-                    attempt_number=3,
-                )
-                for i in range(6, 9)
-            ]
-        )
+        questions.extend([
+            QuestionMetadataFactory(
+                question_id=f"q{i}",
+                difficulty="medium",
+                is_correct=i < 2,
+                attempt_number=2,
+            )
+            for i in range(3, 6)
+        ])
+        questions.extend([
+            QuestionMetadataFactory(
+                question_id=f"q{i}",
+                difficulty="hard",
+                is_correct=False,
+                attempt_number=3,
+            )
+            for i in range(6, 9)
+        ])
 
         return {q.question_id: q for q in questions}
 
@@ -127,16 +123,14 @@ class TestBasePerformanceCalculator:
         """Test difficulty ranking when attempt numbers are equal."""
         questions = []
         for diff in ["easy", "medium", "hard"]:
-            questions.extend(
-                [
-                    QuestionMetadataFactory(
-                        difficulty=diff,
-                        is_correct=True,
-                        attempt_number=2,  # Same attempt number for all
-                    )
-                    for _ in range(2)
-                ]
-            )
+            questions.extend([
+                QuestionMetadataFactory(
+                    difficulty=diff,
+                    is_correct=True,
+                    attempt_number=2,  # Same attempt number for all
+                )
+                for _ in range(2)
+            ])
 
         data = {q.question_id: q for q in questions}
         stats = calculator.calculate_performance(data)

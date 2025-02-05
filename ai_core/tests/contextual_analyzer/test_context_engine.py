@@ -82,7 +82,6 @@ def context_setup(user, mock_repositories, mock_builders, topic):
         topic=topic,
         user_question_attempt=question_attempt,
         user_question_set=question_set,
-        question_repository=question_repo,
         learning_history_repository=learning_history_repo,
         context_builder=context_builder,
         stats_calculator=stats_calculator,

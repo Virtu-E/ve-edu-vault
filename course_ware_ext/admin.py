@@ -9,7 +9,6 @@ from .models import (
     BookResource,
     CategoryExt,
     TopicExt,
-    UserCategoryMastery,
     VideoResource,
 )
 
@@ -117,59 +116,6 @@ class ArticleResourceAdmin(JsonWidgetModelAdmin):
     )
 
 
-@admin.register(UserCategoryMastery)
-class UserCategoryMasteryAdmin(JsonWidgetModelAdmin):
-    list_display = (
-        "user",
-        "category",
-        "mastery_status",
-        "points_earned",
-        "accuracy_percentage",
-        "last_activity",
-    )
-    list_filter = ("mastery_status", "started_at", "completed_at")
-    search_fields = ("user__username", "category__name")
-    readonly_fields = (
-        "total_points",
-        "accuracy_percentage",
-        "started_at",
-        "last_activity",
-    )
-    fieldsets = (
-        ("User and Category", {"fields": ("user", "category", "mastery_status")}),
-        (
-            "Points and Achievements",
-            {
-                "fields": (
-                    "points_earned",
-                    "bonus_points_earned",
-                    "total_points",
-                    "mastery_achievements",
-                )
-            },
-        ),
-        (
-            "Performance Metrics",
-            {
-                "fields": (
-                    "attempts_count",
-                    "correct_answers",
-                    "accuracy_percentage",
-                    "streak_count",
-                    "best_streak",
-                )
-            },
-        ),
-        (
-            "Timestamps",
-            {
-                "fields": ("started_at", "last_activity", "completed_at"),
-                "classes": ("collapse",),
-            },
-        ),
-    )
-
-
 @admin.register(TopicExt)
 class TopicExtAdmin(admin.ModelAdmin):
     list_display = ["topic", "estimated_duration", "resource_summary"]
@@ -258,7 +204,6 @@ class CategoryExtAdmin(admin.ModelAdmin):
     autocomplete_fields = ["category"]
     readonly_fields = [
         "base_mastery_points",
-        "bonus_points_available",
         "minimum_mastery_percentage",
     ]
     fieldsets = (

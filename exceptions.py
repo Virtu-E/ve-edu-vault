@@ -158,3 +158,9 @@ class InvalidParameterError(VirtuEducateError):
         self.parameter = parameter
         self.message = f"{message}: '{parameter}'"
         super().__init__(self.message)
+
+
+class OrchestrationError(Exception):
+    """Custom exception for orchestration related errors"""
+
+    pass

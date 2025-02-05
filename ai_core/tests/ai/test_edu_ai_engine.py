@@ -1,14 +1,18 @@
+from unittest.mock import MagicMock, patch
 import pytest
-from unittest.mock import MagicMock
 from langchain.chat_models import ChatOpenAI
 from langchain.output_parsers import StructuredOutputParser
+from langchain.schema import AIMessage, HumanMessage, SystemMessage
 
-from ai_core.ai.edu_ai_engine import EduAIEngine
+from ai_core.ai.edu_ai_engine import EduAIEngine, AIEngineInterface
 
 
 class MockLangChainPromptGenerator:
     def generate_ai_prompt(self):
-        return [{"role": "system", "content": "Mock system prompt"}]
+        return [
+            SystemMessage(content="Mock system prompt"),
+            HumanMessage(content="Mock human message"),
+        ]
 
 
 @pytest.fixture
@@ -20,10 +24,9 @@ def mock_prompt_generator():
 @pytest.fixture
 def mock_llm():
     """Fixture for a mocked ChatOpenAI instance."""
-    mock_chat_open_ai = MagicMock(spec=ChatOpenAI)
-    # Mocking the LLM's return response to simulate an LLMResult
-    mock_chat_open_ai.return_value = MagicMock(content='{"generated_questions": [{"question": "What is AI?", "metadata": {}}]}')
-    return mock_chat_open_ai
+    mock = MagicMock(spec=ChatOpenAI)
+    mock.return_value = AIMessage(content='{"generated_questions": [{"question": "What is AI?", "metadata": {}}]}')
+    return mock
 
 
 @pytest.fixture
@@ -32,63 +35,111 @@ def edu_ai_engine(mock_prompt_generator, mock_llm):
     return EduAIEngine(prompt_generator=mock_prompt_generator, llm=mock_llm)
 
 
+def test_edu_ai_engine_implements_interface():
+    """Test that EduAIEngine properly implements AIEngineInterface."""
+    assert issubclass(EduAIEngine, AIEngineInterface), "EduAIEngine should implement AIEngineInterface"
+
+
 def test_create_output_parser():
     """Test the static _create_output_parser method."""
     parser = EduAIEngine._create_output_parser()
-    assert isinstance(parser, StructuredOutputParser), "Output parser is not of type StructuredOutputParser."
+    assert isinstance(parser, StructuredOutputParser)
+
+    # Verify the schema structure
+    schemas = parser.response_schemas
+    assert len(schemas) == 1
+    assert schemas[0].name == "generated_questions"
+    assert schemas[0].type == "array"
 
 
-def test_get_ai_recommendation_success(edu_ai_engine, mock_prompt_generator, mock_llm):
-    """Test the get_ai_recommendation method for correct behavior."""
-    mock_llm.return_value.content = '{"generated_questions": [{"question": "What is AI?", "metadata": {}}]}'
+def test_get_ai_recommendation_success(edu_ai_engine, mock_llm):
+    """Test successful AI recommendation generation."""
+    expected_response = {"generated_questions": [{"question": "What is AI?", "metadata": {}}]}
+
+    mock_llm.return_value = AIMessage(content='{"generated_questions": [{"question": "What is AI?", "metadata": {}}]}')
 
     result = edu_ai_engine.get_ai_recommendation()
 
-    assert isinstance(result, dict), "Result is not a dictionary."
-    assert "generated_questions" in result, "Response does not contain 'generated_questions'."
-    assert isinstance(result["generated_questions"], list), "'generated_questions' is not a list."
-    assert result["generated_questions"][0]["question"] == "What is AI?", "Question value is incorrect."
-
-
-def test_get_ai_recommendation_invalid_response(edu_ai_engine, mock_prompt_generator, mock_llm):
-    """Test the get_ai_recommendation method when the LLM returns invalid content."""
-    # Mock the LLM's response to return invalid JSON
-    mock_llm.return_value.content = "Invalid response"
-
-    with pytest.raises(AssertionError, match="Error parsing response content"):
-        edu_ai_engine.get_ai_recommendation()
-
-
-def test_integration_with_prompt_generator(mock_prompt_generator, mock_llm):
-    """Test if the generate_ai_prompt is called correctly."""
-    engine = EduAIEngine(prompt_generator=mock_prompt_generator, llm=mock_llm)
-
-    # Spy on the `generate_ai_prompt` method of the prompt generator
-    spy = MagicMock(wraps=mock_prompt_generator.generate_ai_prompt)
-    engine.prompt_generator.generate_ai_prompt = spy
-
-    engine.get_ai_recommendation()
-
-    spy.assert_called_once()
-
-
-def test_integration_with_llm(mock_prompt_generator):
-    """Test if the LLM object is used as expected."""
-    mock_llm = MagicMock(spec=ChatOpenAI)
-    mock_llm.return_value = MagicMock(content='{"generated_questions": [{"question": "Test question", "metadata": {}}]}')
-    engine = EduAIEngine(prompt_generator=mock_prompt_generator, llm=mock_llm)
-
-    engine.get_ai_recommendation()
-
+    assert isinstance(result, dict)
+    assert result == expected_response
     mock_llm.assert_called_once()
 
-    args, kwargs = mock_llm.call_args
-    args, kwargs = mock_llm.call_args
-    assert len(args) > 0, "No positional arguments passed to LLM."
-    assert isinstance(args[0], list), "Messages were not passed as a list of messages."
+
+def test_get_ai_recommendation_with_complex_response(edu_ai_engine, mock_llm):
+    """Test AI recommendation with more complex response structure."""
+    mock_response = """{
+        "generated_questions": [
+            {
+                "question": "What is machine learning?",
+                "metadata": {
+                    "difficulty": "intermediate",
+                    "category": "AI",
+                    "tags": ["ML", "AI basics"]
+                }
+            }
+        ]
+    }"""
+    mock_llm.return_value = AIMessage(content=mock_response)
+
+    result = edu_ai_engine.get_ai_recommendation()
+
+    assert isinstance(result["generated_questions"][0]["metadata"], dict)
+    assert "difficulty" in result["generated_questions"][0]["metadata"]
+    assert "category" in result["generated_questions"][0]["metadata"]
+    assert "tags" in result["generated_questions"][0]["metadata"]
 
 
-def test_output_parser_initialization(mock_prompt_generator):
-    """Test if the output_parser gets initialized properly."""
-    engine = EduAIEngine(prompt_generator=mock_prompt_generator)
-    assert isinstance(engine.output_parser, StructuredOutputParser), "Output parser was not initialized correctly."
+def test_get_ai_recommendation_invalid_json(edu_ai_engine, mock_llm):
+    """Test handling of invalid JSON response."""
+    mock_llm.return_value = AIMessage(content="Invalid JSON content")
+
+    with pytest.raises(Exception) as exc_info:
+        edu_ai_engine.get_ai_recommendation()
+
+    assert "parsing" in str(exc_info.value).lower()
+
+
+def test_get_ai_recommendation_missing_required_field(edu_ai_engine, mock_llm):
+    """Test handling of valid JSON but missing required field."""
+    mock_llm.return_value = AIMessage(content='{"wrong_field": []}')
+
+    with pytest.raises(Exception) as exc_info:
+        edu_ai_engine.get_ai_recommendation()
+
+    assert "generated_questions" in str(exc_info.value).lower()
+
+
+def test_prompt_generator_integration(edu_ai_engine, mock_prompt_generator):
+    """Test integration with prompt generator."""
+    with patch.object(
+        mock_prompt_generator,
+        "generate_ai_prompt",
+        wraps=mock_prompt_generator.generate_ai_prompt,
+    ) as mock_generate:
+        edu_ai_engine.get_ai_recommendation()
+
+        mock_generate.assert_called_once()
+        # Just verify the method was called - the actual message validation
+        # is handled in other tests
+
+
+def test_llm_integration_with_messages(edu_ai_engine, mock_llm, mock_prompt_generator):
+    """Test that LLM receives correct message format."""
+    edu_ai_engine.get_ai_recommendation()
+
+    mock_llm.assert_called_once()
+    args, _ = mock_llm.call_args
+
+    assert isinstance(args[0], list)
+    assert len(args[0]) == 2
+    assert isinstance(args[0][0], SystemMessage)
+    assert isinstance(args[0][1], HumanMessage)
+    assert args[0][0].content == "Mock system prompt"
+
+
+def test_initialization_with_custom_llm(mock_prompt_generator):
+    """Test initialization with a custom LLM instance."""
+    custom_llm = ChatOpenAI(temperature=0.5, openai_api_key="test_key")
+    engine = EduAIEngine(prompt_generator=mock_prompt_generator, llm=custom_llm)
+    assert isinstance(engine.llm, ChatOpenAI)
+    assert engine.llm.temperature == 0.5

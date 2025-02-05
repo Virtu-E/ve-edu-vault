@@ -32,7 +32,13 @@ class MongoQuestionValidator(QuestionValidator):
 
 
 class MongoQuestionRepository(QuestionRepository):
-    def __init__(self, database_engine: NoSqLDatabaseEngineInterface, database_name: str, validator: QuestionValidator, collection_name: str):
+    def __init__(
+        self,
+        database_engine: NoSqLDatabaseEngineInterface,
+        database_name: str,
+        validator: QuestionValidator,
+        collection_name: str,
+    ):
         self.database_engine = database_engine
         self.database_name = database_name
         self.validator = validator

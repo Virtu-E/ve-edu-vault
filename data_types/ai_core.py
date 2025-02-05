@@ -1,9 +1,8 @@
 from typing import Dict, List
 
 from pydantic import BaseModel, Field, constr
-from typing_extensions import Literal
 from pydantic.v1 import validator
-
+from typing_extensions import Literal
 
 LearningMode = Literal["normal", "reinforcement", "recovery", "reset", "mastered"]
 
@@ -26,6 +25,16 @@ class PerformanceStats(BaseModel):
         ...,
         description=("A dictionary mapping each difficulty level to its completion status. 'incomplete' means the user has not yet completed questions for that difficulty, while 'completed' means they have completed all required questions for that difficulty."),
     )
+
+    @property
+    def failed_difficulties(self) -> List[str]:
+        """
+        Returns a list of difficulty levels that are marked as incomplete.
+
+        Returns:
+            List[str]: A list of difficulty levels (easy, medium, hard) that are incomplete.
+        """
+        return [difficulty for difficulty, status in self.difficulty_status.items() if status == "incomplete"]
 
 
 class RecommendationEngineConfig(BaseModel):
@@ -157,7 +166,6 @@ class QuestionBank(BaseModel):
 class QuestionPromptGeneratorConfig(BaseModel):
     course_name: str
     topic_name: str
-    difficulty: str
     academic_level: str
     syllabus: str
     category: str

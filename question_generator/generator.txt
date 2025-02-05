@@ -30,25 +30,7 @@ class QuestionAPIGenerator:
             {
                 "role": "system",
                 "content": f"""You must respond with only a JSON array containing chemistry exam questions. The response should be a valid JSON array of question objects. Each question object should follow this structure:
-{{
-    "question_id": "subject_topic_difficulty_number",
-    "text": "question_text",
-    "topic": "topic_name",
-    "category": "category_name",
-    "academic_class": "form_level",
-    "examination_level": "exam_system",
-    "difficulty": "difficulty_level",
-    "tags": ["tag1", "tag2"],
-    "choices": [
-        {{"text": "option_text", "is_correct": boolean}}
-    ],
-    "solution": {{
-        "explanation": "detailed_explanation",
-        "steps": ["step1 reason to get to explanation", "step2 reason to get to explanation"]
-    }},
-    "hint": "hint_text",
-    "metadata": {json.dumps(metadata)}
-}}""",
+{ {"question_id": "subject_topic_difficulty_number", "text": "question_text", "topic": "topic_name", "category": "category_name", "academic_class": "form_level", "examination_level": "exam_system", "difficulty": "difficulty_level", "tags": ["tag1", "tag2"], "choices": [{{"text": "option_text", "is_correct": boolean}}], "solution": {{"explanation": "detailed_explanation", "steps": ["step1 reason to get to explanation", "step2 reason to get to explanation"]}}, "hint": "hint_text", "metadata": {json.dumps(metadata)}} }""",
             },
             {
                 "role": "user",

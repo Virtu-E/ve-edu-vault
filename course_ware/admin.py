@@ -12,7 +12,6 @@ from .models import (
     Topic,
     TopicIframeID,
     EdxUser,
-    UserCategoryProgress,
     UserQuestionAttempts,
     UserQuestionSet,
 )
@@ -159,13 +158,6 @@ class UserAdmin(admin.ModelAdmin):
     list_display = ["username", "email", "active"]
     search_fields = ["username", "email"]
     list_filter = ["active"]
-
-
-@admin.register(UserCategoryProgress)
-class UserCategoryProgressAdmin(admin.ModelAdmin):
-    list_display = ["user", "category", "progress_percentage", "is_completed"]
-    list_filter = ["is_completed"]
-    search_fields = ["user__username", "category__name"]
 
 
 @admin.register(AcademicClass)

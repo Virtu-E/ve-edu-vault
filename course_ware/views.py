@@ -139,13 +139,11 @@ class GetQuestionsView(DatabaseQuestionViewBase):
 
         questions = [Question(**{**doc, "_id": str(doc["_id"])}).model_dump(by_alias=True, exclude={"choices": {"is_correct"}}) for doc in docs]
 
-        return Response(
-            {
-                "username": self.serializer.validated_data["username"],
-                "block_id": self.serializer.validated_data["block_id"],
-                "questions": questions,
-            }
-        )
+        return Response({
+            "username": self.serializer.validated_data["username"],
+            "block_id": self.serializer.validated_data["block_id"],
+            "questions": questions,
+        })
 
 
 class PostQuestionAttemptView(DatabaseQuestionViewBase):
@@ -255,12 +253,10 @@ class GetSingleQuestionAttemptView(QuestionViewBase):
         response = user_question_attempt.get_latest_question_metadata.get(question_id)
         if not response:
             # means that the question does not yet have an entry in the question attempt metadata
-            return Response(
-                {
-                    "total_correct_count": user_question_attempt.get_correct_questions_count,
-                    "total_incorrect_count": user_question_attempt.get_incorrect_questions_count,
-                }
-            )
+            return Response({
+                "total_correct_count": user_question_attempt.get_correct_questions_count,
+                "total_incorrect_count": user_question_attempt.get_incorrect_questions_count,
+            })
 
         return Response(
             QuestionAttemptData(

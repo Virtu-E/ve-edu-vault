@@ -2,7 +2,7 @@ from abc import ABC
 from enum import Enum
 
 
-class CalculatorLearningMode(Enum):
+class LearningModeType(Enum):
     NORMAL = "normal"
     REINFORCEMENT = "reinforcement"
     RECOVERY = "recovery"
@@ -12,6 +12,7 @@ class CalculatorLearningMode(Enum):
 
 class BaseLearningModeRule(ABC):
     questions_per_difficulty = 0
+    required_correct_questions = 0
     pass_requirement = 0
     attempts_allowed = 0
     prerequisite = ""
@@ -72,10 +73,11 @@ Provide your response in a structured format that can be parsed into JSON."""
 class NormalRule(BaseLearningModeRule):
     questions_per_difficulty = 3
     pass_requirement = 2 / 3
+    required_correct_questions = 2
     attempts_allowed = 1
     prerequisite = None
     mode_description = ""
-    current_mode = CalculatorLearningMode.NORMAL
+    current_mode = LearningModeType.NORMAL
     mode_specific_context = """
      Failed Difficulty Levels: {failed_difficulties}
      Failed Tags: {failed_tags}
@@ -90,33 +92,13 @@ class NormalRule(BaseLearningModeRule):
               """
 
 
-class ReinforcementRule(BaseLearningModeRule):
+class RecoveryRule(BaseLearningModeRule):
     questions_per_difficulty = 5
     pass_requirement = 4 / 5
+    required_correct_questions = 4
+    current_mode = LearningModeType.RECOVERY
     attempts_allowed = 2
-    current_mode = CalculatorLearningMode.REINFORCEMENT
-    prerequisite = CalculatorLearningMode.NORMAL
-    mode_description = ""
-    mode_specific_context = """
-    Failed Difficulty Levels: {failed_difficulties}
-    Failed Tags: {failed_tags}
-    Previous Attempt IDs: {previous_attempt_ids}
-    """
-
-    mode_specific_task = """
-    Task:
-    Select 5 questions for each failed difficulty level where:
-    - 60% focus on failed tags
-    - 40% introduce new but related tags
-    """
-
-
-class RecoveryRule(BaseLearningModeRule):
-    questions_per_difficulty = 3
-    pass_requirement = 3 / 3
-    current_mode = CalculatorLearningMode.RECOVERY
-    attempts_allowed = 1
-    prerequisite = CalculatorLearningMode.REINFORCEMENT
+    prerequisite = LearningModeType.REINFORCEMENT
     mode_description = ""
     mode_specific_context = """
        Failed Difficulty Levels: {failed_difficulties}
@@ -126,19 +108,42 @@ class RecoveryRule(BaseLearningModeRule):
 
     mode_specific_task = """
        Task:
-       Select 3 questions for each failed difficulty level where:
+       Select 5 questions for each failed difficulty level where:
        - 60% focus on failed tags
        - 40% introduce new but related tags
        """
 
 
+class ReinforcementRule(BaseLearningModeRule):
+    questions_per_difficulty = 3
+    pass_requirement = 3 / 3
+    required_correct_questions = 3
+    attempts_allowed = 1
+    current_mode = LearningModeType.REINFORCEMENT
+    prerequisite = LearningModeType.NORMAL
+    mode_description = ""
+    mode_specific_context = """
+    Failed Difficulty Levels: {failed_difficulties}
+    Failed Tags: {failed_tags}
+    Previous Attempt IDs: {previous_attempt_ids}
+    """
+
+    mode_specific_task = """
+    Task:
+    Select 3 questions for each failed difficulty level where:
+    - 60% focus on failed tags
+    - 40% introduce new but related tags
+    """
+
+
 class ResetRule(BaseLearningModeRule):
     questions_per_difficulty = 3
     pass_requirement = 3 / 3
+    required_correct_questions = 3
     attempts_allowed = -1  # infinite attempts allowed
-    prerequisite = CalculatorLearningMode.RECOVERY
+    prerequisite = LearningModeType.RECOVERY
     mode_description = ""
-    current_mode = CalculatorLearningMode.RESET
+    current_mode = LearningModeType.RESET
     system_template = """You are an intelligent learning assistant that recommends educational resources to support student learning.
     Analyze the student's context, performance history, and learning needs to suggest targeted learning materials.
     Recommend a mix of videos, articles, interactive tools, and other educational content that align with the topic and learning objectives.
@@ -159,7 +164,42 @@ class ResetRule(BaseLearningModeRule):
 
 class MasteredRule(BaseLearningModeRule):
     questions_per_difficulty = -1  # infinite
+    required_correct_questions = 0
     pass_requirement = 0
-    current_mode = CalculatorLearningMode.MASTERED
+    current_mode = LearningModeType.MASTERED
     attempts_allowed = -1  # infinite attempts allowed
     prerequisite = None
+
+
+class LearningRuleFactory:
+    """A simple factory for creating learning mode rules"""
+
+    @staticmethod
+    def create_rule(mode: LearningModeType) -> "BaseLearningModeRule":
+        """
+        Create and return a rule instance based on the learning mode
+
+        Args:
+            mode: The learning mode to create a rule for
+
+        Returns:
+            An instance of the appropriate rule class
+
+        Raises:
+            ValueError: If an invalid mode is provided
+        """
+        if not isinstance(mode, LearningModeType):
+            raise ValueError(f"Mode must be a LearningModeType, got {type(mode)}")
+
+        if mode == LearningModeType.NORMAL:
+            return NormalRule()
+        elif mode == LearningModeType.REINFORCEMENT:
+            return ReinforcementRule()
+        elif mode == LearningModeType.RECOVERY:
+            return RecoveryRule()
+        elif mode == LearningModeType.RESET:
+            return ResetRule()
+        elif mode == LearningModeType.MASTERED:
+            return MasteredRule()
+        else:
+            raise ValueError(f"Unsupported learning mode: {mode}")

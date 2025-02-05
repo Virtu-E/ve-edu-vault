@@ -1,9 +1,7 @@
 from abc import ABC, abstractmethod
-
-from ai_core.learning_mode_rules import BaseLearningModeRule
-
 from typing import List
 
+from ai_core.learning_mode_rules import BaseLearningModeRule
 from data_types.ai_core import LearningHistory, QuestionPromptGeneratorConfig
 from repository.ai_core.prompt_engine import PromptEngineRepositoryInterface
 
@@ -21,7 +19,15 @@ class QuestionPromptGeneratorInterface(ABC):
 
 
 class BaseQuestionPromptGenerator(QuestionPromptGeneratorInterface):
-    def __init__(self, rule: BaseLearningModeRule, learning_history: LearningHistory, repository: PromptEngineRepositoryInterface, question_ids: List[str], config: QuestionPromptGeneratorConfig, failed_difficulties: List[str]):
+    def __init__(
+        self,
+        rule: BaseLearningModeRule,
+        learning_history: LearningHistory,
+        repository: PromptEngineRepositoryInterface,
+        question_ids: List[str],
+        config: QuestionPromptGeneratorConfig,
+        failed_difficulties: List[str],
+    ):
         """
         Initialize the BaseQuestionPromptGenerator with required dependencies and configuration.
 
@@ -67,7 +73,11 @@ class BaseQuestionPromptGenerator(QuestionPromptGeneratorInterface):
         previous_attempt_ids = self.question_ids
 
         # Format mode-specific context
-        mode_context = self.rule.mode_specific_context.format(failed_difficulties=failed_difficulties, failed_tags=failed_tags, previous_attempt_ids=previous_attempt_ids)
+        mode_context = self.rule.mode_specific_context.format(
+            failed_difficulties=failed_difficulties,
+            failed_tags=failed_tags,
+            previous_attempt_ids=previous_attempt_ids,
+        )
 
         course_name = self.config.course_name
         syllabus = self.config.syllabus
@@ -78,7 +88,19 @@ class BaseQuestionPromptGenerator(QuestionPromptGeneratorInterface):
         question_bank = self.repository.get_question_bank(self.question_ids)
 
         # Format the complete prompt
-        prompt = template.format(course_name=course_name, current_mode=self.rule.current_mode, mode_description=self.rule.mode_description, category=category, syllabus=syllabus, topic_name=topic_name, academic_level=academic_level, user_learning_history=user_learning_history, mode_specific_context=mode_context, mode_specific_task=self.rule.mode_specific_task, question_bank=question_bank, format_instructions=self.rule.system_template)
-        print(prompt)
+        prompt = template.format(
+            course_name=course_name,
+            current_mode=self.rule.current_mode,
+            mode_description=self.rule.mode_description,
+            category=category,
+            syllabus=syllabus,
+            topic_name=topic_name,
+            academic_level=academic_level,
+            user_learning_history=user_learning_history,
+            mode_specific_context=mode_context,
+            mode_specific_task=self.rule.mode_specific_task,
+            question_bank=question_bank,
+            format_instructions=self.rule.system_template,
+        )
 
         return prompt

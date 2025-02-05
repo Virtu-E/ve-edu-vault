@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class UniqueValidator(ABC):
     """
-    Abstract class for Unique validators.
+    Abstract class for Unique validator.
     """
 
     @abstractmethod

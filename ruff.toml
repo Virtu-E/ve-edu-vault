@@ -1,11 +1,12 @@
 line-length = 1000
 target-version = "py313"
 
-# Use standard Black formatting style
-format.quote-style = "double"
-format.indent-style = "space"
-format.skip-magic-trailing-comma = false
-format.line-ending = "auto"
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+preview = true
 
 [lint.isort]
 combine-as-imports = true

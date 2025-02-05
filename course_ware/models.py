@@ -340,49 +340,13 @@ class UserQuestionAttempts(models.Model):
         questions_list = []
 
         for question_id, metadata in question_metadata.items():
-            questions_list.append(
-                {
-                    "id": str(question_id),
-                    "status": "correct" if metadata.get("is_correct") else "incorrect",
-                    "question_pos": 10,
-                }
-            )
+            questions_list.append({
+                "id": str(question_id),
+                "status": "correct" if metadata.get("is_correct") else "incorrect",
+                "question_pos": 10,
+            })
 
         return questions_list
 
     def __str__(self):
         return f"{self.user.username} - {self.topic.name} Attempts"
-
-
-# TODO : to be deprecated
-class UserCategoryProgress(models.Model):
-    """
-    Tracks the user's category progress by keeping track of the cleared/uncleared topics in the category
-    """
-
-    user = models.ForeignKey(EdxUser, on_delete=models.CASCADE, related_name="progress")
-    category = models.OneToOneField(Category, on_delete=models.CASCADE, related_name="category_progress")
-    last_activity = models.DateTimeField(auto_now=True)
-    # TODO : retire the is_completed field below because it is redundant
-    is_completed = models.BooleanField(default=False)
-
-    @property
-    def get_cleared_topics_count(self):
-        return self.category.topic_set.filter(is_completed=True).count()
-
-    @property
-    def get_topics_count(self):
-        return self.category.topics.count()
-
-    @property
-    def progress_percentage(self):
-        total_topics = self.get_topics_count()
-        completed_topics = self.get_cleared_topics_count()
-        return (completed_topics / total_topics) * 100 if total_topics > 0 else 0
-
-    class Meta:
-        verbose_name = "User Progress"
-        verbose_name_plural = "User Progress"
-
-    def __str__(self):
-        return f"{self.user.username} - {self.category.name} Progress"

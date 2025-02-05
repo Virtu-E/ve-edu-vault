@@ -31,7 +31,7 @@ class PerformanceEngine(PerformanceEngineInterface):
 
     def __init__(
         self,
-        topic_id: str,
+        topic_id: int,
         user_id: int,
         performance_calculator: PerformanceCalculatorInterface,
     ):

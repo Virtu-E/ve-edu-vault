@@ -30,7 +30,7 @@ class MongoLearningHistoryRepository(LearningHistoryRepository):
         self.database_name = database_name
         self.collection_name = collection_name
 
-    def get_learning_history(self, user_id: str, block_id: str) -> LearningHistory:
+    def get_learning_history(self, user_id: int, block_id: str) -> LearningHistory:
         query = {"userId": user_id, "block_id": block_id}
         history = self.database_engine.fetch_one_from_db(self.collection_name, self.database_name, query)
         if not history:

@@ -221,11 +221,6 @@ class CategoryExt(models.Model):
         help_text="Base points awarded for completing this category",
     )
 
-    bonus_points_available = models.PositiveIntegerField(
-        default=0,
-        help_text="Additional bonus points available for exceptional performance",
-    )
-
     estimated_hours = models.PositiveIntegerField(default=0, help_text="Estimated hours to achieve mastery")
 
     teacher_guide = models.TextField(blank=True, null=True, help_text="Guidance for teachers on category instruction")
@@ -243,105 +238,41 @@ class CategoryExt(models.Model):
     def __str__(self):
         return f"{self.category.name} Extension"
 
-    @property
-    def total_available_points(self):
-        """Calculate total points available including bonus"""
-        return self.base_mastery_points + self.bonus_points_available
 
-
-class UserCategoryMastery(models.Model):
+class TopicMastery(models.Model):
     """
-    Tracks detailed user progress and mastery for a specific category,
+    Tracks detailed user progress and mastery for a specific topic,
     including points earned, achievements, and mastery status.
     """
 
-    user = models.ForeignKey(EdxUser, on_delete=models.CASCADE, related_name="category_masteries")
+    user = models.ForeignKey(EdxUser, on_delete=models.CASCADE, related_name="topic_mastery")
 
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="user_masteries")
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name="topic_mastery")
 
-    points_earned = models.PositiveIntegerField(default=0, help_text="Total points earned in this category")
+    points_earned = models.PositiveIntegerField(default=0, help_text="Total points earned in this topic")
 
-    bonus_points_earned = models.PositiveIntegerField(default=0, help_text="Bonus points earned through exceptional performance")
+    mastery_achievements = models.JSONField(
+        default=dict(),
+        help_text="List of specific achievements earned in this category",
+    )
 
-    mastery_achievements = models.JSONField(default=list, help_text="List of specific achievements earned in this category")
-
-    # Progress tracking
     started_at = models.DateTimeField(auto_now_add=True)
 
     last_activity = models.DateTimeField(auto_now=True)
 
     completed_at = models.DateTimeField(null=True, blank=True)
 
-    # Status tracking
     MASTERY_STATUS_CHOICES = [
         ("not_started", "Not Started"),
         ("in_progress", "In Progress"),
         ("mastered", "Mastered"),
-        ("advanced_mastery", "Advanced Mastery"),
     ]
 
     mastery_status = models.CharField(max_length=20, choices=MASTERY_STATUS_CHOICES, default="not_started")
 
-    # Performance metrics
-    attempts_count = models.PositiveIntegerField(default=0, help_text="Number of question attempts in this category")
-
-    correct_answers = models.PositiveIntegerField(default=0, help_text="Number of correct answers in this category")
-
-    streak_count = models.PositiveIntegerField(default=0, help_text="Current streak of correct answers")
-
-    best_streak = models.PositiveIntegerField(default=0, help_text="Best streak of correct answers")
-
     class Meta:
         verbose_name = "User Skill Mastery"
-        verbose_name_plural = "User Skill Masteries"
-        unique_together = ["user", "category"]
+        verbose_name_plural = "User Skill Mastery"
 
     def __str__(self):
-        return f"{self.user.username} - {self.category.name} Mastery"
-
-    @property
-    def total_points(self):
-        """Calculate total points including bonus points"""
-        return self.points_earned + self.bonus_points_earned
-
-    @property
-    def accuracy_percentage(self):
-        """Calculate accuracy percentage"""
-        if self.attempts_count == 0:
-            return 0
-        return (self.correct_answers / self.attempts_count) * 100
-
-    def update_streak(self, is_correct):
-        """Update streak counts based on answer correctness"""
-        if is_correct:
-            self.streak_count += 1
-            self.best_streak = max(self.streak_count, self.best_streak)
-        else:
-            self.streak_count = 0
-        self.save()
-
-    def add_achievement(self, achievement):
-        """Add a new achievement to the user's mastery record"""
-        if achievement not in self.mastery_achievements:
-            self.mastery_achievements.append(achievement)
-            self.save()
-
-    def update_mastery_status(self):
-        """Update mastery status based on points and accuracy"""
-        category_ext = self.category.extension
-        total_possible = category_ext.total_available_points
-
-        if self.total_points == 0:
-            self.mastery_status = "not_started"
-        elif self.total_points >= total_possible and self.accuracy_percentage >= category_ext.minimum_mastery_percentage:
-            self.mastery_status = "advanced_mastery"
-        elif self.points_earned >= category_ext.base_mastery_points:
-            self.mastery_status = "mastered"
-        else:
-            self.mastery_status = "in_progress"
-
-        self.save()
-
-
-# last accessed unit and content will be created here
-# TODO : create a topic mastery table
+        return f"{self.user.username} - {self.topic.name} Mastery"

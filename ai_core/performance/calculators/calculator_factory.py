@@ -1,4 +1,4 @@
-from ai_core.learning_mode_rules import CalculatorLearningMode
+from ai_core.learning_mode_rules import LearningModeType
 from ai_core.performance.calculators.base_calculator import (
     PerformanceCalculatorInterface,
 )
@@ -12,12 +12,12 @@ from ai_core.performance.calculators.reinforcement_cal import (
 class PerformanceCalculatorFactory:
     @staticmethod
     def create_calculator(
-        mode: CalculatorLearningMode,
+        mode: LearningModeType,
     ) -> PerformanceCalculatorInterface:
         calculators = {
-            CalculatorLearningMode.NORMAL: NormalModeCalculator,
-            CalculatorLearningMode.RECOVERY: RecoveryModeCalculator,
-            CalculatorLearningMode.REINFORCEMENT: ReinforcementModeCalculator,
+            LearningModeType.NORMAL: NormalModeCalculator,
+            LearningModeType.RECOVERY: RecoveryModeCalculator,
+            LearningModeType.REINFORCEMENT: ReinforcementModeCalculator,
         }
 
         calculator_class = calculators.get(mode)
