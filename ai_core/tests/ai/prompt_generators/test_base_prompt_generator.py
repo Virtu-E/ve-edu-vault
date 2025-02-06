@@ -1,18 +1,9 @@
 import pytest
 
-from ai_core.ai.prompt_generators.base_prompt_generator import (
-    BaseQuestionPromptGenerator,
-)
-from ai_core.learning_mode_rules import (
-    BaseLearningModeRule,
-    NormalRule,
-    LearningModeType,
-)
+from ai_core.ai.prompt_generators.base_prompt_generator import BaseQuestionPromptGenerator
+from ai_core.learning_mode_rules import BaseLearningModeRule, LearningModeType, NormalRule
 from ai_core.tests.ai_core_factories import ModeDataFactory
-from data_types.ai_core import (
-    LearningHistory,
-    QuestionPromptGeneratorConfig,
-)
+from data_types.ai_core import LearningHistory, QuestionPromptGeneratorConfig
 from repository.ai_core.prompt_engine import PromptEngineRepositoryInterface
 
 

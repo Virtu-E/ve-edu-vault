@@ -1,43 +1,22 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from functools import lru_cache
-from typing import List, Dict
+from typing import Dict, List
 
 from decouple import config
 
 from ai_core.ai.edu_ai_engine import EduAIEngine
-from ai_core.ai.prompt_generators.base_prompt_generator import (
-    BaseQuestionPromptGenerator,
-)
-from ai_core.ai.prompt_generators.lang_chain_prompt_generator import (
-    LangChainQuestionPromptGenerator,
-)
+from ai_core.ai.prompt_generators.base_prompt_generator import BaseQuestionPromptGenerator
+from ai_core.ai.prompt_generators.lang_chain_prompt_generator import LangChainQuestionPromptGenerator
 from ai_core.contextual_analyzer.context_builder import QuestionContextBuilder
 from ai_core.contextual_analyzer.context_engine import ContextEngine
-from ai_core.contextual_analyzer.stats.stats_calculator import (
-    create_difficulty_stats_calculator,
-)
-from ai_core.learning_mode_rules import LearningModeType, BaseLearningModeRule
-from ai_core.performance.calculators.base_calculator import (
-    PerformanceCalculatorInterface,
-)
-from ai_core.performance.calculators.calculator_factory import (
-    PerformanceCalculatorFactory,
-)
-from ai_core.performance.performance_engine import (
-    PerformanceEngineInterface,
-    PerformanceEngine,
-)
-from ai_core.validator.validator_engine import ValidatorEngineInterface
-from course_ware.models import (
-    UserQuestionAttempts,
-    UserQuestionSet,
-    EdxUser,
-    Topic,
-    Course,
-    Category,
-)
+from ai_core.contextual_analyzer.stats.stats_calculator import create_difficulty_stats_calculator
+from ai_core.learning_mode_rules import BaseLearningModeRule, LearningModeType
+from ai_core.performance.calculators.base_calculator import PerformanceCalculatorInterface
+from ai_core.performance.calculators.calculator_factory import PerformanceCalculatorFactory
+from ai_core.performance.performance_engine import PerformanceEngine, PerformanceEngineInterface
+from ai_core.validator.validator_engine import ValidationEngine
+from course_ware.models import Category, Course, EdxUser, Topic, UserQuestionAttempts, UserQuestionSet
 from data_types.ai_core import QuestionPromptGeneratorConfig
 from exceptions import OrchestrationError, ValidationError
 from no_sql_database.mongodb import mongo_database
@@ -99,10 +78,12 @@ class OrchestrationEngine(OrchestrationEngineInterface):
         learning_mode: LearningModeType,
         user_question_set: UserQuestionSet,
         learning_mode_rule: BaseLearningModeRule,
+        question_attempt: UserQuestionAttempts,
     ):
         self._topic = topic
         self._user = user
         self._category = category
+        self._question_attempt = question_attempt
         self.learning_mode = learning_mode
         self._learning_mode_rule = learning_mode_rule
         self._course = course
@@ -125,6 +106,7 @@ class OrchestrationEngine(OrchestrationEngineInterface):
         self._learning_history = None
 
         self._logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        self.initialize()
 
     @property
     def is_initialized(self) -> bool:
@@ -133,15 +115,9 @@ class OrchestrationEngine(OrchestrationEngineInterface):
 
     def initialize(
         self,
-        question_set: UserQuestionSet,
-        user_question_attempt: UserQuestionAttempts,
     ) -> None:
         """
         Initializes all components in the correct dependency order.
-
-        Args:
-            question_set: The question set to be processed
-            user_question_attempt: The user's attempt information
 
         Raises:
             OrchestrationError: If initialization fails
@@ -154,8 +130,8 @@ class OrchestrationEngine(OrchestrationEngineInterface):
             # Initialize validator first
             self._validator = self._create_validator()
             validation_result = self._validator.run_all_validators(
-                question_set=question_set,
-                user_question_attempt_instance=user_question_attempt,
+                question_set=self._user_question_set,
+                user_question_attempt_instance=self._question_attempt,
             )
             self._state.validator_initialized = True
 
@@ -169,8 +145,8 @@ class OrchestrationEngine(OrchestrationEngineInterface):
 
             # Initialize context engine
             self._context_engine = self._create_context_engine(
-                user_question_attempt=user_question_attempt,
-                user_question_set=question_set,
+                user_question_attempt=self._question_attempt,
+                user_question_set=self._user_question_set,
             )
             self._learning_history = self._context_engine.generate_learning_history_context()
             self._state.context_engine_initialized = True
@@ -210,11 +186,10 @@ class OrchestrationEngine(OrchestrationEngineInterface):
         pass
 
     @staticmethod
-    def _create_validator() -> ValidatorEngineInterface:
+    def _create_validator() -> ValidationEngine:
         """Creates validator engine instance"""
-        return ValidatorEngineInterface()
+        return ValidationEngine()
 
-    @lru_cache(maxsize=128)
     def _create_mongo_question_repository(self) -> MongoQuestionRepository:
         """Creates and caches MongoDB question repository instance"""
         return MongoQuestionRepository(
@@ -224,7 +199,6 @@ class OrchestrationEngine(OrchestrationEngineInterface):
             validator=MongoQuestionValidator(),
         )
 
-    @lru_cache(maxsize=128)
     def _create_learning_history_repository(self) -> MongoLearningHistoryRepository:
         """Creates and caches learning history repository instance"""
         return MongoLearningHistoryRepository(
@@ -277,7 +251,7 @@ class OrchestrationEngine(OrchestrationEngineInterface):
             rule=self._learning_mode_rule,
             learning_history=self._learning_history,
             repository=self._create_prompt_repository(),
-            question_ids=self._user_question_set.question_list_ids,
+            question_ids=list(self._user_question_set.get_question_set_ids),
             config=self._create_base_prompt_config(),
             failed_difficulties=self._failed_difficulties(),
         )

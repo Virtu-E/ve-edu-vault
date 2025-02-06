@@ -1,12 +1,7 @@
 import logging
 from typing import Dict
 
-from course_sync.change_detectors import (
-    CategoryNameChangeDetector,
-    NameChangeDetector,
-    StructuralChangeDetector,
-    TopicNameChangeDetector,
-)
+from course_sync.change_detectors import CategoryNameChangeDetector, NameChangeDetector, StructuralChangeDetector, TopicNameChangeDetector
 
 log = logging.getLogger(__name__)
 

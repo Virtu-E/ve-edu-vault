@@ -1,6 +1,6 @@
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 
-from grade_book.grader import EvaluationResult
+from data_types.ai_core import EvaluationResult
 
 
 class LearningHistoryRepository(ABC):

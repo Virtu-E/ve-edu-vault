@@ -9,11 +9,7 @@ from decouple import config
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
-from pylti1p3.contrib.django import (
-    DjangoDbToolConf,
-    DjangoMessageLaunch,
-    DjangoOIDCLogin,
-)
+from pylti1p3.contrib.django import DjangoDbToolConf, DjangoMessageLaunch, DjangoOIDCLogin
 
 from course_ware.models import TopicIframeID
 from edu_vault.settings import common

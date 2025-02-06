@@ -11,11 +11,7 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.errors import OperationFailure, ServerSelectionTimeoutError
 
-from exceptions import (
-    MongoDbConfigurationError,
-    MongoDbConnectionError,
-    MongoDbOperationError,
-)
+from exceptions import MongoDbConfigurationError, MongoDbConnectionError, MongoDbOperationError
 
 log = logging.getLogger(__name__)
 

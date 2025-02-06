@@ -4,17 +4,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django_json_widget.widgets import JSONEditorWidget
 
-from .models import (
-    AcademicClass,
-    Category,
-    Course,
-    DefaultQuestionSet,
-    Topic,
-    TopicIframeID,
-    EdxUser,
-    UserQuestionAttempts,
-    UserQuestionSet,
-)
+from .models import AcademicClass, Category, Course, DefaultQuestionSet, EdxUser, ExaminationLevel, Topic, TopicIframeID, UserQuestionAttempts, UserQuestionSet
 
 
 # Base admin class with JSON widget configuration
@@ -170,3 +160,6 @@ class AcademicClassAdmin(admin.ModelAdmin):
 class TopicIframeIDAdmin(admin.ModelAdmin):
     list_display = ["identifier", "topic"]
     search_fields = ["identifier"]
+
+
+admin.site.register(ExaminationLevel)

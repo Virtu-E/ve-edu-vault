@@ -1,11 +1,9 @@
 import logging
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 
 from ai_core.contextual_analyzer.context_builder import QuestionContextBuilderInterface
-from ai_core.contextual_analyzer.stats.stats_calculator import (
-    DifficultyStatsCalculatorInterface,
-)
-from course_ware.models import Topic, EdxUser, UserQuestionAttempts, UserQuestionSet
+from ai_core.contextual_analyzer.stats.stats_calculator import DifficultyStatsCalculatorInterface
+from course_ware.models import EdxUser, Topic, UserQuestionAttempts, UserQuestionSet
 from data_types.ai_core import LearningHistory, ModeData
 from repository.ai_core.learning_history import LearningHistoryRepository
 
@@ -48,7 +46,7 @@ class ContextEngine(ContextEngineInterface):
             learning_history = self.learning_history_repository.get_learning_history(self.user.id, self.topic.block_id)
 
             question_contexts = self.context_builder.build_question_context(
-                self.user_question_set.question_list_ids,
+                list(self.user_question_set.get_question_set_ids),
                 self.user_question_attempt.get_latest_question_metadata,
             )
 

@@ -7,6 +7,7 @@ from django.db.models import Model
 from course_ware.models import DefaultQuestionSet, Topic, TopicIframeID
 from edu_vault.settings import common
 from no_sql_database.nosql_database_engine import NoSqLDatabaseEngineInterface
+from webhooks.edx_requests import EdxClient
 
 log = logging.getLogger(__name__)
 
@@ -69,7 +70,7 @@ def create_aggregation_pipeline(topic: Topic) -> List[Dict[str, Any]]:
         {
             "$match": {
                 "academic_class": topic.category.academic_class.name,
-                "examination_level": topic.category.examination_level,
+                "examination_level": topic.category.examination_level.name,
                 "category": normalized_category_name,
                 "topic": normalized_topic_name,
             }
@@ -140,6 +141,11 @@ class TopicCreationSideEffect(CreationSideEffect):
     def __init__(self, no_sql_database_client: NoSqLDatabaseEngineInterface) -> None:
         self.no_sql_database_client = no_sql_database_client
 
+    # TODO : this can be made  better
+    @staticmethod
+    def _get_edx_client():
+        return EdxClient("OPENEDX")
+
     def process_creation_side_effects(self, topic: Topic) -> None:
         """
         Process all side effects related to topic creation.
@@ -159,8 +165,8 @@ class TopicCreationSideEffect(CreationSideEffect):
             question_list_ids = get_question_list_ids(results)
             create_default_question_set(topic, question_list_ids)
 
-            # course_blocks = get_course_blocks(topic.block_id)
-            # create_topic_iframe_id(topic, course_blocks)
+            course_blocks = self._get_edx_client().get_course_blocks(topic.block_id)
+            create_topic_iframe_id(topic, course_blocks)
 
         except Exception as e:
             log.exception(f"Failed to create topic creation side effect due to: {e}")

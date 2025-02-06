@@ -1,24 +1,12 @@
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from typing import List
 
-from ai_core.contextual_analyzer.stats.attempts_calculator import (
-    AttemptStatsCalculator,
-    IAttemptStatsCalculator,
-)
-from ai_core.contextual_analyzer.stats.completion_analyzer import (
-    CompletionAnalyzer,
-    ICompletionAnalyzer,
-)
-from ai_core.contextual_analyzer.stats.question_filter import (
-    QuestionFilter,
-    IQuestionFilter,
-)
-from ai_core.contextual_analyzer.stats.tags_collector import (
-    FailedTagsCollector,
-    IFailedTagsCollector,
-)
-from ai_core.contextual_analyzer.stats.time_analyzer import TimeAnalyzer, ITimeAnalyzer
-from data_types.ai_core import QuestionAIContext, DifficultyStats
+from ai_core.contextual_analyzer.stats.attempts_calculator import AttemptStatsCalculator, IAttemptStatsCalculator
+from ai_core.contextual_analyzer.stats.completion_analyzer import CompletionAnalyzer, ICompletionAnalyzer
+from ai_core.contextual_analyzer.stats.question_filter import IQuestionFilter, QuestionFilter
+from ai_core.contextual_analyzer.stats.tags_collector import FailedTagsCollector, IFailedTagsCollector
+from ai_core.contextual_analyzer.stats.time_analyzer import ITimeAnalyzer, TimeAnalyzer
+from data_types.ai_core import DifficultyStats, QuestionAIContext
 
 
 class DifficultyStatsCalculatorInterface(ABC):
@@ -116,7 +104,11 @@ class DifficultyStatsCalculator(DifficultyStatsCalculatorInterface):
             averageFirstAttemptTime=time_stats["averageFirstAttemptTime"],
             averageSecondAttemptTime=time_stats["averageSecondAttemptTime"],
             averageThirdAttemptTime=time_stats["averageThirdAttemptTime"],
-            timeDistribution=time_stats,
+            timeDistribution={
+                "firstAttempt": time_stats["timeDistribution"]["firstAttempt"],
+                "secondAttempt": time_stats["timeDistribution"]["secondAttempt"],
+                "thirdAttempt": time_stats["timeDistribution"]["thirdAttempt"],
+            },
         )
 
     def _empty_stats(self) -> DifficultyStats:

@@ -11,18 +11,21 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from ai_core.learning_mode_rules import LearningModeType, LearningRuleFactory
+from ai_core.orchestration.orchestration_engine import OrchestrationEngine
 from course_ware.mixins import RetrieveUserAndResourcesMixin
-from course_ware.models import Course, Topic, EdxUser, UserQuestionAttempts
-from course_ware.serializers import (
-    GetSingleQuestionSerializer,
-    PostQuestionAttemptSerializer,
-    QueryParamsSerializer,
-    UserQuestionAttemptSerializer,
-)
+from course_ware.models import Course, EdxUser, Topic, UserQuestionAttempts, UserQuestionSet
+from course_ware.serializers import GetSingleQuestionSerializer, PostQuestionAttemptSerializer, QueryParamsSerializer, UserQuestionAttemptSerializer
 from data_types.questions import Question, QuestionAttemptData
 from edu_vault.settings.common import NO_SQL_DATABASE_NAME
 from exceptions import ParsingError, QuestionNotFoundError
+from grade_book.grader import Gradebook
+from grade_book.messages import ModeMessageGenerator
+from grade_book.performance_evaluator import PerformanceEvaluator
+from grade_book.strategy import StandardLearningModeStrategy
+from no_sql_database.mongodb import mongo_database
 from no_sql_database.nosql_database_engine import NoSqLDatabaseEngineInterface
+from repository.grade_book import MongoLearningHistoryRepository
 
 log = logging.getLogger(__name__)
 
@@ -341,32 +344,49 @@ class QuizCompletionView(DatabaseQuestionViewBase):
     def post(self, request):
         #   TODO : the naming here already shows that my function is doing two things. Change that
         user, topic, question_set_ids, collection_name = self.validate_and_get_resources(request.data)
-        # we have to create a filler for all unattempted questions that the user has been assigned in the question set
         user_question_attempt = get_object_or_404(UserQuestionAttempts, user=user, topic=topic)
+        user_question_set = get_object_or_404(UserQuestionSet, user=user, topic=topic)
 
+        # we have to create a filler for all unattempted questions that the user has been assigned in the question set
         self._ensure_user_question_attempts_exist(question_set_ids, user_question_attempt, collection_name)
 
-        # we have to calculate the performance
-        # performance_calculator_instance = AttemptBasedDifficultyRankerCalculator()
-        # performance_engine = PerformanceEngine(
-        #     topic_id=topic.id,
-        #     user_id=user.id,
-        #     performance_calculator=performance_calculator_instance,
-        # )
-        # performance_stats = performance_engine.get_topic_performance_stats()
-        # return Response(performance_stats.model_dump(), status.HTTP_200_OK)
+        learning_mode = LearningModeType.from_string(user_question_attempt.current_learning_mode)
 
-        # what do we do during examination complete process ?
-        # we get the quiz details
-        # - course, topic, examination level etc
-        # RecommendationQuestionMetadata - of this instance
+        orchestration_engine = OrchestrationEngine(
+            topic=topic,
+            user=user,
+            category=topic.category,
+            course=topic.category.course,
+            user_question_set=user_question_set,
+            learning_mode=learning_mode,
+            learning_mode_rule=LearningRuleFactory.create_rule(learning_mode),
+            question_attempt=user_question_attempt,
+        )
+        performance_evaluator = PerformanceEvaluator(orchestration_engine=orchestration_engine)
 
-        # we calculate the grades for the user
-        # we pass the grades back to edx platform
-        # we suggest new question sets if the user has failed the exam
-        # we award them a completion badge and then turn the topic to just practice only
-        # where they can select the level of questions and they just randomly practice
-        # choose quiz difficulty, practice questions etc
+        learning_history_repository = MongoLearningHistoryRepository(mongo_engine=mongo_database, database_name="", collection_name="")
+
+        grader = Gradebook(
+            topic=topic,
+            user=user,
+            user_attempt=user_question_attempt,
+            user_question_set=user_question_set,
+            performance_evaluator=performance_evaluator,
+            message_generator=ModeMessageGenerator(),
+            learning_mode_strategy=StandardLearningModeStrategy(),
+            learning_history_repository=learning_history_repository,
+        )
+        grade_data = grader.evaluate_performance(user_question_attempt.current_learning_mode)
+
+        print(grade_data.ai_recommendation)
+
+        return Response(
+            {
+                "error": "Sequential block not found in course outline",
+                "status": "error",
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 @api_view(["GET"])

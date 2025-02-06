@@ -3,10 +3,7 @@ from unittest.mock import Mock
 import pytest
 
 from ai_core.contextual_analyzer.context_builder import QuestionContextBuilder
-from course_ware.tests.course_ware_factory import (
-    QuestionFactory,
-    QuestionMetadataFactory,
-)
+from course_ware.tests.course_ware_factory import QuestionFactory, QuestionMetadataFactory
 from data_types.ai_core import QuestionAIContext
 from exceptions import InvalidQuestionConfiguration
 from repository.shared import QuestionRepository

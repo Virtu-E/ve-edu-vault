@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Dict, List
 
 from pydantic import BaseModel, Field, constr
@@ -169,3 +170,17 @@ class QuestionPromptGeneratorConfig(BaseModel):
     academic_level: str
     syllabus: str
     category: str
+
+
+# TODO : move to pydantic
+@dataclass
+class EvaluationResult:
+    """Data class to hold evaluation results"""
+
+    status: str
+    passed: bool
+    next_mode: str
+    mode_guidance: str
+    guidance: str
+    performance_stats: PerformanceStats | None
+    ai_recommendation: Dict

@@ -4,7 +4,7 @@ from typing import Dict, Set
 
 from course_sync.extractor import StructureExtractor
 from course_sync.side_effects import CreationSideEffect
-from course_ware.models import AcademicClass, Category, Course, Topic
+from course_ware.models import AcademicClass, Category, Course, ExaminationLevel, Topic
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +20,12 @@ class DatabaseSync(ABC):
 class CategorySync(DatabaseSync):
     """Responsible for synchronizing categories"""
 
-    def __init__(self, course: Course, academic_class: AcademicClass, examination_level: str):
+    def __init__(
+        self,
+        course: Course,
+        academic_class: AcademicClass,
+        examination_level: ExaminationLevel,
+    ):
         self.course = course
         self.academic_class = academic_class
         self.examination_level = examination_level

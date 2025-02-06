@@ -2,10 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from ai_core.contextual_analyzer.stats.stats_calculator import (
-    DifficultyStatsCalculator,
-    QuestionFilter,
-)
+from ai_core.contextual_analyzer.stats.stats_calculator import DifficultyStatsCalculator, QuestionFilter
 from ai_core.tests.ai_core_factories import QuestionAIContextFactory
 from data_types.ai_core import DifficultyStats
 

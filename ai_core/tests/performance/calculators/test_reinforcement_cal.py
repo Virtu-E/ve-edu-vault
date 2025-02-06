@@ -1,8 +1,6 @@
 from ai_core.learning_mode_rules import ReinforcementRule
 from ai_core.performance.calculators.base_calculator import BasePerformanceCalculator
-from ai_core.performance.calculators.reinforcement_cal import (
-    ReinforcementModeCalculator,
-)
+from ai_core.performance.calculators.reinforcement_cal import ReinforcementModeCalculator
 
 
 class TestReinforcementModeCalculator:

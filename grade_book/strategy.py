@@ -18,9 +18,9 @@ class StandardLearningModeStrategy:
 
     def __init__(self):
         self.mode_progression = {
-            "normal": "reinforcement",
-            "reinforcement": "recovery",
-            "recovery": "reset",
+            "normal": "recovery",
+            "reinforcement": "reset",
+            "recovery": "reinforcement",
             "reset": "reset",
             "mastered": "mastered",
         }

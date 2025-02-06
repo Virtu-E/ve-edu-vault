@@ -1,7 +1,7 @@
 import pytest
 
 from ai_core.contextual_analyzer.stats.time_analyzer import TimeAnalyzer
-from ai_core.tests.ai_core_factories import QuestionAIContextFactory, AttemptsFactory
+from ai_core.tests.ai_core_factories import AttemptsFactory, QuestionAIContextFactory
 
 
 @pytest.fixture

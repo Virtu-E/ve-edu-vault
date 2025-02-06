@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from course_ware.models import Category
+
 from .models import ArticleResource, BookResource, CategoryExt, TopicExt, VideoResource
 
 
@@ -13,11 +14,9 @@ class CategoryExtSerializer(serializers.ModelSerializer):
             "category_name",
             "description",
             "base_mastery_points",
-            "bonus_points_available",
             "estimated_hours",
             "teacher_guide",
             "minimum_mastery_percentage",
-            "total_available_points",
         ]
 
 

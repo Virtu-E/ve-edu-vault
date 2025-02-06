@@ -2,7 +2,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator, URLVali
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from course_ware.models import Category, Topic, EdxUser
+from course_ware.models import Category, EdxUser, Topic
 
 
 class TopicExt(models.Model):

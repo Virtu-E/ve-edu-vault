@@ -3,11 +3,9 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Tuple
 
 from course_sync.main import CourseSync
-from course_ware.models import AcademicClass, Course
-from course_ware.utils import (
-    academic_class_from_course_id,
-    get_examination_level_from_course_id,
-)
+from course_ware.models import AcademicClass, Course, ExaminationLevel
+from course_ware.utils import academic_class_from_course_id, get_examination_level_from_course_id
+from webhooks.edx_requests import EdxClient
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +41,13 @@ class CourseUpdatedHandler(WebhookHandler):
     Handles OpenEdx Course Update events with improved error handling and response tracking.
     """
 
-    def _validate_payload(self, payload: Dict[str, Any]) -> Tuple[bool, str]:
+    # TODO : this can be improved
+    @staticmethod
+    def _get_edx_client():
+        return EdxClient("OPENEDX")
+
+    @staticmethod
+    def _validate_payload(payload: Dict[str, Any]) -> Tuple[bool, str]:
         """
         Validates the webhook payload structure.
 
@@ -61,7 +65,8 @@ class CourseUpdatedHandler(WebhookHandler):
 
         return True, ""
 
-    def _get_or_update_course(self, course_id: str, course_outline: Dict[str, Any]) -> Tuple[Course, bool]:
+    @staticmethod
+    def _get_or_update_course(course_id: str, course_outline: Dict[str, Any]) -> Tuple[Course, bool]:
         """
         Gets or updates course instance with proper change tracking.
 
@@ -107,7 +112,7 @@ class CourseUpdatedHandler(WebhookHandler):
         course_instance: Course,
         academic_class_instance: AcademicClass,
         course_outline: Dict[str, Any],
-        examination_level: str,
+        examination_level: ExaminationLevel,
     ) -> bool:
         """
         Synchronizes course structure with proper error handling.
@@ -146,8 +151,7 @@ class CourseUpdatedHandler(WebhookHandler):
 
         course_id = payload["course"]["course_key"]
 
-        # course_outline = get_course_outline(course_id)
-        course_outline = payload["course"]["course_outline"]
+        course_outline = self._get_edx_client().get_course_outline(course_id)
 
         course_instance, created = self._get_or_update_course(course_id, course_outline)
 

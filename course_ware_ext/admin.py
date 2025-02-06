@@ -4,13 +4,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django_json_widget.widgets import JSONEditorWidget
 
-from .models import (
-    ArticleResource,
-    BookResource,
-    CategoryExt,
-    TopicExt,
-    VideoResource,
-)
+from .models import ArticleResource, BookResource, CategoryExt, TopicExt, VideoResource
 
 
 # Base admin class with JSON widget configuration
@@ -213,7 +207,6 @@ class CategoryExtAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "base_mastery_points",
-                    "bonus_points_available",
                     "minimum_mastery_percentage",
                 )
             },

@@ -1,4 +1,4 @@
-from typing import List, Dict, Protocol
+from typing import Dict, List, Protocol
 
 from data_types.ai_core import QuestionAIContext
 

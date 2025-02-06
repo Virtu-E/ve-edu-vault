@@ -7,17 +7,9 @@ from typing import List, Literal, Set, TypeVar
 from ai_core.performance.performance_engine import PerformanceEngineInterface
 from ai_core.utils import fetch_from_model
 from course_ware.models import UserQuestionAttempts, UserQuestionSet
-from data_types.ai_core import (
-    RecommendationEngineConfig,
-    RecommendationQuestionMetadata,
-)
+from data_types.ai_core import RecommendationEngineConfig, RecommendationQuestionMetadata
 from data_types.questions import Question
-from exceptions import (
-    DatabaseQueryError,
-    DatabaseUpdateError,
-    InsufficientQuestionsError,
-    QuestionFetchError,
-)
+from exceptions import DatabaseQueryError, DatabaseUpdateError, InsufficientQuestionsError, QuestionFetchError
 from no_sql_database.nosql_database_engine import NoSqLDatabaseEngineInterface
 
 # Type variables for generics

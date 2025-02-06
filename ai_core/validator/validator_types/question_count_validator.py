@@ -1,8 +1,8 @@
-from typing import Union, Dict
+from typing import Dict, Union
 
 from pydantic import ValidationError
 
-from ai_core.learning_mode_rules import LearningRuleFactory, LearningModeType
+from ai_core.learning_mode_rules import LearningModeType, LearningRuleFactory
 from ai_core.validator.base_validator import BaseValidator
 from course_ware.models import UserQuestionAttempts
 
@@ -10,17 +10,21 @@ from course_ware.models import UserQuestionAttempts
 class PrerequisiteQuestionCountValidator(BaseValidator):
     """Validates that the number of questions matches the required count for each difficulty level."""
 
-    def __init__(self, user_question_attempt_instance: UserQuestionAttempts):
-        """
-        Initialize the validator with user attempt instance and required question count.
+    def __init__(self, **kwargs):
+        """Initialize the validator with kwargs.
 
         Args:
-            user_question_attempt_instance: Instance of UserQuestionAttempts
-            required_questions: Number of questions required per difficulty
+            **kwargs: Keyword arguments containing user_question_attempt_instance
         """
-        if not isinstance(user_question_attempt_instance, UserQuestionAttempts):
-            raise ValueError("Invalid user question attempt instance provided")
-        self.attempt_instance = user_question_attempt_instance
+        attempt_instance = kwargs.get("user_question_attempt_instance")
+
+        if not attempt_instance:
+            raise ValueError("user_question_attempt_instance not provided in kwargs")
+
+        if not isinstance(attempt_instance, UserQuestionAttempts):
+            raise ValueError(f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}")
+
+        self.attempt_instance = attempt_instance
 
     def validate(self) -> Union[bool, str]:
         """Validates that each difficulty has the required number of questions.

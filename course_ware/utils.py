@@ -1,3 +1,6 @@
+from course_ware.models import ExaminationLevel
+
+
 def academic_class_from_course_id(course_id: str) -> str | None:
     """
     Function to get Academic class from course id
@@ -23,12 +26,11 @@ def academic_class_from_course_id(course_id: str) -> str | None:
     return None
 
 
-def get_examination_level_from_course_id(course_id: str) -> str:
+def get_examination_level_from_course_id(course_id: str) -> ExaminationLevel:
     """
     Function to get examination level from course id
     """
     parts = course_id.split(":")
 
     course_parts = parts[-1].split("+")
-
-    return course_parts[1]
+    return ExaminationLevel.objects.get(name=course_parts[1])

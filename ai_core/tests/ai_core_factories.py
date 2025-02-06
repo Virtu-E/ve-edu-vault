@@ -1,8 +1,8 @@
 import factory
 from bson import ObjectId
-from factory import Factory, Faker, List, Dict, SubFactory
+from factory import Dict, Factory, Faker, List, SubFactory
 
-from data_types.ai_core import QuestionAIContext, Attempt, DifficultyStats, ModeData
+from data_types.ai_core import Attempt, DifficultyStats, ModeData, QuestionAIContext
 
 
 class AttemptsFactory(Factory):

@@ -1,4 +1,4 @@
-from typing import Union, Optional, Dict, Any
+from typing import Any, Dict, Optional, Union
 
 from ai_core.validator.base_validator import BaseValidator
 from course_ware.models import UserQuestionAttempts
@@ -11,15 +11,21 @@ class LearningModeValidator(BaseValidator):
     matches the mode specified in the question's metadata for the current version.
     """
 
-    def __init__(self, user_question_attempt_instance: UserQuestionAttempts):
-        """Initialize the validator with a user question attempt instance.
+    def __init__(self, **kwargs):
+        """Initialize the validator with kwargs.
 
         Args:
-            user_question_attempt_instance: Instance of UserQuestionAttempts to validate
+            **kwargs: Keyword arguments containing user_question_attempt_instance
         """
-        if not isinstance(user_question_attempt_instance, UserQuestionAttempts):
-            raise ValueError("Invalid user question attempt instance provided")
-        self.attempt_instance = user_question_attempt_instance
+        attempt_instance = kwargs.get("user_question_attempt_instance")
+
+        if not attempt_instance:
+            raise ValueError("user_question_attempt_instance not provided in kwargs")
+
+        if not isinstance(attempt_instance, UserQuestionAttempts):
+            raise ValueError(f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}")
+
+        self.attempt_instance = attempt_instance
 
     def _get_metadata_mode(self, metadata: Dict[str, Any], version: str) -> Optional[str]:
         """Safely extracts the learning mode from metadata for given version.

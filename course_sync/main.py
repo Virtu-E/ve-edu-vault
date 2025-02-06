@@ -6,7 +6,7 @@ from django.db import transaction
 from course_sync.comparator import StructureComparator
 from course_sync.side_effects import TopicCreationSideEffect
 from course_sync.sync_types import CategorySync, TopicSync
-from course_ware.models import AcademicClass, Course
+from course_ware.models import AcademicClass, Course, ExaminationLevel
 from exceptions import DatabaseUpdateError
 from no_sql_database.mongodb import mongo_database
 
@@ -21,7 +21,7 @@ class CourseSync:
         self,
         course: Course,
         academic_class: AcademicClass,
-        examination_level: str,
+        examination_level: ExaminationLevel,
         new_structure: Optional[Dict] = None,
     ):
         self.course = course

@@ -1,13 +1,33 @@
 from abc import ABC
 from enum import Enum
+from typing import Union
 
 
-class LearningModeType(Enum):
+class LearningModeType(str, Enum):
     NORMAL = "normal"
     REINFORCEMENT = "reinforcement"
     RECOVERY = "recovery"
     RESET = "reset"
     MASTERED = "mastered"
+
+    @classmethod
+    def from_string(cls, value: Union[str, "LearningModeType"]) -> "LearningModeType":
+        if isinstance(value, cls):
+            return value
+
+        if not isinstance(value, str):
+            raise ValueError(f"Value must be a string or {cls.__name__}, got {type(value)}")
+
+        try:
+            # Try to match the exact enum value first
+            return cls(value.lower())
+        except ValueError:
+            # If no exact match, try to match case-insensitive
+            valid_values = {member.value.lower(): member for member in cls}
+            if value.lower() in valid_values:
+                return valid_values[value.lower()]
+
+            raise ValueError(f"Invalid {cls.__name__}: '{value}'. Valid values are: {', '.join(member.value for member in cls)}")
 
 
 class BaseLearningModeRule(ABC):
@@ -17,8 +37,53 @@ class BaseLearningModeRule(ABC):
     attempts_allowed = 0
     prerequisite = ""
     system_template = """You are an intelligent learning assistant tasked with recommending questions and creating learning paths for students.
-Your recommendations should be based on their current learning mode, performance history, and specific requirements.
-Provide your response in a structured format that can be parsed into JSON."""
+    Your recommendations should be based on the provided data which includes:
+
+    1. Course Data:
+       - All information provided in the Context section (Course details, Mode, Topic, etc.)
+       - Any relevant syllabus or curriculum information
+
+    2. Student Data:
+       - Learning history and performance metrics
+       - Previous attempts and outcomes
+       - Failed difficulty levels and tags
+
+    3. Task Requirements:
+       - Specific requirements defined in mode_specific_task
+       - General requirements (conceptual progression, addressing weaknesses)
+
+    IMPORTANT: When selecting questions:
+    1. First check if suitable questions exist in the Question Bank that:
+       - Meet all requirements specified in the provided data
+       - Haven't been previously attempted (check Previous Attempt IDs)
+
+    2. Your response must always be in this format:
+       {
+         "question_bank_ids": [],      # List of question IDs from the bank that meet requirements
+         "generated_questions": []      # List of newly generated questions only if needed
+       }
+
+    3. Only generate new questions if:
+       - The questions in the bank have already been answered by the user
+       - OR there aren't enough suitable questions in the bank meeting the requirements
+       - Use this format for generated questions:
+          dict (
+
+        "text": "question_text",
+        "difficulty": "difficulty_level",
+        "tags": ["tag1", "tag2"],
+        "choices": [dict ("text": "option_text", "is_correct": boolean )],
+        "solution": dict("explanation": "explanation", "steps": ["step1", "step2"]),
+        "hint": "hint_text",
+        "metadata": dict("created_by": "model", "time_estimate": dict("minutes": "3"))
+
+    )
+        where dict is a dictionary format, i.e. curly braces
+
+
+    Analyze all provided data to make appropriate recommendations following the specified requirements.
+    Provide your response in JSON format with both question_bank_ids and generated_questions arrays, even if one is empty.
+    """
     current_mode = ""
     mode_specific_context = ""
     mode_description = ""
@@ -39,26 +104,8 @@ Provide your response in a structured format that can be parsed into JSON."""
     {mode_specific_task}
 
     Requirements:
-    - Exclude questions from Previous Attempt IDs
     - Build conceptual progression
     - Address specific areas of weakness
-    - If no applicable questions from question bank, generate new questions from the relevant context.
-
-    Return questions in this format:
-    [ dict (
-
-        "text": "question_text",
-        "difficulty": "difficulty_level",
-        "tags": ["tag1", "tag2"],
-        "choices": [dict ("text": "option_text", "is_correct": boolean )],
-        "solution": dict("explanation": "explanation", "steps": ["step1", "step2"]),
-        "hint": "hint_text",
-        "metadata": dict("created_by": "model", "time_estimate": dict("minutes": "3"))
-
-    )
-    ]
-
-    where dict is a dictionary format, i.e. curly braces
 
     Question Bank:
     {question_bank}
@@ -79,17 +126,16 @@ class NormalRule(BaseLearningModeRule):
     mode_description = ""
     current_mode = LearningModeType.NORMAL
     mode_specific_context = """
-     Failed Difficulty Levels: {failed_difficulties}
-     Failed Tags: {failed_tags}
-     Previous Attempt IDs: {previous_attempt_ids}
-     """
-
+    Failed Difficulty Levels: {failed_difficulties}
+    Failed Tags: {failed_tags}
+    Previous Attempt IDs: {previous_attempt_ids}
+    """
     mode_specific_task = """
-              Task:
-              Select 3 questions for each failed difficulty level where:
-              - 60% focus on failed tags
-              - 40% introduce new but related tags
-              """
+    Task:
+    Select 3 questions for each failed difficulty level where:
+    - 60% focus on failed tags
+    - 40% introduce new but related tags
+    """
 
 
 class RecoveryRule(BaseLearningModeRule):
@@ -101,17 +147,16 @@ class RecoveryRule(BaseLearningModeRule):
     prerequisite = LearningModeType.REINFORCEMENT
     mode_description = ""
     mode_specific_context = """
-       Failed Difficulty Levels: {failed_difficulties}
-       Failed Tags: {failed_tags}
-       Previous Attempt IDs: {previous_attempt_ids}
-       """
-
+    Failed Difficulty Levels: {failed_difficulties}
+    Failed Tags: {failed_tags}
+    Previous Attempt IDs: {previous_attempt_ids}
+    """
     mode_specific_task = """
-       Task:
-       Select 5 questions for each failed difficulty level where:
-       - 60% focus on failed tags
-       - 40% introduce new but related tags
-       """
+    Task:
+    Select 5 questions for each failed difficulty level where:
+    - 60% focus on failed tags
+    - 40% introduce new but related tags
+    """
 
 
 class ReinforcementRule(BaseLearningModeRule):
@@ -127,7 +172,6 @@ class ReinforcementRule(BaseLearningModeRule):
     Failed Tags: {failed_tags}
     Previous Attempt IDs: {previous_attempt_ids}
     """
-
     mode_specific_task = """
     Task:
     Select 3 questions for each failed difficulty level where:
@@ -144,22 +188,23 @@ class ResetRule(BaseLearningModeRule):
     prerequisite = LearningModeType.RECOVERY
     mode_description = ""
     current_mode = LearningModeType.RESET
-    system_template = """You are an intelligent learning assistant that recommends educational resources to support student learning.
+    system_template = """
+    You are an intelligent learning assistant that recommends educational resources to support student learning.
     Analyze the student's context, performance history, and learning needs to suggest targeted learning materials.
     Recommend a mix of videos, articles, interactive tools, and other educational content that align with the topic and learning objectives.
-    Provide your response in a structured format that can be parsed into JSON with fields for resource type, title, description, difficulty level, and estimated completion time."""
+    Provide your response in a structured format that can be parsed into JSON with fields for resource type, title, description, difficulty level, and estimated completion time.
+    """
     mode_specific_context = """
-          Failed Difficulty Levels: {failed_difficulties}
-          Failed Tags: {failed_tags}
-          Previous Attempt IDs: {previous_attempt_ids}
-          """
-
+    Failed Difficulty Levels: {failed_difficulties}
+    Failed Tags: {failed_tags}
+    Previous Attempt IDs: {previous_attempt_ids}
+    """
     mode_specific_task = """
-          Task:
-          Select 3 questions for each failed difficulty level where:
-          - 60% focus on failed tags
-          - 40% introduce new but related tags
-          """
+    Task:
+    Select 3 questions for each failed difficulty level where:
+    - 60% focus on failed tags
+    - 40% introduce new but related tags
+    """
 
 
 class MasteredRule(BaseLearningModeRule):

@@ -7,13 +7,10 @@ from .models import OAuthClientConfig
 class OAuthClient:
     def __init__(self, service_type=None, config_name=None):
         self.config = self.get_config(config_name, service_type)
-
         self.base_url = self.config.base_url
         self.client_id = self.config.client_id
         self.client_secret = self.config.client_secret
         self.service_type = self.config.service_type
-
-        self.config = self.get_config(service_type)
 
     @staticmethod
     def get_config(config_name=None, service_type=None):

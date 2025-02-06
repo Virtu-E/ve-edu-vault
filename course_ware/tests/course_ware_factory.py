@@ -5,17 +5,7 @@ from bson import ObjectId
 from factory import Factory, Faker, Sequence, SubFactory
 from factory.django import DjangoModelFactory
 
-from course_ware.models import (
-    AcademicClass,
-    Category,
-    Course,
-    Topic,
-    UserQuestionAttempts,
-    UserQuestionSet,
-    EdxUser,
-    ExaminationLevel,
-    CoreElement,
-)
+from course_ware.models import AcademicClass, Category, CoreElement, Course, EdxUser, ExaminationLevel, Topic, UserQuestionAttempts, UserQuestionSet
 from data_types.course_ware_schema import QuestionMetadata
 from data_types.questions import Choice, Metadata, Question, Solution
 

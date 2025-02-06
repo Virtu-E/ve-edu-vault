@@ -1,12 +1,10 @@
 import logging
-from typing import Dict
-from dataclasses import dataclass
 
 from django.db import transaction
 
-from course_ware.models import UserQuestionAttempts, UserQuestionSet, EdxUser, Topic
+from course_ware.models import EdxUser, Topic, UserQuestionAttempts, UserQuestionSet
 from course_ware_ext.models import TopicMastery
-from data_types.ai_core import PerformanceStats
+from data_types.ai_core import EvaluationResult
 from grade_book.messages import ModeMessageGenerator
 from grade_book.performance_evaluator import PerformanceEvaluator
 from grade_book.strategy import LearningModeStrategy
@@ -15,21 +13,18 @@ from repository.grade_book import LearningHistoryRepository
 log = logging.getLogger(__name__)
 
 
-@dataclass
-class EvaluationResult:
-    """Data class to hold evaluation results"""
-
-    status: str
-    passed: bool
-    next_mode: str
-    mode_guidance: str
-    guidance: str
-    performance_stats: PerformanceStats | None
-    ai_recommendation: Dict
-
-
 class Gradebook:
-    def __init__(self, performance_evaluator: PerformanceEvaluator, message_generator: ModeMessageGenerator, learning_mode_strategy: LearningModeStrategy, learning_history_repository: LearningHistoryRepository, user_question_set: UserQuestionSet, topic: Topic, user: EdxUser, user_attempt: UserQuestionAttempts):
+    def __init__(
+        self,
+        performance_evaluator: PerformanceEvaluator,
+        message_generator: ModeMessageGenerator,
+        learning_mode_strategy: LearningModeStrategy,
+        learning_history_repository: LearningHistoryRepository,
+        user_question_set: UserQuestionSet,
+        topic: Topic,
+        user: EdxUser,
+        user_attempt: UserQuestionAttempts,
+    ):
         self._performance_evaluator = performance_evaluator
         self._message_generator = message_generator
         self._learning_mode_strategy = learning_mode_strategy

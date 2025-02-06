@@ -2,11 +2,9 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from langchain.output_parsers import ResponseSchema, StructuredOutputParser
-from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
-from ai_core.ai.prompt_generators.base_prompt_generator import (
-    BaseQuestionPromptGenerator,
-)
+from ai_core.ai.prompt_generators.base_prompt_generator import BaseQuestionPromptGenerator
 
 
 class LangChainPromptGeneratorInterface(ABC):

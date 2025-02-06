@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import Dict, List
 
-from data_types.ai_core import QuestionAIContext, Attempt
+from data_types.ai_core import Attempt, QuestionAIContext
 from exceptions import InvalidQuestionConfiguration
 from repository.shared import QuestionRepository
 
@@ -36,20 +36,20 @@ class QuestionContextBuilder(QuestionContextBuilderInterface):
         question_contexts = []
 
         for question in questions:
-            attempt_data = question_metadata.get(question.id)
+            attempt_data = question_metadata.get(question["_id"])
             if not attempt_data:
-                raise InvalidQuestionConfiguration(f"Question {question.id} not found in attempt data")
+                raise InvalidQuestionConfiguration(f"Question {question['_id']} not found in attempt data")
 
             attempt = Attempt(
-                success=attempt_data.is_correct,
+                success=attempt_data["is_correct"],
                 timeSpent=90,
-                attemptNumber=attempt_data.attempt_number,
+                attemptNumber=attempt_data["attempt_number"],
             )
 
             context = QuestionAIContext(
-                _id=question.id,
-                difficulty=question.difficulty,
-                tags=question.tags,
+                _id=question["_id"],
+                difficulty=question["difficulty"],
+                tags=question["tags"],
                 attempts=attempt,
             )
 

@@ -1,6 +1,6 @@
 import pytest
 
-from course_ware.tests.course_ware_factory import UserFactory, TopicFactory
+from course_ware.tests.course_ware_factory import TopicFactory, UserFactory
 
 
 @pytest.fixture(autouse=True)

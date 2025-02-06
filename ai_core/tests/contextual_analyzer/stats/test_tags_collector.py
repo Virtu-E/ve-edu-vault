@@ -2,7 +2,7 @@
 import pytest
 
 from ai_core.contextual_analyzer.stats.tags_collector import FailedTagsCollector
-from ai_core.tests.ai_core_factories import QuestionAIContextFactory, AttemptsFactory
+from ai_core.tests.ai_core_factories import AttemptsFactory, QuestionAIContextFactory
 
 
 @pytest.fixture

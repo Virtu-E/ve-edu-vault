@@ -5,6 +5,7 @@ from decouple import config
 from oauth_clients.services import OAuthClient
 
 
+# TODO : thinking of making this a singleton class instance
 class EdxClient:
     def __init__(self, service_type: str):
         self.client = OAuthClient(service_type=service_type)

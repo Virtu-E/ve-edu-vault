@@ -1,10 +1,11 @@
 from unittest.mock import MagicMock, patch
+
 import pytest
 from langchain.chat_models import ChatOpenAI
 from langchain.output_parsers import StructuredOutputParser
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 
-from ai_core.ai.edu_ai_engine import EduAIEngine, AIEngineInterface
+from ai_core.ai.edu_ai_engine import AIEngineInterface, EduAIEngine
 
 
 class MockLangChainPromptGenerator:
