@@ -177,3 +177,19 @@ COMPLETION_THRESHOLD = 2 / 3
 ENCRYPTION_KEY = "gk79FsqK0sTh03Xo6MFkQW6g44-bk4cXj3gFvmpk8kA="
 LTI_LAUNCH_URL = "https://vault.virtueducate.edly.io/lti/launch/"
 LEARNING_HISTORY_COLLECTION_NAME = "learning_history"
+
+
+# CELERY SETTINGS
+CELERY_BROKER_URL = "redis://default:1oynQcxAlVNul3J3RCND3w53y4AGNHPj@redis-19292.internal.c36439.af-south-1-mz.ec2.cloud.rlrcp.com:19292/0"
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "UTC"
+
+# Track started tasks in addition to pending
+CELERY_TASK_TRACK_STARTED = True
+
+# Store task results for 7 days
+CELERY_RESULT_EXPIRES = 60 * 60 * 24 * 7
