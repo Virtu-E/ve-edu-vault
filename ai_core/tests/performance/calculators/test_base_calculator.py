@@ -26,24 +26,28 @@ class TestBasePerformanceCalculator:
             )
             for i in range(3)
         ]
-        questions.extend([
-            QuestionMetadataFactory(
-                question_id=f"q{i}",
-                difficulty="medium",
-                is_correct=i < 2,
-                attempt_number=2,
-            )
-            for i in range(3, 6)
-        ])
-        questions.extend([
-            QuestionMetadataFactory(
-                question_id=f"q{i}",
-                difficulty="hard",
-                is_correct=False,
-                attempt_number=3,
-            )
-            for i in range(6, 9)
-        ])
+        questions.extend(
+            [
+                QuestionMetadataFactory(
+                    question_id=f"q{i}",
+                    difficulty="medium",
+                    is_correct=i < 2,
+                    attempt_number=2,
+                )
+                for i in range(3, 6)
+            ]
+        )
+        questions.extend(
+            [
+                QuestionMetadataFactory(
+                    question_id=f"q{i}",
+                    difficulty="hard",
+                    is_correct=False,
+                    attempt_number=3,
+                )
+                for i in range(6, 9)
+            ]
+        )
 
         return {q.question_id: q for q in questions}
 
@@ -64,11 +68,15 @@ class TestBasePerformanceCalculator:
             calculator.validate_difficulty("invalid")
         assert "Invalid difficulty" in str(exc_info.value)
 
-    def test_calculate_performance_empty_data(self, calculator: BasePerformanceCalculator):
+    def test_calculate_performance_empty_data(
+        self, calculator: BasePerformanceCalculator
+    ):
         """Test performance calculation with empty data."""
         stats = calculator.calculate_performance({})
         assert isinstance(stats, PerformanceStats)
-        assert all(status == "incomplete" for status in stats.difficulty_status.values())
+        assert all(
+            status == "incomplete" for status in stats.difficulty_status.values()
+        )
         assert len(stats.ranked_difficulties) == 3
         assert all(avg == 0.0 for _, avg in stats.ranked_difficulties)
 
@@ -95,9 +103,16 @@ class TestBasePerformanceCalculator:
         avg_attempts = [avg for _, avg in stats.ranked_difficulties]
         assert avg_attempts == sorted(avg_attempts)
 
-    def test_calculate_performance_partial_data(self, calculator: BasePerformanceCalculator):
+    def test_calculate_performance_partial_data(
+        self, calculator: BasePerformanceCalculator
+    ):
         """Test performance calculation with partial difficulty data."""
-        questions = [QuestionMetadataFactory(difficulty="easy", is_correct=True, attempt_number=1) for _ in range(2)]
+        questions = [
+            QuestionMetadataFactory(
+                difficulty="easy", is_correct=True, attempt_number=1
+            )
+            for _ in range(2)
+        ]
         data = {q.question_id: q for q in questions}
 
         stats = calculator.calculate_performance(data)
@@ -106,9 +121,13 @@ class TestBasePerformanceCalculator:
         assert stats.difficulty_status["hard"] == "incomplete"
 
     @pytest.mark.parametrize("required_correct", [5, 1, 3])
-    def test_different_required_correct_thresholds(self, required_correct: int, sample_question_data: Dict[str, QuestionMetadata]):
+    def test_different_required_correct_thresholds(
+        self, required_correct: int, sample_question_data: Dict[str, QuestionMetadata]
+    ):
         """Test performance calculation with different required correct question thresholds."""
-        calculator = BasePerformanceCalculator(required_correct_questions=required_correct)
+        calculator = BasePerformanceCalculator(
+            required_correct_questions=required_correct
+        )
         stats = calculator.calculate_performance(sample_question_data)
 
         # For easy difficulty (3 correct questions)
@@ -123,14 +142,16 @@ class TestBasePerformanceCalculator:
         """Test difficulty ranking when attempt numbers are equal."""
         questions = []
         for diff in ["easy", "medium", "hard"]:
-            questions.extend([
-                QuestionMetadataFactory(
-                    difficulty=diff,
-                    is_correct=True,
-                    attempt_number=2,  # Same attempt number for all
-                )
-                for _ in range(2)
-            ])
+            questions.extend(
+                [
+                    QuestionMetadataFactory(
+                        difficulty=diff,
+                        is_correct=True,
+                        attempt_number=2,  # Same attempt number for all
+                    )
+                    for _ in range(2)
+                ]
+            )
 
         data = {q.question_id: q for q in questions}
         stats = calculator.calculate_performance(data)

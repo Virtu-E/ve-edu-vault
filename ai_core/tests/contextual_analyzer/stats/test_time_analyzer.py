@@ -28,8 +28,12 @@ class TestTimeAnalyzer:
     def test_first_attempts_only(self, analyzer):
         """Test analysis when all questions are on their first attempt."""
         questions = [
-            QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=1, timeSpent=100)),
-            QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=1, timeSpent=200)),
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(attemptNumber=1, timeSpent=100)
+            ),
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(attemptNumber=1, timeSpent=200)
+            ),
         ]
 
         result = analyzer.analyze_time(questions)
@@ -44,10 +48,14 @@ class TestTimeAnalyzer:
         """Test analysis when questions have had two attempts."""
         questions = [
             QuestionAIContextFactory(
-                attempts=AttemptsFactory(attemptNumber=2, timeSpent=150)  # Total time after 2 attempts
+                attempts=AttemptsFactory(
+                    attemptNumber=2, timeSpent=150
+                )  # Total time after 2 attempts
             ),
             QuestionAIContextFactory(
-                attempts=AttemptsFactory(attemptNumber=2, timeSpent=200)  # Total time after 2 attempts
+                attempts=AttemptsFactory(
+                    attemptNumber=2, timeSpent=200
+                )  # Total time after 2 attempts
             ),
         ]
 
@@ -72,7 +80,9 @@ class TestTimeAnalyzer:
                 attempts=AttemptsFactory(attemptNumber=2, timeSpent=300)  # Two attempts
             ),
             QuestionAIContextFactory(
-                attempts=AttemptsFactory(attemptNumber=3, timeSpent=600)  # Three attempts
+                attempts=AttemptsFactory(
+                    attemptNumber=3, timeSpent=600
+                )  # Three attempts
             ),
         ]
 
@@ -87,12 +97,18 @@ class TestTimeAnalyzer:
     def test_time_distribution_with_varied_attempts(self, analyzer):
         """Test time distribution calculations with varied attempt counts."""
         questions = [
-            QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=1, timeSpent=100)),
             QuestionAIContextFactory(
-                attempts=AttemptsFactory(attemptNumber=2, timeSpent=300)  # 150 per attempt average
+                attempts=AttemptsFactory(attemptNumber=1, timeSpent=100)
             ),
             QuestionAIContextFactory(
-                attempts=AttemptsFactory(attemptNumber=3, timeSpent=600)  # 200 per attempt average
+                attempts=AttemptsFactory(
+                    attemptNumber=2, timeSpent=300
+                )  # 150 per attempt average
+            ),
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(
+                    attemptNumber=3, timeSpent=600
+                )  # 200 per attempt average
             ),
         ]
 
@@ -104,13 +120,24 @@ class TestTimeAnalyzer:
         expected_second = (150 + 200) / total_time
         expected_third = 200 / total_time
 
-        assert pytest.approx(result["timeDistribution"]["firstAttempt"]) == expected_first
-        assert pytest.approx(result["timeDistribution"]["secondAttempt"]) == expected_second
-        assert pytest.approx(result["timeDistribution"]["thirdAttempt"]) == expected_third
+        assert (
+            pytest.approx(result["timeDistribution"]["firstAttempt"]) == expected_first
+        )
+        assert (
+            pytest.approx(result["timeDistribution"]["secondAttempt"])
+            == expected_second
+        )
+        assert (
+            pytest.approx(result["timeDistribution"]["thirdAttempt"]) == expected_third
+        )
 
     def test_zero_time_spent(self, analyzer):
         """Test handling of questions with zero time spent."""
-        questions = [QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=2, timeSpent=0))]
+        questions = [
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(attemptNumber=2, timeSpent=0)
+            )
+        ]
 
         result = analyzer.analyze_time(questions)
         assert result["averageFirstAttemptTime"] == 0.0
@@ -128,7 +155,13 @@ class TestTimeAnalyzer:
     )
     def test_invalid_data_handling(self, analyzer, attempt_number, time_spent):
         """Test handling of invalid attempt numbers and negative times."""
-        questions = [QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=attempt_number, timeSpent=time_spent))]
+        questions = [
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(
+                    attemptNumber=attempt_number, timeSpent=time_spent
+                )
+            )
+        ]
 
         # The analyzer should handle these cases gracefully
         result = analyzer.analyze_time(questions)
@@ -138,8 +171,12 @@ class TestTimeAnalyzer:
     def test_internal_time_grouping(self, analyzer):
         """Test the internal _group_time_by_attempt method."""
         questions = [
-            QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=1, timeSpent=100)),
-            QuestionAIContextFactory(attempts=AttemptsFactory(attemptNumber=2, timeSpent=300)),
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(attemptNumber=1, timeSpent=100)
+            ),
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(attemptNumber=2, timeSpent=300)
+            ),
         ]
 
         time_groups = analyzer._group_time_by_attempt(questions)

@@ -54,8 +54,12 @@ class BaseQuestionPromptGenerator(QuestionPromptGeneratorInterface):
         Raises:
             ValueError: If the prerequisite mode is missing in the learning history.
         """
-        if self.rule.prerequisite and not self.learning_history.modeHistory.get(self.rule.prerequisite):
-            raise ValueError(f"Learning history does not contain the required prerequisite: {self.rule.prerequisite}")
+        if self.rule.prerequisite and not self.learning_history.modeHistory.get(
+            self.rule.prerequisite
+        ):
+            raise ValueError(
+                f"Learning history does not contain the required prerequisite: {self.rule.prerequisite}"
+            )
 
     def generate_question_prompt(self) -> str:
         """

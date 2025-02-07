@@ -1,4 +1,8 @@
-from course_ware.views import GetQuestionsView, PostQuestionAttemptView, QuizCompletionView
+from course_ware.views import (
+    GetQuestionsView,
+    PostQuestionAttemptView,
+    QuizCompletionView,
+)
 from edu_vault.settings import common
 from no_sql_database.nosql_database_engine import MongoDatabaseEngine
 

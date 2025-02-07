@@ -22,7 +22,9 @@ class QuestionMetadataValidator(BaseValidator):
             raise ValueError("user_question_attempt_instance not provided in kwargs")
 
         if not isinstance(attempt_instance, UserQuestionAttempts):
-            raise ValueError(f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}")
+            raise ValueError(
+                f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}"
+            )
 
         self.attempt_instance = attempt_instance
 

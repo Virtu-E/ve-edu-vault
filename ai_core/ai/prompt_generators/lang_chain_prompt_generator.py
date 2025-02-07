@@ -4,7 +4,9 @@ from typing import List
 from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
-from ai_core.ai.prompt_generators.base_prompt_generator import BaseQuestionPromptGenerator
+from ai_core.ai.prompt_generators.base_prompt_generator import (
+    BaseQuestionPromptGenerator,
+)
 
 
 class LangChainPromptGeneratorInterface(ABC):
@@ -51,5 +53,7 @@ class LangChainQuestionPromptGenerator(LangChainPromptGeneratorInterface):
         prompt = self.base_prompt.generate_question_prompt()
         return [
             SystemMessage(content=prompt),
-            HumanMessage(content="Generate content based on the above context and requirements."),
+            HumanMessage(
+                content="Generate content based on the above context and requirements."
+            ),
         ]

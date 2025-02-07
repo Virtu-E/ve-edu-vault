@@ -26,7 +26,9 @@ def mock_prompt_generator():
 def mock_llm():
     """Fixture for a mocked ChatOpenAI instance."""
     mock = MagicMock(spec=ChatOpenAI)
-    mock.return_value = AIMessage(content='{"generated_questions": [{"question": "What is AI?", "metadata": {}}]}')
+    mock.return_value = AIMessage(
+        content='{"generated_questions": [{"question": "What is AI?", "metadata": {}}]}'
+    )
     return mock
 
 
@@ -38,7 +40,9 @@ def edu_ai_engine(mock_prompt_generator, mock_llm):
 
 def test_edu_ai_engine_implements_interface():
     """Test that EduAIEngine properly implements AIEngineInterface."""
-    assert issubclass(EduAIEngine, AIEngineInterface), "EduAIEngine should implement AIEngineInterface"
+    assert issubclass(
+        EduAIEngine, AIEngineInterface
+    ), "EduAIEngine should implement AIEngineInterface"
 
 
 def test_create_output_parser():
@@ -55,9 +59,13 @@ def test_create_output_parser():
 
 def test_get_ai_recommendation_success(edu_ai_engine, mock_llm):
     """Test successful AI recommendation generation."""
-    expected_response = {"generated_questions": [{"question": "What is AI?", "metadata": {}}]}
+    expected_response = {
+        "generated_questions": [{"question": "What is AI?", "metadata": {}}]
+    }
 
-    mock_llm.return_value = AIMessage(content='{"generated_questions": [{"question": "What is AI?", "metadata": {}}]}')
+    mock_llm.return_value = AIMessage(
+        content='{"generated_questions": [{"question": "What is AI?", "metadata": {}}]}'
+    )
 
     result = edu_ai_engine.get_ai_recommendation()
 

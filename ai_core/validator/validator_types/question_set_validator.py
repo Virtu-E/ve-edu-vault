@@ -35,13 +35,17 @@ class QuestionSetMetadataValidator(BaseValidator):
         if not question_set:
             raise ValueError("question_set not provided in kwargs")
         if not isinstance(question_set, UserQuestionSet):
-            raise ValueError(f"Expected UserQuestionSet instance, got {type(question_set)}")
+            raise ValueError(
+                f"Expected UserQuestionSet instance, got {type(question_set)}"
+            )
 
         # Validate attempt_instance
         if not attempt_instance:
             raise ValueError("attempt_instance not provided in kwargs")
         if not isinstance(attempt_instance, UserQuestionAttempts):
-            raise ValueError(f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}")
+            raise ValueError(
+                f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}"
+            )
 
         self.question_set = question_set
         self.attempt_instance = attempt_instance

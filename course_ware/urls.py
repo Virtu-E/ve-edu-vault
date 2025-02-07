@@ -1,7 +1,16 @@
 from django.urls import path
 
-from course_ware.factory_views import complete_quiz_view_factory, get_questions_view_factory, post_question_attempt_view_factory
-from course_ware.views import CourseOutlinePathView, GetQuestionAttemptView, GetSingleQuestionAttemptView, iframe_id_given_topic_id
+from course_ware.factory_views import (
+    complete_quiz_view_factory,
+    get_questions_view_factory,
+    post_question_attempt_view_factory,
+)
+from course_ware.views import (
+    CourseOutlinePathView,
+    GetQuestionAttemptView,
+    GetSingleQuestionAttemptView,
+    iframe_id_given_topic_id,
+)
 
 app_name = "course_ware"
 

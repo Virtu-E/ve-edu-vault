@@ -1,6 +1,10 @@
 import pytest
 
-from course_ware.tests.course_ware_factory import CategoryFactory, CourseFactory, TopicFactory
+from course_ware.tests.course_ware_factory import (
+    CategoryFactory,
+    CourseFactory,
+    TopicFactory,
+)
 from data_types.course_ware_models import EdxUserData
 
 

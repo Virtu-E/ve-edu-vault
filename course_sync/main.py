@@ -41,14 +41,18 @@ class CourseSync:
             bool: True if sync was performed, False if no changes detected
         """
         if not force and self.new_structure:
-            if not self.comparator.has_changes(self.stored_structure, self.new_structure):
+            if not self.comparator.has_changes(
+                self.stored_structure, self.new_structure
+            ):
                 log.info(f"No changes detected for course {self.course.name}")
                 return False
 
             self._update_course_name()
             self._update_stored_structure()
 
-        structure_to_sync = self.new_structure if self.new_structure else self.stored_structure
+        structure_to_sync = (
+            self.new_structure if self.new_structure else self.stored_structure
+        )
 
         try:
             self.category_sync.sync(structure_to_sync)

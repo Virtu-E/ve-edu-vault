@@ -7,7 +7,9 @@ class LearningHistoryRepository(ABC):
     """Interface Segregation - Separate database operations"""
 
     @abstractmethod
-    def save_learning_history(self, user_id: str, block_id: str, evaluation_result: EvaluationResult) -> None:
+    def save_learning_history(
+        self, user_id: str, block_id: str, evaluation_result: EvaluationResult
+    ) -> None:
         pass
 
 
@@ -19,7 +21,9 @@ class MongoLearningHistoryRepository(LearningHistoryRepository):
         self.database_name = database_name
         self.collection_name = collection_name
 
-    def save_learning_history(self, user_id: str, topic_id: str, evaluation_result: EvaluationResult) -> None:
+    def save_learning_history(
+        self, user_id: str, topic_id: str, evaluation_result: EvaluationResult
+    ) -> None:
         learning_history_data = {
             "user_id": user_id,
             "topic_id": topic_id,

@@ -22,7 +22,9 @@ class PrerequisiteQuestionCountValidator(BaseValidator):
             raise ValueError("user_question_attempt_instance not provided in kwargs")
 
         if not isinstance(attempt_instance, UserQuestionAttempts):
-            raise ValueError(f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}")
+            raise ValueError(
+                f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}"
+            )
 
         self.attempt_instance = attempt_instance
 
@@ -42,7 +44,9 @@ class PrerequisiteQuestionCountValidator(BaseValidator):
             }
 
             current_learning_mode = self.attempt_instance.current_learning_mode
-            rule = LearningRuleFactory.create_rule(rule_mapping.get(current_learning_mode))
+            rule = LearningRuleFactory.create_rule(
+                rule_mapping.get(current_learning_mode)
+            )
             version_content = self.attempt_instance.get_latest_question_metadata
             required_questions = rule.questions_per_difficulty
 

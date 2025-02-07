@@ -29,7 +29,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "points_earned",
-                    models.PositiveIntegerField(default=0, help_text="Total points earned in this topic"),
+                    models.PositiveIntegerField(
+                        default=0, help_text="Total points earned in this topic"
+                    ),
                 ),
                 (
                     "mastery_achievements",

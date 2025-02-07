@@ -12,4 +12,6 @@ def fetch_from_model(model, **kwargs):
 
 
 def sort_versions(version_keys: List[str]) -> List[str]:
-    return sorted(version_keys, key=lambda x: [int(i) for i in x.lstrip("v").split(".")])
+    return sorted(
+        version_keys, key=lambda x: [int(i) for i in x.lstrip("v").split(".")]
+    )

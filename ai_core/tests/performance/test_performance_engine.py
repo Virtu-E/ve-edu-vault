@@ -33,7 +33,9 @@ def performance_engine(mock_performance_calculator, user, topic):
 
 
 class TestPerformanceEngine:
-    def test_get_topic_performance_stats_with_data(self, performance_engine, user, topic):
+    def test_get_topic_performance_stats_with_data(
+        self, performance_engine, user, topic
+    ):
         UserQuestionAttemptsFactory(
             user_id=user.id,
             topic_id=topic.id,
@@ -60,8 +62,12 @@ class TestPerformanceEngine:
         assert result.ranked_difficulties == []
         assert result.difficulty_status == {}
 
-    def test_get_user_attempt_question_metadata_success(self, performance_engine, user, topic):
-        question_attempt = UserQuestionAttemptsFactory(user_id=user.id, topic_id=topic.id)
+    def test_get_user_attempt_question_metadata_success(
+        self, performance_engine, user, topic
+    ):
+        question_attempt = UserQuestionAttemptsFactory(
+            user_id=user.id, topic_id=topic.id
+        )
 
         instance = performance_engine._get_user_attempt_question_attempt_instance()
 
@@ -73,7 +79,9 @@ class TestPerformanceEngine:
         assert instance is None
 
     @patch("course_ware.models.UserQuestionAttempts.objects.get", autospec=True)
-    def test_get_user_attempt_question_metadata_error(self, mock_get, performance_engine):
+    def test_get_user_attempt_question_metadata_error(
+        self, mock_get, performance_engine
+    ):
         mock_get.side_effect = Exception("Database error")
 
         with pytest.raises(DatabaseQueryError):

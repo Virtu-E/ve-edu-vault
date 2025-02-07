@@ -104,7 +104,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "email",
-                    models.EmailField(blank=True, help_text="edX email", max_length=254, null=True),
+                    models.EmailField(
+                        blank=True, help_text="edX email", max_length=254, null=True
+                    ),
                 ),
                 ("active", models.BooleanField(default=True)),
             ],

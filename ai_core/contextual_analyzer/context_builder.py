@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from typing import Any, List
 
 from data_types.ai_core import Attempt, QuestionAIContext
+from data_types.course_ware_schema import QuestionMetadata
 from exceptions import InvalidQuestionConfiguration
 from repository.shared import QuestionRepository
 
@@ -10,7 +11,11 @@ class QuestionContextBuilderInterface(ABC):
     """Interface for building question contexts"""
 
     @abstractmethod
-    def build_question_context(self, question_ids: List[str], question_metadata: Dict) -> List[QuestionAIContext]:
+    def build_question_context(
+        self,
+        question_ids: List[str],
+        question_metadata: dict[str, QuestionMetadata | Any],
+    ) -> List[QuestionAIContext]:
         """Build question contexts for AI analysis"""
         raise NotImplementedError
 
@@ -21,7 +26,11 @@ class QuestionContextBuilder(QuestionContextBuilderInterface):
     def __init__(self, question_repository: QuestionRepository):
         self.question_repository = question_repository
 
-    def build_question_context(self, question_ids: List[str], question_metadata: Dict) -> List[QuestionAIContext]:
+    def build_question_context(
+        self,
+        question_ids: List[str],
+        question_metadata: dict[str, QuestionMetadata | Any],
+    ) -> List[QuestionAIContext]:
         """
         Build question contexts for AI analysis.
 
@@ -38,7 +47,9 @@ class QuestionContextBuilder(QuestionContextBuilderInterface):
         for question in questions:
             attempt_data = question_metadata.get(question["_id"])
             if not attempt_data:
-                raise InvalidQuestionConfiguration(f"Question {question['_id']} not found in attempt data")
+                raise InvalidQuestionConfiguration(
+                    f"Question {question['_id']} not found in attempt data"
+                )
 
             attempt = Attempt(
                 success=attempt_data["is_correct"],

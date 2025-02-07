@@ -6,7 +6,13 @@ from bson import ObjectId
 from rest_framework.test import APIClient
 
 from course_ware.serializers import QueryParamsSerializer
-from course_ware.tests.course_ware_factory import QuestionMetadataFactory, TopicFactory, UserFactory, UserQuestionAttemptsFactory, UserQuestionSetFactory
+from course_ware.tests.course_ware_factory import (
+    QuestionMetadataFactory,
+    TopicFactory,
+    UserFactory,
+    UserQuestionAttemptsFactory,
+    UserQuestionSetFactory,
+)
 from course_ware.views import DatabaseQuestionViewBase
 from no_sql_database.nosql_database_engine import MongoDatabaseEngine
 
@@ -53,7 +59,9 @@ def user_question_attempts(user, topic):
 
     question_metadata = factory.LazyFunction(generate_question_metadata)
 
-    return UserQuestionAttemptsFactory(user=user, topic=topic, question_metadata=question_metadata)
+    return UserQuestionAttemptsFactory(
+        user=user, topic=topic, question_metadata=question_metadata
+    )
 
 
 @pytest.fixture

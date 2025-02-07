@@ -9,7 +9,11 @@ from decouple import config
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
-from pylti1p3.contrib.django import DjangoDbToolConf, DjangoMessageLaunch, DjangoOIDCLogin
+from pylti1p3.contrib.django import (
+    DjangoDbToolConf,
+    DjangoMessageLaunch,
+    DjangoOIDCLogin,
+)
 
 from course_ware.models import TopicIframeID
 from edu_vault.settings import common
@@ -41,11 +45,17 @@ def lti_launch(request):
 
         launch_data = launch.get_launch_data()
 
-        resource_link = launch_data["https://purl.imsglobal.org/spec/lti/claim/resource_link"]
+        resource_link = launch_data[
+            "https://purl.imsglobal.org/spec/lti/claim/resource_link"
+        ]
         claim_context = launch_data["https://purl.imsglobal.org/spec/lti/claim/context"]
         course_id = claim_context.get("id", "")
-        iframe_id = get_object_or_404(TopicIframeID, identifier=resource_link.get("id", ""))
-        return redirect(f"{config('FRONT_END_URL')}/assessment/{course_id}/{iframe_id.topic.block_id}/")
+        iframe_id = get_object_or_404(
+            TopicIframeID, identifier=resource_link.get("id", "")
+        )
+        return redirect(
+            f"{config('FRONT_END_URL')}/assessment/{course_id}/{iframe_id.topic.block_id}/"
+        )
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
@@ -87,8 +97,24 @@ def jwks_view(request):
     public_numbers = public_key.public_numbers()
 
     # Base64 encode the modulus and exponent
-    n = base64.urlsafe_b64encode(public_numbers.n.to_bytes((public_numbers.n.bit_length() + 7) // 8, byteorder="big")).decode("utf-8").rstrip("=")
-    e = base64.urlsafe_b64encode(public_numbers.e.to_bytes((public_numbers.e.bit_length() + 7) // 8, byteorder="big")).decode("utf-8").rstrip("=")
+    n = (
+        base64.urlsafe_b64encode(
+            public_numbers.n.to_bytes(
+                (public_numbers.n.bit_length() + 7) // 8, byteorder="big"
+            )
+        )
+        .decode("utf-8")
+        .rstrip("=")
+    )
+    e = (
+        base64.urlsafe_b64encode(
+            public_numbers.e.to_bytes(
+                (public_numbers.e.bit_length() + 7) // 8, byteorder="big"
+            )
+        )
+        .decode("utf-8")
+        .rstrip("=")
+    )
 
     # Generate the dynamic Key ID
     kid = generate_kid(public_key)

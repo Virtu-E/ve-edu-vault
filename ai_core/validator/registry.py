@@ -1,10 +1,18 @@
 from typing import Dict, Type
 
 from ai_core.validator.base_validator import BaseValidator
-from ai_core.validator.validator_types.learning_mode_validator import LearningModeValidator
-from ai_core.validator.validator_types.question_count_validator import PrerequisiteQuestionCountValidator
-from ai_core.validator.validator_types.question_metadata_content_validator import QuestionMetadataValidator
-from ai_core.validator.validator_types.question_set_validator import QuestionSetMetadataValidator
+from ai_core.validator.validator_types.learning_mode_validator import (
+    LearningModeValidator,
+)
+from ai_core.validator.validator_types.question_count_validator import (
+    PrerequisiteQuestionCountValidator,
+)
+from ai_core.validator.validator_types.question_metadata_content_validator import (
+    QuestionMetadataValidator,
+)
+from ai_core.validator.validator_types.question_set_validator import (
+    QuestionSetMetadataValidator,
+)
 
 
 class ValidatorRegistry:

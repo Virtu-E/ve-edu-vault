@@ -37,7 +37,9 @@ class TimeAnalyzer:
 
         return {**averages, "timeDistribution": distribution}
 
-    def _group_time_by_attempt(self, questions: List[QuestionAIContext]) -> Dict[str, List[int]]:
+    def _group_time_by_attempt(
+        self, questions: List[QuestionAIContext]
+    ) -> Dict[str, List[int]]:
         """
         Groups the time spent for each attempt type (first, second, third) across the given questions.
 
@@ -49,12 +51,20 @@ class TimeAnalyzer:
                                   and values are lists of times spent on these attempts.
         """
         return {
-            "first": [q.attempts.timeSpent for q in questions if q.attempts.attemptNumber >= 1],
-            "second": [q.attempts.timeSpent for q in questions if q.attempts.attemptNumber >= 2],
-            "third": [q.attempts.timeSpent for q in questions if q.attempts.attemptNumber == 3],
+            "first": [
+                q.attempts.timeSpent for q in questions if q.attempts.attemptNumber >= 1
+            ],
+            "second": [
+                q.attempts.timeSpent for q in questions if q.attempts.attemptNumber >= 2
+            ],
+            "third": [
+                q.attempts.timeSpent for q in questions if q.attempts.attemptNumber == 3
+            ],
         }
 
-    def _calculate_time_averages(self, time_by_attempt: Dict[str, List[int]]) -> Dict[str, float]:
+    def _calculate_time_averages(
+        self, time_by_attempt: Dict[str, List[int]]
+    ) -> Dict[str, float]:
         """
         Calculates the average time spent on each attempt type.
 
@@ -68,12 +78,16 @@ class TimeAnalyzer:
         averages = {}
         for attempt, times in time_by_attempt.items():
             if times:
-                averages[f"average{attempt.capitalize()}AttemptTime"] = sum(times) / len(times)
+                averages[f"average{attempt.capitalize()}AttemptTime"] = sum(
+                    times
+                ) / len(times)
             else:
                 averages[f"average{attempt.capitalize()}AttemptTime"] = 0.0
         return averages
 
-    def _calculate_time_distribution(self, time_by_attempt: Dict[str, List[int]]) -> Dict[str, float]:
+    def _calculate_time_distribution(
+        self, time_by_attempt: Dict[str, List[int]]
+    ) -> Dict[str, float]:
         """
         Calculates the distribution of time spent across different attempt types.
 
@@ -88,4 +102,7 @@ class TimeAnalyzer:
         if total_time == 0:
             return {f"{k}Attempt": 0.0 for k in time_by_attempt.keys()}
 
-        return {f"{k}Attempt": sum(times) / total_time for k, times in time_by_attempt.items()}
+        return {
+            f"{k}Attempt": sum(times) / total_time
+            for k, times in time_by_attempt.items()
+        }

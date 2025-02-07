@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 from pydantic.v1 import validator
@@ -28,7 +28,9 @@ class Metadata(BaseModel):
 
 class Question(BaseModel):
     id: str = Field(..., alias="_id")
-    question_id: str  # why am i including this here ? I feel like it will just create confusion
+    question_id: (
+        str  # why am i including this here ? I feel like it will just create confusion
+    )
     text: str
     topic: str
     category: str
@@ -55,6 +57,6 @@ class QuestionAttemptData(BaseModel):
     difficulty: str
     topic: str
     question_id: str
-    choice_id: int
+    choice_id: Optional[int] = None
     total_correct_count: int
     total_incorrect_count: int

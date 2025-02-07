@@ -2,7 +2,10 @@ from unittest.mock import Mock
 
 import pytest
 
-from ai_core.contextual_analyzer.stats.stats_calculator import DifficultyStatsCalculator, QuestionFilter
+from ai_core.contextual_analyzer.stats.stats_calculator import (
+    DifficultyStatsCalculator,
+    QuestionFilter,
+)
 from ai_core.tests.ai_core_factories import QuestionAIContextFactory
 from data_types.ai_core import DifficultyStats
 
@@ -46,8 +49,12 @@ class TestDifficultyStatsCalculator:
     def test_calculate_with_no_attempts(self, calculator, mock_dependencies):
         """Test calculator with questions having no attempts recorded."""
         filtered_questions = [QuestionAIContextFactory()]
-        mock_dependencies["question_filter"].filter_by_difficulty.return_value = filtered_questions
-        mock_dependencies["attempt_calculator"].calculate_total_attempts.return_value = 0
+        mock_dependencies["question_filter"].filter_by_difficulty.return_value = (
+            filtered_questions
+        )
+        mock_dependencies[
+            "attempt_calculator"
+        ].calculate_total_attempts.return_value = 0
 
         result = calculator.calculate([filtered_questions[0]], "medium")
 
@@ -57,11 +64,19 @@ class TestDifficultyStatsCalculator:
     def test_calculate_with_valid_data(self, calculator, mock_dependencies):
         """Test calculator with valid questions and attempts data."""
         filtered_questions = [QuestionAIContextFactory(), QuestionAIContextFactory()]
-        mock_dependencies["question_filter"].filter_by_difficulty.return_value = filtered_questions
+        mock_dependencies["question_filter"].filter_by_difficulty.return_value = (
+            filtered_questions
+        )
 
-        mock_dependencies["attempt_calculator"].calculate_total_attempts.return_value = 5
-        mock_dependencies["attempt_calculator"].calculate_success_rate.return_value = 0.8
-        mock_dependencies["attempt_calculator"].calculate_attempt_specific_rates.return_value = {
+        mock_dependencies[
+            "attempt_calculator"
+        ].calculate_total_attempts.return_value = 5
+        mock_dependencies["attempt_calculator"].calculate_success_rate.return_value = (
+            0.8
+        )
+        mock_dependencies[
+            "attempt_calculator"
+        ].calculate_attempt_specific_rates.return_value = {
             "first": 0.6,
             "second": 0.3,
             "third": 0.1,

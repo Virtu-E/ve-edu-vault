@@ -23,11 +23,15 @@ class LearningModeValidator(BaseValidator):
             raise ValueError("user_question_attempt_instance not provided in kwargs")
 
         if not isinstance(attempt_instance, UserQuestionAttempts):
-            raise ValueError(f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}")
+            raise ValueError(
+                f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}"
+            )
 
         self.attempt_instance = attempt_instance
 
-    def _get_metadata_mode(self, metadata: Dict[str, Any], version: str) -> Optional[str]:
+    def _get_metadata_mode(
+        self, metadata: Dict[str, Any], version: str
+    ) -> Optional[str]:
         """Safely extracts the learning mode from metadata for given version.
 
         Args:
@@ -64,7 +68,9 @@ class LearningModeValidator(BaseValidator):
 
             metadata_mode = self._get_metadata_mode(metadata, current_version)
             if metadata_mode is None:
-                return f"Learning mode not found in metadata for version {current_version}"
+                return (
+                    f"Learning mode not found in metadata for version {current_version}"
+                )
 
             if current_learning_mode == metadata_mode:
                 return True

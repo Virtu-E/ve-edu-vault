@@ -24,9 +24,13 @@ class QuestionAPIGenerator:
             "time_estimate": {"minutes": "3"},
         }
 
-    def create_prompt(self, subject: str, topic_data: Dict, model_name: str) -> List[Dict]:
+    def create_prompt(
+        self, subject: str, topic_data: Dict, model_name: str
+    ) -> List[Dict]:
         metadata = self.create_metadata(model_name)
-        metadata_str = json.dumps(metadata).replace('"', '\\"')  # Properly escape quotes
+        metadata_str = json.dumps(metadata).replace(
+            '"', '\\"'
+        )  # Properly escape quotes
 
         return [
             {
@@ -136,7 +140,9 @@ Important: Ensure questions align with Malawian curriculum context and utilize t
 
 
 def main():
-    client = ai.Client(provider_configs={"openai": {"api_key": config("OPENAI_API_KEY")}})
+    client = ai.Client(
+        provider_configs={"openai": {"api_key": config("OPENAI_API_KEY")}}
+    )
     generator = QuestionAPIGenerator(client)
 
     topic_data = {

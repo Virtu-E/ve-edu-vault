@@ -7,7 +7,10 @@ class TestRecoveryModeCalculator:
     def test_initialization(self):
         """Test if calculator initializes with correct required questions"""
         calculator = RecoveryModeCalculator()
-        assert calculator.required_correct_questions == RecoveryRule.required_correct_questions
+        assert (
+            calculator.required_correct_questions
+            == RecoveryRule.required_correct_questions
+        )
 
     def test_inherits_from_base_calculator(self):
         """Test if RecoveryModeCalculator inherits from BasePerformanceCalculator"""

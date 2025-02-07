@@ -1,10 +1,10 @@
-from dataclasses import dataclass
 from typing import Dict, List
 
 from pydantic import BaseModel, Field, constr
 from pydantic.v1 import validator
 from typing_extensions import Literal
 
+DifficultyLiteral = Literal["easy", "medium", "hard"]
 LearningMode = Literal["normal", "reinforcement", "recovery", "reset", "mastered"]
 
 
@@ -15,27 +15,59 @@ class PerformanceStats(BaseModel):
     Attributes:
         ranked_difficulties: A list of difficulty rankings ordered by the average number of attempts per difficulty level.
         difficulty_status: A dictionary mapping each difficulty level to its completion status.
+        difficulty_scores: A dictionary containing the number of correct answers for each difficulty level.
     """
 
     ranked_difficulties: List[tuple[Literal["easy", "medium", "hard"], float]] = Field(
         ...,
-        description=("A list of tuples where each tuple contains a difficulty level (easy, medium, hard) and the corresponding average number of attempts for that difficulty, ordered by the average attempts in ascending order."),
+        description=(
+            "A list of tuples where each tuple contains a difficulty level (easy, medium, hard) and the corresponding average number of attempts for that difficulty, ordered by the average attempts in ascending order."
+        ),
     )
 
-    difficulty_status: Dict[Literal["easy", "medium", "hard"], Literal["incomplete", "completed"]] = Field(
+    difficulty_status: Dict[
+        Literal["easy", "medium", "hard"], Literal["incomplete", "completed"]
+    ] = Field(
         ...,
-        description=("A dictionary mapping each difficulty level to its completion status. 'incomplete' means the user has not yet completed questions for that difficulty, while 'completed' means they have completed all required questions for that difficulty."),
+        description=(
+            "A dictionary mapping each difficulty level to its completion status. 'incomplete' means the user has not yet completed questions for that difficulty, while 'completed' means they have completed all required questions for that difficulty."
+        ),
+    )
+
+    difficulty_scores: Dict[DifficultyLiteral, int] = Field(
+        ...,
+        description=(
+            "A dictionary mapping each difficulty level (easy, medium, hard) to the number of correctly answered questions for that difficulty. For example, {'easy': 2, 'medium': 0, 'hard': 1} indicates 2 correct easy questions, 0 correct medium questions, and 1 correct hard question."
+        ),
     )
 
     @property
-    def failed_difficulties(self) -> List[str]:
+    def failed_difficulties(self) -> List[Literal["easy", "medium", "hard"]]:
         """
         Returns a list of difficulty levels that are marked as incomplete.
 
         Returns:
             List[str]: A list of difficulty levels (easy, medium, hard) that are incomplete.
         """
-        return [difficulty for difficulty, status in self.difficulty_status.items() if status == "incomplete"]
+        return [
+            difficulty
+            for difficulty, status in self.difficulty_status.items()
+            if status == "incomplete"
+        ]
+
+    @property
+    def passed_difficulties(self) -> List[Literal["easy", "medium", "hard"]]:
+        """
+        Returns a list of difficulty levels that are marked as incomplete.
+
+        Returns:
+            List[str]: A list of difficulty levels (easy, medium, hard) that are incomplete.
+        """
+        return [
+            difficulty
+            for difficulty, status in self.difficulty_status.items()
+            if status == "completed"
+        ]
 
 
 class RecommendationEngineConfig(BaseModel):
@@ -71,7 +103,9 @@ class RecommendationQuestionMetadata(BaseModel):
         """Pydantic configuration."""
 
         use_enum_values = True  # Ensure Enum or Literal values are used directly
-        anystr_strip_whitespace = True  # Automatically strip whitespace from string fields
+        anystr_strip_whitespace = (
+            True  # Automatically strip whitespace from string fields
+        )
         validate_assignment = True  # Allow runtime validation on assignment
 
 
@@ -103,7 +137,9 @@ class DifficultyStats(BaseModel):
     # Completion stats
     completionRate: float  # Percentage of questions completed successfully
     incompleteRate: float  # Percentage of questions not completed after all attempts
-    earlyAbandonment: float  # Percentage of questions abandoned before using all attempts
+    earlyAbandonment: (
+        float  # Percentage of questions abandoned before using all attempts
+    )
 
     # Time-based stats
     averageFirstAttemptTime: float  # Average time spent on first attempts
@@ -146,7 +182,11 @@ class LearningHistory(LearningDefaults):
             for difficulty, stats in mode_data.difficultyStats.items():
                 if difficulty not in failed_tags:
                     failed_tags[difficulty] = []
-                failed_tags[difficulty].extend(tag for tag in stats.failedTags if tag not in failed_tags[difficulty])
+                failed_tags[difficulty].extend(
+                    tag
+                    for tag in stats.failedTags
+                    if tag not in failed_tags[difficulty]
+                )
         return failed_tags
 
 
@@ -172,15 +212,33 @@ class QuestionPromptGeneratorConfig(BaseModel):
     category: str
 
 
-# TODO : move to pydantic
-@dataclass
-class EvaluationResult:
-    """Data class to hold evaluation results"""
+class DifficultyScore(BaseModel):
+    difficulty: Literal["easy", "medium", "hard"]
+    users_score: str
+    status: Literal["success", "failed"]
+    required_score: str
 
-    status: str
-    passed: bool
-    next_mode: str
+
+class PreviousMode(BaseModel):
+    mode_name: str
     mode_guidance: str
     guidance: str
-    performance_stats: PerformanceStats | None
-    ai_recommendation: Dict
+    required_score: int
+    passed_difficulties: list[DifficultyScore]
+    failed_difficulties: list[DifficultyScore]
+    total_questions: int
+
+
+class NextMode(BaseModel):
+    mode_name: str
+    mode_guidance: str
+    guidance: str
+    required_score: int
+    total_questions: int
+
+
+class EvaluationResult(BaseModel):
+    status: str
+    passed: bool
+    next_mode: NextMode
+    previous_mode: PreviousMode

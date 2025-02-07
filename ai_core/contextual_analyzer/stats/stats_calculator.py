@@ -1,17 +1,31 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from ai_core.contextual_analyzer.stats.attempts_calculator import AttemptStatsCalculator, IAttemptStatsCalculator
-from ai_core.contextual_analyzer.stats.completion_analyzer import CompletionAnalyzer, ICompletionAnalyzer
-from ai_core.contextual_analyzer.stats.question_filter import IQuestionFilter, QuestionFilter
-from ai_core.contextual_analyzer.stats.tags_collector import FailedTagsCollector, IFailedTagsCollector
+from ai_core.contextual_analyzer.stats.attempts_calculator import (
+    AttemptStatsCalculator,
+    IAttemptStatsCalculator,
+)
+from ai_core.contextual_analyzer.stats.completion_analyzer import (
+    CompletionAnalyzer,
+    ICompletionAnalyzer,
+)
+from ai_core.contextual_analyzer.stats.question_filter import (
+    IQuestionFilter,
+    QuestionFilter,
+)
+from ai_core.contextual_analyzer.stats.tags_collector import (
+    FailedTagsCollector,
+    IFailedTagsCollector,
+)
 from ai_core.contextual_analyzer.stats.time_analyzer import ITimeAnalyzer, TimeAnalyzer
 from data_types.ai_core import DifficultyStats, QuestionAIContext
 
 
 class DifficultyStatsCalculatorInterface(ABC):
     @abstractmethod
-    def calculate(self, questions: List[QuestionAIContext], difficulty: str) -> DifficultyStats:
+    def calculate(
+        self, questions: List[QuestionAIContext], difficulty: str
+    ) -> DifficultyStats:
         """
          Calculate comprehensive difficulty-based statistics for the given set of questions.
 
@@ -56,7 +70,9 @@ class DifficultyStatsCalculator(DifficultyStatsCalculatorInterface):
         self._completion_analyzer = completion_analyzer
         self._tags_collector = tags_collector
 
-    def calculate(self, questions: List[QuestionAIContext], difficulty: str) -> DifficultyStats:
+    def calculate(
+        self, questions: List[QuestionAIContext], difficulty: str
+    ) -> DifficultyStats:
         """
         Calculate comprehensive difficulty-based statistics for the given set of questions.
 
@@ -68,26 +84,42 @@ class DifficultyStatsCalculator(DifficultyStatsCalculatorInterface):
             DifficultyStats: An object containing detailed statistics including attempt-based stats,
                              time-based stats, completion stats, and failed tags.
         """
-        filtered_questions = self._question_filter.filter_by_difficulty(questions, difficulty)
+        filtered_questions = self._question_filter.filter_by_difficulty(
+            questions, difficulty
+        )
 
         if not filtered_questions:
             return self._empty_stats()
 
-        total_attempts = self._attempt_calculator.calculate_total_attempts(filtered_questions)
+        total_attempts = self._attempt_calculator.calculate_total_attempts(
+            filtered_questions
+        )
         if total_attempts == 0:
             return self._empty_stats()
 
-        success_rate = self._attempt_calculator.calculate_success_rate(filtered_questions)
-        attempt_rates = self._attempt_calculator.calculate_attempt_specific_rates(filtered_questions)
+        success_rate = self._attempt_calculator.calculate_success_rate(
+            filtered_questions
+        )
+        attempt_rates = self._attempt_calculator.calculate_attempt_specific_rates(
+            filtered_questions
+        )
 
         time_stats = self._time_analyzer.analyze_time(filtered_questions)
 
-        completion_stats = self._completion_analyzer.analyze_completion(filtered_questions)
+        completion_stats = self._completion_analyzer.analyze_completion(
+            filtered_questions
+        )
 
         failed_tags = self._tags_collector.collect_failed_tags(filtered_questions)
 
-        successful_attempts = [q.attempts.attemptNumber for q in filtered_questions if q.attempts.success]
-        avg_attempts_to_success = (sum(successful_attempts) / len(successful_attempts)) if successful_attempts else 0
+        successful_attempts = [
+            q.attempts.attemptNumber for q in filtered_questions if q.attempts.success
+        ]
+        avg_attempts_to_success = (
+            (sum(successful_attempts) / len(successful_attempts))
+            if successful_attempts
+            else 0
+        )
 
         return DifficultyStats(
             totalAttempts=total_attempts,

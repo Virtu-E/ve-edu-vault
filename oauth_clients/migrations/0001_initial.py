@@ -43,7 +43,11 @@ class Migration(migrations.Migration):
             options={
                 "verbose_name": "OAuth Client Configuration",
                 "verbose_name_plural": "OAuth Client Configurations",
-                "indexes": [models.Index(fields=["service_type"], name="oauth_clien_service_7cd5cb_idx")],
+                "indexes": [
+                    models.Index(
+                        fields=["service_type"], name="oauth_clien_service_7cd5cb_idx"
+                    )
+                ],
             },
         ),
     ]

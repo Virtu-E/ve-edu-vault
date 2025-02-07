@@ -46,5 +46,12 @@ class MongoQuestionRepository(QuestionRepository):
 
     def get_questions_by_ids(self, question_ids: List[str]) -> List[Question]:
         object_ids = self.validator.validate_ids(question_ids)
-        questions = self.database_engine.fetch_from_db(self.collection_name, self.database_name, {"_id": {"$in": object_ids}})
-        return [Question(**{**question, "_id": str(question["_id"])}).model_dump(by_alias=True, exclude={"choices": {"is_correct"}}) for question in questions]
+        questions = self.database_engine.fetch_from_db(
+            self.collection_name, self.database_name, {"_id": {"$in": object_ids}}
+        )
+        return [
+            Question(**{**question, "_id": str(question["_id"])}).model_dump(
+                by_alias=True, exclude={"choices": {"is_correct"}}
+            )
+            for question in questions
+        ]

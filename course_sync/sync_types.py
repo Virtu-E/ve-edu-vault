@@ -32,13 +32,19 @@ class CategorySync(DatabaseSync):
 
     def sync(self, structure: Dict) -> None:
         categories = StructureExtractor.extract(structure).categories
-        existing_categories = set(Category.objects.filter(course=self.course).values_list("block_id", flat=True))
+        existing_categories = set(
+            Category.objects.filter(course=self.course).values_list(
+                "block_id", flat=True
+            )
+        )
 
         self._delete_removed_categories(existing_categories - categories)
         self._update_categories(structure)
 
     def _delete_removed_categories(self, removed_categories: Set[str]) -> None:
-        Category.objects.filter(course=self.course, block_id__in=removed_categories).delete()
+        Category.objects.filter(
+            course=self.course, block_id__in=removed_categories
+        ).delete()
 
     def _update_categories(self, structure: Dict) -> None:
         chapters = StructureExtractor.extract_chapters(structure)
@@ -63,13 +69,19 @@ class TopicSync(DatabaseSync):
 
     def sync(self, structure: Dict) -> None:
         structure_data = StructureExtractor.extract(structure)
-        existing_topics = set(Topic.objects.filter(category__course=self.course).values_list("block_id", flat=True))
+        existing_topics = set(
+            Topic.objects.filter(category__course=self.course).values_list(
+                "block_id", flat=True
+            )
+        )
 
         self._delete_removed_topics(existing_topics - structure_data.topics)
         self._update_topics(structure)
 
     def _delete_removed_topics(self, removed_topics: Set[str]) -> None:
-        Topic.objects.filter(category__course=self.course, block_id__in=removed_topics).delete()
+        Topic.objects.filter(
+            category__course=self.course, block_id__in=removed_topics
+        ).delete()
 
     def _update_topics(self, structure: Dict) -> None:
         chapters = StructureExtractor.extract_chapters(structure)
@@ -86,7 +98,9 @@ class TopicSync(DatabaseSync):
                             "category": category,
                         },
                     )
-                    self.creation_side_effect.process_creation_side_effects(topic_instance)
+                    self.creation_side_effect.process_creation_side_effects(
+                        topic_instance
+                    )
 
             except Category.DoesNotExist:
                 log.error(f"Category not found for chapter {chapter.id}")

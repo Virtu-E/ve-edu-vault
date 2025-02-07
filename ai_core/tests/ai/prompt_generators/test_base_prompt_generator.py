@@ -1,7 +1,13 @@
 import pytest
 
-from ai_core.ai.prompt_generators.base_prompt_generator import BaseQuestionPromptGenerator
-from ai_core.learning_mode_rules import BaseLearningModeRule, LearningModeType, NormalRule
+from ai_core.ai.prompt_generators.base_prompt_generator import (
+    BaseQuestionPromptGenerator,
+)
+from ai_core.learning_mode_rules import (
+    BaseLearningModeRule,
+    LearningModeType,
+    NormalRule,
+)
 from ai_core.tests.ai_core_factories import ModeDataFactory
 from data_types.ai_core import LearningHistory, QuestionPromptGeneratorConfig
 from repository.ai_core.prompt_engine import PromptEngineRepositoryInterface
@@ -53,7 +59,9 @@ class TestBaseQuestionPromptGenerator:
         assert generator.learning_history == learning_history
         assert generator.repository == repository
 
-    def test_validate_prerequisite_with_missing_prerequisite(self, learning_history, repository, config):
+    def test_validate_prerequisite_with_missing_prerequisite(
+        self, learning_history, repository, config
+    ):
         class TestRule(BaseLearningModeRule):
             prerequisite = LearningModeType.REINFORCEMENT
 
@@ -66,7 +74,9 @@ class TestBaseQuestionPromptGenerator:
                 config=config,
                 failed_difficulties=["easy"],
             )
-        assert "Learning history does not contain the required prerequisite" in str(exc_info.value)
+        assert "Learning history does not contain the required prerequisite" in str(
+            exc_info.value
+        )
 
     def test_generate_question_prompt(self, learning_history, repository, config):
         rule = NormalRule()

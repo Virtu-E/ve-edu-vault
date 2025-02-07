@@ -11,7 +11,11 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.errors import OperationFailure, ServerSelectionTimeoutError
 
-from exceptions import MongoDbConfigurationError, MongoDbConnectionError, MongoDbOperationError
+from exceptions import (
+    MongoDbConfigurationError,
+    MongoDbConnectionError,
+    MongoDbOperationError,
+)
 
 log = logging.getLogger(__name__)
 
@@ -122,7 +126,10 @@ class MongoDatabaseEngine(NoSqLDatabaseEngineInterface):
             self._client = MongoClient(
                 self._url,
                 tlsCAFile=certifi.where(),
-                serverSelectionTimeoutMS=5000,  # 5 second timeout
+                serverSelectionTimeoutMS=10000,  # Increased timeout
+                maxPoolSize=100,  # Add connection pooling
+                waitQueueTimeoutMS=2500,  # Queue timeout for pool
+                retryWrites=True,
             )
             # Verify connection
             # self._client.server_info()
@@ -155,7 +162,9 @@ class MongoDatabaseEngine(NoSqLDatabaseEngineInterface):
             collection: Collection = db.get_collection(collection_name)
             yield collection
         except OperationFailure as e:
-            self.logger.error(f"Failed to access collection {collection_name}: {str(e)}")
+            self.logger.error(
+                f"Failed to access collection {collection_name}: {str(e)}"
+            )
             raise MongoDbOperationError(f"Collection operation failed: {str(e)}")
         except Exception as e:
             self.logger.error(f"Unexpected error accessing collection: {str(e)}")
@@ -248,10 +257,14 @@ class MongoDatabaseEngine(NoSqLDatabaseEngineInterface):
         try:
             with self.get_collection(collection_name, database_name) as collection:
                 result = list(collection.aggregate(pipeline))
-                self.logger.debug(f"Aggregation query executed on {collection_name}: {pipeline}")
+                self.logger.debug(
+                    f"Aggregation query executed on {collection_name}: {pipeline}"
+                )
                 return result
         except Exception as e:
-            self.logger.error(f"Error running aggregation on {collection_name}: {str(e)}")
+            self.logger.error(
+                f"Error running aggregation on {collection_name}: {str(e)}"
+            )
             raise MongoDbOperationError(f"Failed to execute aggregation: {str(e)}")
 
     def write_to_db(

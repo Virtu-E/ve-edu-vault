@@ -21,5 +21,7 @@ class WebhookRegistry:
 webhook_registry = WebhookRegistry()
 
 # Register handlers
-webhook_registry.register("org.openedx.content_authoring.course.created.v1", CourseCreatedHandler())
+webhook_registry.register(
+    "org.openedx.content_authoring.course.created.v1", CourseCreatedHandler()
+)
 webhook_registry.register("course_published", CourseUpdatedHandler())

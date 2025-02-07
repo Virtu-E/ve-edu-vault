@@ -142,13 +142,29 @@ class TopicExtAdmin(admin.ModelAdmin):
         if not obj.pk:  # If this is a new object being created
             return "Save the topic extension first to add resources"
 
-        videos_url = reverse("admin:course_ware_ext_videoresource_add") + f"?topic_ext={obj.pk}"
-        books_url = reverse("admin:course_ware_ext_bookresource_add") + f"?topic_ext={obj.pk}"
-        articles_url = reverse("admin:course_ware_ext_articleresource_add") + f"?topic_ext={obj.pk}"
+        videos_url = (
+            reverse("admin:course_ware_ext_videoresource_add") + f"?topic_ext={obj.pk}"
+        )
+        books_url = (
+            reverse("admin:course_ware_ext_bookresource_add") + f"?topic_ext={obj.pk}"
+        )
+        articles_url = (
+            reverse("admin:course_ware_ext_articleresource_add")
+            + f"?topic_ext={obj.pk}"
+        )
 
-        video_list_url = reverse("admin:course_ware_ext_videoresource_changelist") + f"?topic_ext__id__exact={obj.pk}"
-        book_list_url = reverse("admin:course_ware_ext_bookresource_changelist") + f"?topic_ext__id__exact={obj.pk}"
-        article_list_url = reverse("admin:course_ware_ext_articleresource_changelist") + f"?topic_ext__id__exact={obj.pk}"
+        video_list_url = (
+            reverse("admin:course_ware_ext_videoresource_changelist")
+            + f"?topic_ext__id__exact={obj.pk}"
+        )
+        book_list_url = (
+            reverse("admin:course_ware_ext_bookresource_changelist")
+            + f"?topic_ext__id__exact={obj.pk}"
+        )
+        article_list_url = (
+            reverse("admin:course_ware_ext_articleresource_changelist")
+            + f"?topic_ext__id__exact={obj.pk}"
+        )
 
         video_count = obj.videoresource.count()
         book_count = obj.bookresource.count()

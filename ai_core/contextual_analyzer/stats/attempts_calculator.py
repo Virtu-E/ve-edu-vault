@@ -6,7 +6,9 @@ from data_types.ai_core import QuestionAIContext
 class IAttemptStatsCalculator(Protocol):
     def calculate_total_attempts(self, questions: List[QuestionAIContext]) -> int: ...
     def calculate_success_rate(self, questions: List[QuestionAIContext]) -> float: ...
-    def calculate_attempt_specific_rates(self, questions: List[QuestionAIContext]) -> Dict[str, float]: ...
+    def calculate_attempt_specific_rates(
+        self, questions: List[QuestionAIContext]
+    ) -> Dict[str, float]: ...
 
 
 class AttemptStatsCalculator:
@@ -63,15 +65,39 @@ class AttemptStatsCalculator:
         total = len(questions)
         rates = {
             "first": round(
-                (sum(1 for q in questions if q.attempts.success and q.attempts.attemptNumber == 1) / total) * 100,
+                (
+                    sum(
+                        1
+                        for q in questions
+                        if q.attempts.success and q.attempts.attemptNumber == 1
+                    )
+                    / total
+                )
+                * 100,
                 1,
             ),
             "second": round(
-                (sum(1 for q in questions if q.attempts.success and q.attempts.attemptNumber == 2) / total) * 100,
+                (
+                    sum(
+                        1
+                        for q in questions
+                        if q.attempts.success and q.attempts.attemptNumber == 2
+                    )
+                    / total
+                )
+                * 100,
                 1,
             ),
             "third": round(
-                (sum(1 for q in questions if q.attempts.success and q.attempts.attemptNumber == 3) / total) * 100,
+                (
+                    sum(
+                        1
+                        for q in questions
+                        if q.attempts.success and q.attempts.attemptNumber == 3
+                    )
+                    / total
+                )
+                * 100,
                 1,
             ),
         }

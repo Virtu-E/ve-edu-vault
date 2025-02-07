@@ -1,7 +1,13 @@
 import logging
 from abc import ABC, abstractmethod
 
-from ai_core.performance.calculators.base_calculator import PerformanceCalculatorInterface
+from ai_core.learning_mode_rules import LearningModeType
+from ai_core.performance.calculators.base_calculator import (
+    PerformanceCalculatorInterface,
+)
+from ai_core.performance.calculators.calculator_factory import (
+    PerformanceCalculatorFactory,
+)
 from course_ware.models import UserQuestionAttempts
 from data_types.ai_core import PerformanceStats
 from data_types.course_ware_schema import QuestionMetadata, UserQuestionAttemptsSchema
@@ -60,8 +66,15 @@ class PerformanceEngine(PerformanceEngineInterface):
         if not question_attempt_instance:
             log.info("No question attempt data for topic {}".format(self.topic_id))
             return PerformanceStats(ranked_difficulties=[], difficulty_status={})
-        question_metadata_current_version = question_attempt_instance.get_latest_question_metadata
-        return self.performance_calculator.calculate_performance({key: QuestionMetadata(**value) for key, value in question_metadata_current_version.items()})
+        question_metadata_current_version = (
+            question_attempt_instance.get_latest_question_metadata
+        )
+        return self.performance_calculator.calculate_performance(
+            {
+                key: QuestionMetadata(**value)
+                for key, value in question_metadata_current_version.items()
+            }
+        )
 
     def _get_user_attempt_question_attempt_instance(
         self,
@@ -76,12 +89,40 @@ class PerformanceEngine(PerformanceEngineInterface):
             DatabaseQueryError: Raised if an unexpected error occurs while querying the database.
         """
         try:
-            question_attempt_instance = UserQuestionAttempts.objects.get(user_id=self.user_id, topic_id=self.topic_id)
+            question_attempt_instance = UserQuestionAttempts.objects.get(
+                user_id=self.user_id, topic_id=self.topic_id
+            )
             UserQuestionAttemptsSchema.model_validate(question_attempt_instance)
             return question_attempt_instance
         except UserQuestionAttempts.DoesNotExist:
-            log.info(f"No question attempts found for user_id={self.user_id}, topic_id={self.topic_id}.")
+            log.info(
+                f"No question attempts found for user_id={self.user_id}, topic_id={self.topic_id}."
+            )
             return None
         except Exception as e:
-            log.error(f"Error retrieving question metadata for user_id={self.user_id}, topic_id={self.topic_id}: {e}")
+            log.error(
+                f"Error retrieving question metadata for user_id={self.user_id}, topic_id={self.topic_id}: {e}"
+            )
             raise DatabaseQueryError(f"An unexpected error occurred: {e}")
+
+
+def create_performance_engine(
+    user_id: int, topic_id: int, learning_mode: LearningModeType
+) -> PerformanceEngine:
+    """
+    Creates and initializes an instance of the PerformanceEngine.
+
+    Args:
+        user_id (int): The ID of the user for whom the performance engine is created.
+        topic_id (int): The ID of the topic for which performance is being calculated.
+        learning_mode (LearningModeType): The learning mode to determine the type of performance calculator.
+
+    Returns:
+        PerformanceEngine: An instance of the PerformanceEngine configured with the provided user, topic, and learning mode.
+    """
+    factory = PerformanceCalculatorFactory()
+    return PerformanceEngine(
+        user_id=user_id,
+        topic_id=topic_id,
+        performance_calculator=factory.create_calculator(learning_mode),
+    )

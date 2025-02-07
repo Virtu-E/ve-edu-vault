@@ -42,7 +42,14 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
 
     def get_topics(self, obj):
         related_topics = self._get_related_topics(obj)
-        topics_dict = {topic.block_id: (TopicExtSerializer(topic.extension).data if hasattr(topic, "extension") else {}) for topic in related_topics}
+        topics_dict = {
+            topic.block_id: (
+                TopicExtSerializer(topic.extension).data
+                if hasattr(topic, "extension")
+                else {}
+            )
+            for topic in related_topics
+        }
         return topics_dict
 
     def get_total_topics(self, obj):
@@ -91,9 +98,15 @@ class TopicExtSerializer(serializers.ModelSerializer):
         """
         try:
             return {
-                "videos": VideoResourceSerializer(getattr(obj, "videoresource", []).all(), many=True).data,
-                "books": BookResourceSerializer(getattr(obj, "bookresource", []).all(), many=True).data,
-                "articles": ArticleResourceSerializer(getattr(obj, "articleresource", []).all(), many=True).data,
+                "videos": VideoResourceSerializer(
+                    getattr(obj, "videoresource", []).all(), many=True
+                ).data,
+                "books": BookResourceSerializer(
+                    getattr(obj, "bookresource", []).all(), many=True
+                ).data,
+                "articles": ArticleResourceSerializer(
+                    getattr(obj, "articleresource", []).all(), many=True
+                ).data,
             }
         except AttributeError:
             return {"videos": [], "books": [], "articles": []}

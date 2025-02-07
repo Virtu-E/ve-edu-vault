@@ -4,6 +4,7 @@ from typing import Any, Union
 from django.db import models
 
 from ai_core.performance.calculators.base_calculator import log
+from data_types.course_ware_schema import QuestionMetadata
 from exceptions import VersionParsingError
 
 DEFAULT_VERSION = "v1.0.0"
@@ -34,8 +35,12 @@ class EdxUser(models.Model):
     Holds Edx user information. Not the Django primary user Model
     """
 
-    id = models.PositiveIntegerField(primary_key=True, unique=True, help_text="edX user ID")
-    username = models.CharField(null=True, blank=True, max_length=100, unique=True, help_text="edX username")
+    id = models.PositiveIntegerField(
+        primary_key=True, unique=True, help_text="edX user ID"
+    )
+    username = models.CharField(
+        null=True, blank=True, max_length=100, unique=True, help_text="edX username"
+    )
     email = models.EmailField(null=True, blank=True, help_text="edX email")
     active = models.BooleanField(default=True)
 
@@ -112,7 +117,9 @@ class Category(models.Model):
     academic_class = models.ForeignKey(AcademicClass, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="category")
+    course = models.ForeignKey(
+        Course, on_delete=models.CASCADE, related_name="category"
+    )
     core_element = models.ForeignKey(
         CoreElement,
         on_delete=models.SET_NULL,
@@ -135,8 +142,12 @@ class Topic(models.Model):
     """
 
     name = models.CharField(max_length=255)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="topics")
-    block_id = models.TextField(unique=True, db_index=True, null=False, blank=False)  # edx block ID associated with the topic
+    category = models.ForeignKey(
+        Category, on_delete=models.CASCADE, related_name="topics"
+    )
+    block_id = models.TextField(
+        unique=True, db_index=True, null=False, blank=False
+    )  # edx block ID associated with the topic
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -154,7 +165,9 @@ class TopicIframeID(models.Model):
     """
 
     identifier = models.CharField(max_length=255, unique=True, db_index=True)
-    topic = models.OneToOneField(Topic, on_delete=models.CASCADE, related_name="iframe_id")
+    topic = models.OneToOneField(
+        Topic, on_delete=models.CASCADE, related_name="iframe_id"
+    )
 
 
 class BaseQuestionSet(models.Model):
@@ -170,7 +183,9 @@ class BaseQuestionSet(models.Model):
        {"id": "mongo_question_id_3"}
     ]
     """
-    question_list_ids = models.JSONField(help_text="References to MongoDB question IDs.")
+    question_list_ids = models.JSONField(
+        help_text="References to MongoDB question IDs."
+    )
 
     class Meta:
         abstract = True
@@ -183,7 +198,9 @@ class BaseQuestionSet(models.Model):
 class UserQuestionSet(BaseQuestionSet):
     """User-specific question set."""
 
-    user = models.ForeignKey(EdxUser, on_delete=models.CASCADE, related_name="question_sets")
+    user = models.ForeignKey(
+        EdxUser, on_delete=models.CASCADE, related_name="question_sets"
+    )
 
     class Meta:
         verbose_name = "User Question Set"
@@ -214,15 +231,21 @@ class UserQuestionAttempts(models.Model):
     modifying, or updating questions without requiring extensive structural changes to the database.
     """
 
-    user = models.ForeignKey(EdxUser, on_delete=models.CASCADE, related_name="question_attempts")
-    topic = models.OneToOneField(Topic, on_delete=models.CASCADE, related_name="topic_attempts")
+    user = models.ForeignKey(
+        EdxUser, on_delete=models.CASCADE, related_name="question_attempts"
+    )
+    topic = models.OneToOneField(
+        Topic, on_delete=models.CASCADE, related_name="topic_attempts"
+    )
     # the data is stored in this format :  dict[str, dict[str, QuestionMetadata | Any]]. Check in data types module
     # for more info ( course_ware_schema.py )
     question_metadata = models.JSONField(
         help_text="Metadata for questions attempted by the user.",
         default={"v1.0.0": {}},
     )
-    current_learning_mode = models.CharField(choices=LEARNING_MODES, default="normal", max_length=255)
+    current_learning_mode = models.CharField(
+        choices=LEARNING_MODES, default="normal", max_length=255
+    )
 
     question_metadata_description = models.JSONField(
         help_text="Stores status information and guidance for questions",
@@ -269,7 +292,7 @@ class UserQuestionAttempts(models.Model):
         return max(self.question_metadata.keys(), key=self._parse_version)
 
     @property
-    def get_latest_question_metadata(self) -> dict[str, Any]:
+    def get_latest_question_metadata(self) -> dict[str, QuestionMetadata | Any]:
         """
         Get the current (latest) question version from metadata.
 
@@ -289,7 +312,9 @@ class UserQuestionAttempts(models.Model):
     @property
     def get_incorrect_questions_count(self) -> int:
         question_metadata = self.get_latest_question_metadata
-        incorrect_count = len([q for q in question_metadata.values() if not q["is_correct"]])
+        incorrect_count = len(
+            [q for q in question_metadata.values() if not q["is_correct"]]
+        )
         return incorrect_count
 
     @property
@@ -318,7 +343,9 @@ class UserQuestionAttempts(models.Model):
                 return f"v{major + 1}.0.0"
 
             log.error("Unable to parse version string %s", latest_version)
-            raise VersionParsingError("Unable to parse version string %s", latest_version)
+            raise VersionParsingError(
+                "Unable to parse version string %s", latest_version
+            )
 
         except Exception as e:
             log.error(f"Version parsing error: {str(e)}")
@@ -340,11 +367,13 @@ class UserQuestionAttempts(models.Model):
         questions_list = []
 
         for question_id, metadata in question_metadata.items():
-            questions_list.append({
-                "id": str(question_id),
-                "status": "correct" if metadata.get("is_correct") else "incorrect",
-                "question_pos": 10,
-            })
+            questions_list.append(
+                {
+                    "id": str(question_id),
+                    "status": "correct" if metadata.get("is_correct") else "incorrect",
+                    "question_pos": 10,
+                }
+            )
 
         return questions_list
 

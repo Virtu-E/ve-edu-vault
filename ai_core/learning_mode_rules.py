@@ -16,7 +16,9 @@ class LearningModeType(str, Enum):
             return value
 
         if not isinstance(value, str):
-            raise ValueError(f"Value must be a string or {cls.__name__}, got {type(value)}")
+            raise ValueError(
+                f"Value must be a string or {cls.__name__}, got {type(value)}"
+            )
 
         try:
             # Try to match the exact enum value first
@@ -27,7 +29,9 @@ class LearningModeType(str, Enum):
             if value.lower() in valid_values:
                 return valid_values[value.lower()]
 
-            raise ValueError(f"Invalid {cls.__name__}: '{value}'. Valid values are: {', '.join(member.value for member in cls)}")
+            raise ValueError(
+                f"Invalid {cls.__name__}: '{value}'. Valid values are: {', '.join(member.value for member in cls)}"
+            )
 
 
 class BaseLearningModeRule(ABC):

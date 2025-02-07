@@ -50,7 +50,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "estimated_hours",
-                    models.PositiveIntegerField(default=0, help_text="Estimated hours to achieve mastery"),
+                    models.PositiveIntegerField(
+                        default=0, help_text="Estimated hours to achieve mastery"
+                    ),
                 ),
                 (
                     "teacher_guide",
@@ -169,7 +171,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "description",
-                    models.TextField(blank=True, help_text="Description of the resource"),
+                    models.TextField(
+                        blank=True, help_text="Description of the resource"
+                    ),
                 ),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),
@@ -268,7 +272,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "description",
-                    models.TextField(blank=True, help_text="Description of the resource"),
+                    models.TextField(
+                        blank=True, help_text="Description of the resource"
+                    ),
                 ),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),
@@ -299,7 +305,9 @@ class Migration(migrations.Migration):
                 ("publication_date", models.DateField()),
                 (
                     "source",
-                    models.CharField(help_text="Source/publisher of the article", max_length=255),
+                    models.CharField(
+                        help_text="Source/publisher of the article", max_length=255
+                    ),
                 ),
                 (
                     "is_peer_reviewed",
@@ -350,7 +358,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "description",
-                    models.TextField(blank=True, help_text="Description of the resource"),
+                    models.TextField(
+                        blank=True, help_text="Description of the resource"
+                    ),
                 ),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),
@@ -441,7 +451,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "points_earned",
-                    models.PositiveIntegerField(default=0, help_text="Total points earned in this category"),
+                    models.PositiveIntegerField(
+                        default=0, help_text="Total points earned in this category"
+                    ),
                 ),
                 (
                     "bonus_points_earned",
@@ -489,11 +501,15 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "streak_count",
-                    models.PositiveIntegerField(default=0, help_text="Current streak of correct answers"),
+                    models.PositiveIntegerField(
+                        default=0, help_text="Current streak of correct answers"
+                    ),
                 ),
                 (
                     "best_streak",
-                    models.PositiveIntegerField(default=0, help_text="Best streak of correct answers"),
+                    models.PositiveIntegerField(
+                        default=0, help_text="Best streak of correct answers"
+                    ),
                 ),
                 (
                     "category",

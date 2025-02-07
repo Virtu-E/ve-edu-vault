@@ -118,7 +118,11 @@ LOGGING = {
             "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
             "style": "{",
         },
-        "detailed": {"format": ("%(asctime)s [%(levelname)s] %(name)s (%(filename)s:%(lineno)d) %(message)s")},
+        "detailed": {
+            "format": (
+                "%(asctime)s [%(levelname)s] %(name)s (%(filename)s:%(lineno)d) %(message)s"
+            )
+        },
         "simple": {"format": "%(asctime)s::%(name)s::%(levelname)s::%(message)s"},
     },
     "handlers": {
@@ -180,7 +184,7 @@ LEARNING_HISTORY_COLLECTION_NAME = "learning_history"
 
 
 # CELERY SETTINGS
-CELERY_BROKER_URL = "redis://default:1oynQcxAlVNul3J3RCND3w53y4AGNHPj@redis-19292.internal.c36439.af-south-1-mz.ec2.cloud.rlrcp.com:19292/0"
+CELERY_BROKER_URL = "redis://default:1oynQcxAlVNul3J3RCND3w53y4AGNHPj@redis-19292.c36439.af-south-1-mz.ec2.cloud.rlrcp.com:19292"
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 
 CELERY_ACCEPT_CONTENT = ["json"]

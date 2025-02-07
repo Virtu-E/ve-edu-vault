@@ -6,7 +6,8 @@ from celery import Celery
 log = logging.getLogger(__name__)
 
 # Set the default Django settings module for the 'celery' program.
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "edu_vault.settings.common")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "edu_vault.settings.dev")
+
 
 app = Celery("edu_vault")
 

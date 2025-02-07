@@ -19,8 +19,12 @@ class TestFailedTagsCollector:
     def test_no_failed_questions(self, collector):
         """Test when all questions are successful."""
         questions = [
-            QuestionAIContextFactory(tags=["python", "loops"], attempts=AttemptsFactory(success=True)),
-            QuestionAIContextFactory(tags=["javascript", "arrays"], attempts=AttemptsFactory(success=True)),
+            QuestionAIContextFactory(
+                tags=["python", "loops"], attempts=AttemptsFactory(success=True)
+            ),
+            QuestionAIContextFactory(
+                tags=["javascript", "arrays"], attempts=AttemptsFactory(success=True)
+            ),
         ]
 
         result = collector.collect_failed_tags(questions)
@@ -29,8 +33,12 @@ class TestFailedTagsCollector:
     def test_all_questions_failed(self, collector):
         """Test when all questions failed."""
         questions = [
-            QuestionAIContextFactory(tags=["python", "loops"], attempts=AttemptsFactory(success=False)),
-            QuestionAIContextFactory(tags=["javascript", "arrays"], attempts=AttemptsFactory(success=False)),
+            QuestionAIContextFactory(
+                tags=["python", "loops"], attempts=AttemptsFactory(success=False)
+            ),
+            QuestionAIContextFactory(
+                tags=["javascript", "arrays"], attempts=AttemptsFactory(success=False)
+            ),
         ]
 
         result = collector.collect_failed_tags(questions)
@@ -40,8 +48,12 @@ class TestFailedTagsCollector:
     def test_mixed_success_and_failure(self, collector):
         """Test with a mix of successful and failed questions."""
         questions = [
-            QuestionAIContextFactory(tags=["python", "loops"], attempts=AttemptsFactory(success=True)),
-            QuestionAIContextFactory(tags=["javascript", "arrays"], attempts=AttemptsFactory(success=False)),
+            QuestionAIContextFactory(
+                tags=["python", "loops"], attempts=AttemptsFactory(success=True)
+            ),
+            QuestionAIContextFactory(
+                tags=["javascript", "arrays"], attempts=AttemptsFactory(success=False)
+            ),
         ]
 
         result = collector.collect_failed_tags(questions)
@@ -51,7 +63,9 @@ class TestFailedTagsCollector:
     def test_duplicate_tags_across_questions(self, collector):
         """Test handling of duplicate tags across different questions."""
         questions = [
-            QuestionAIContextFactory(tags=["python", "algorithms"], attempts=AttemptsFactory(success=False)),
+            QuestionAIContextFactory(
+                tags=["python", "algorithms"], attempts=AttemptsFactory(success=False)
+            ),
             QuestionAIContextFactory(
                 tags=["algorithms", "data-structures"],
                 attempts=AttemptsFactory(success=False),
@@ -67,7 +81,9 @@ class TestFailedTagsCollector:
         """Test with questions that have empty tags lists."""
         questions = [
             QuestionAIContextFactory(tags=[], attempts=AttemptsFactory(success=False)),
-            QuestionAIContextFactory(tags=["python"], attempts=AttemptsFactory(success=False)),
+            QuestionAIContextFactory(
+                tags=["python"], attempts=AttemptsFactory(success=False)
+            ),
         ]
 
         result = collector.collect_failed_tags(questions)
@@ -76,7 +92,9 @@ class TestFailedTagsCollector:
     def test_special_characters_in_tags(self, collector):
         """Test handling of tags containing special characters."""
         questions = [
-            QuestionAIContextFactory(tags=["c++", "object-oriented"], attempts=AttemptsFactory(success=False)),
+            QuestionAIContextFactory(
+                tags=["c++", "object-oriented"], attempts=AttemptsFactory(success=False)
+            ),
             QuestionAIContextFactory(
                 tags=["#python", "machine-learning"],
                 attempts=AttemptsFactory(success=False),

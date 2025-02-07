@@ -4,13 +4,17 @@ from data_types.ai_core import QuestionAIContext
 
 
 class ICompletionAnalyzer(Protocol):
-    def analyze_completion(self, questions: List[QuestionAIContext]) -> Dict[str, float]: ...
+    def analyze_completion(
+        self, questions: List[QuestionAIContext]
+    ) -> Dict[str, float]: ...
 
 
 class CompletionAnalyzer:
     MAX_ATTEMPTS = 3
 
-    def analyze_completion(self, questions: List[QuestionAIContext]) -> Dict[str, float]:
+    def analyze_completion(
+        self, questions: List[QuestionAIContext]
+    ) -> Dict[str, float]:
         """
         Analyze completion statistics for a list of questions based on their attempts.
 
@@ -36,8 +40,16 @@ class CompletionAnalyzer:
 
         total = len(questions)
         completed = sum(1 for q in questions if q.attempts.success)
-        max_attempts_failed = sum(1 for q in questions if not q.attempts.success and q.attempts.attemptNumber == self.MAX_ATTEMPTS)
-        early_abandoned = sum(1 for q in questions if not q.attempts.success and q.attempts.attemptNumber < self.MAX_ATTEMPTS)
+        max_attempts_failed = sum(
+            1
+            for q in questions
+            if not q.attempts.success and q.attempts.attemptNumber == self.MAX_ATTEMPTS
+        )
+        early_abandoned = sum(
+            1
+            for q in questions
+            if not q.attempts.success and q.attempts.attemptNumber < self.MAX_ATTEMPTS
+        )
 
         return {
             "completionRate": round((completed / total) * 100, 1),

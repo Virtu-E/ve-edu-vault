@@ -1,10 +1,17 @@
 import pytest
 
-from ai_core.performance.calculators.base_calculator import PerformanceCalculatorInterface
-from ai_core.performance.calculators.calculator_factory import LearningModeType, PerformanceCalculatorFactory
+from ai_core.performance.calculators.base_calculator import (
+    PerformanceCalculatorInterface,
+)
+from ai_core.performance.calculators.calculator_factory import (
+    LearningModeType,
+    PerformanceCalculatorFactory,
+)
 from ai_core.performance.calculators.normal_cal import NormalModeCalculator
 from ai_core.performance.calculators.recovery_cal import RecoveryModeCalculator
-from ai_core.performance.calculators.reinforcement_cal import ReinforcementModeCalculator
+from ai_core.performance.calculators.reinforcement_cal import (
+    ReinforcementModeCalculator,
+)
 
 
 class TestPerformanceCalculatorFactory:
@@ -12,19 +19,25 @@ class TestPerformanceCalculatorFactory:
 
     def test_create_normal_calculator(self):
         """Test creation of NormalModeCalculator."""
-        calculator = PerformanceCalculatorFactory.create_calculator(LearningModeType.NORMAL)
+        calculator = PerformanceCalculatorFactory.create_calculator(
+            LearningModeType.NORMAL
+        )
         assert isinstance(calculator, NormalModeCalculator)
         assert isinstance(calculator, PerformanceCalculatorInterface)
 
     def test_create_recovery_calculator(self):
         """Test creation of RecoveryModeCalculator."""
-        calculator = PerformanceCalculatorFactory.create_calculator(LearningModeType.RECOVERY)
+        calculator = PerformanceCalculatorFactory.create_calculator(
+            LearningModeType.RECOVERY
+        )
         assert isinstance(calculator, RecoveryModeCalculator)
         assert isinstance(calculator, PerformanceCalculatorInterface)
 
     def test_create_reinforcement_calculator(self):
         """Test creation of ReinforcementModeCalculator."""
-        calculator = PerformanceCalculatorFactory.create_calculator(LearningModeType.REINFORCEMENT)
+        calculator = PerformanceCalculatorFactory.create_calculator(
+            LearningModeType.REINFORCEMENT
+        )
         assert isinstance(calculator, ReinforcementModeCalculator)
         assert isinstance(calculator, PerformanceCalculatorInterface)
 

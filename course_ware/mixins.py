@@ -26,7 +26,9 @@ class RetrieveUserAndResourcesMixin:
         """
         if "username" not in serializer.validated_data:
             raise ValidationError({"username": "Username is required."})
-        return get_object_or_404(EdxUser, username=serializer.validated_data["username"])
+        return get_object_or_404(
+            EdxUser, username=serializer.validated_data["username"]
+        )
 
     # TODO : i have to provide more data like category, course etc
     @staticmethod

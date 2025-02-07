@@ -4,7 +4,10 @@ from typing import Any, Dict, Tuple
 
 from course_sync.main import CourseSync
 from course_ware.models import AcademicClass, Course, ExaminationLevel
-from course_ware.utils import academic_class_from_course_id, get_examination_level_from_course_id
+from course_ware.utils import (
+    academic_class_from_course_id,
+    get_examination_level_from_course_id,
+)
 from webhooks.edx_requests import EdxClient
 
 logger = logging.getLogger(__name__)
@@ -27,7 +30,9 @@ class CourseCreatedHandler(WebhookHandler):
         course_id = payload["course"]["course_key"]
         display_name = payload["course"]["display_name"]
 
-        Course.objects.get_or_create(course_id=course_id, display_name=display_name, course_outline=dict())
+        Course.objects.get_or_create(
+            course_id=course_id, display_name=display_name, course_outline=dict()
+        )
         academic_class = academic_class_from_course_id(course_id)
         if academic_class:
             AcademicClass.objects.get_or_create(name=academic_class)
@@ -66,7 +71,9 @@ class CourseUpdatedHandler(WebhookHandler):
         return True, ""
 
     @staticmethod
-    def _get_or_update_course(course_id: str, course_outline: Dict[str, Any]) -> Tuple[Course, bool]:
+    def _get_or_update_course(
+        course_id: str, course_outline: Dict[str, Any]
+    ) -> Tuple[Course, bool]:
         """
         Gets or updates course instance with proper change tracking.
 
@@ -98,7 +105,9 @@ class CourseUpdatedHandler(WebhookHandler):
             raise ValueError(f"No academic class detected for course ID: {course_id}")
 
         try:
-            academic_class_instance, created = AcademicClass.objects.get_or_create(name=academic_class)
+            academic_class_instance, created = AcademicClass.objects.get_or_create(
+                name=academic_class
+            )
             if created:
                 logger.info(f"Created new academic class: {academic_class}")
             return academic_class_instance
@@ -128,7 +137,9 @@ class CourseUpdatedHandler(WebhookHandler):
         ).sync()
 
         if sync_result:
-            logger.info(f"Successfully synced course structure for {course_instance.course_key}")
+            logger.info(
+                f"Successfully synced course structure for {course_instance.course_key}"
+            )
         else:
             logger.info(f"No changes detected for course {course_instance.course_key}")
 

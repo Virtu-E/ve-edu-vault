@@ -3,8 +3,17 @@ from unittest.mock import Mock
 import pytest
 
 from ai_core.contextual_analyzer.context_engine import ContextEngine
-from course_ware.tests.course_ware_factory import UserQuestionAttemptsFactory, UserQuestionSetFactory
-from data_types.ai_core import Attempt, DifficultyStats, LearningHistory, ModeData, QuestionAIContext
+from course_ware.tests.course_ware_factory import (
+    UserQuestionAttemptsFactory,
+    UserQuestionSetFactory,
+)
+from data_types.ai_core import (
+    Attempt,
+    DifficultyStats,
+    LearningHistory,
+    ModeData,
+    QuestionAIContext,
+)
 from repository.ai_core.learning_history import LearningHistoryRepository
 from repository.shared import QuestionRepository
 
@@ -36,7 +45,9 @@ def mock_difficulty_stats():
 def mock_repositories(user):
     question_repo = Mock(spec=QuestionRepository)
     learning_history_repo = Mock(spec=LearningHistoryRepository)
-    learning_history_repo.get_learning_history.return_value = LearningHistory(userId=user.id, block_id="test_topic", modeHistory={})
+    learning_history_repo.get_learning_history.return_value = LearningHistory(
+        userId=user.id, block_id="test_topic", modeHistory={}
+    )
     return question_repo, learning_history_repo
 
 
@@ -65,7 +76,9 @@ def context_setup(user, mock_repositories, mock_builders, topic):
     question_repo, learning_history_repo = mock_repositories
     context_builder, stats_calculator = mock_builders
 
-    question_attempt = UserQuestionAttemptsFactory(user=user, current_learning_mode="normal")
+    question_attempt = UserQuestionAttemptsFactory(
+        user=user, current_learning_mode="normal"
+    )
     question_set = UserQuestionSetFactory(user=user)
 
     context_engine = ContextEngine(
@@ -120,7 +133,9 @@ class TestContextEngine:
         context_engine = context_setup["engine"]
         learning_history_repo = context_setup["repositories"][1]
 
-        learning_history_repo.get_learning_history.side_effect = Exception("Database error")
+        learning_history_repo.get_learning_history.side_effect = Exception(
+            "Database error"
+        )
 
         with pytest.raises(Exception) as exc_info:
             context_engine.generate_learning_history_context()

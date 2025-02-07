@@ -11,7 +11,9 @@ class TopicExt(models.Model):
     learning objectives, resources, and other pedagogical information.
     """
 
-    topic = models.OneToOneField(Topic, on_delete=models.CASCADE, related_name="extension")
+    topic = models.OneToOneField(
+        Topic, on_delete=models.CASCADE, related_name="extension"
+    )
 
     description = models.TextField(help_text="Description of the topic")
 
@@ -30,7 +32,9 @@ class TopicExt(models.Model):
         null=True,
     )
 
-    teacher_notes = models.TextField(blank=True, null=True, help_text="Notes and guidance for teachers")
+    teacher_notes = models.TextField(
+        blank=True, null=True, help_text="Notes and guidance for teachers"
+    )
 
     assessment_criteria = models.JSONField(
         help_text="Criteria for assessing topic mastery",
@@ -88,7 +92,9 @@ class BaseResource(models.Model):
     Abstract base class for all educational resources
     """
 
-    topic_ext = models.ForeignKey(TopicExt, on_delete=models.CASCADE, related_name="%(class)s")
+    topic_ext = models.ForeignKey(
+        TopicExt, on_delete=models.CASCADE, related_name="%(class)s"
+    )
 
     title = models.CharField(max_length=255, help_text="Title of the resource")
 
@@ -97,7 +103,9 @@ class BaseResource(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    is_featured = models.BooleanField(default=False, help_text="Featured resources appear prominently in the UI")
+    is_featured = models.BooleanField(
+        default=False, help_text="Featured resources appear prominently in the UI"
+    )
 
     metadata = models.JSONField(
         default=dict,
@@ -137,7 +145,9 @@ class VideoResource(BaseResource):
         help_text="Indicates if the video requires a platform subscription",
     )
 
-    transcript_available = models.BooleanField(default=False, help_text="Indicates if a transcript is available")
+    transcript_available = models.BooleanField(
+        default=False, help_text="Indicates if a transcript is available"
+    )
 
     class Meta:
         verbose_name = _("Video Resource")
@@ -150,16 +160,22 @@ class BookResource(BaseResource):
     """
 
     author = models.CharField(max_length=255)
-    isbn = models.CharField(max_length=13, blank=True, help_text="International Standard Book Number")
+    isbn = models.CharField(
+        max_length=13, blank=True, help_text="International Standard Book Number"
+    )
     url = models.URLField(validators=[URLValidator()], help_text="URL to the book")
 
-    publication_year = models.PositiveIntegerField(validators=[MinValueValidator(1900), MaxValueValidator(2100)])
+    publication_year = models.PositiveIntegerField(
+        validators=[MinValueValidator(1900), MaxValueValidator(2100)]
+    )
 
     publisher = models.CharField(max_length=255, blank=True)
 
     edition = models.CharField(max_length=50, blank=True)
 
-    pages = models.PositiveIntegerField(validators=[MinValueValidator(1)], help_text="Number of pages in the book")
+    pages = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)], help_text="Number of pages in the book"
+    )
 
     format = models.CharField(
         max_length=20,
@@ -187,9 +203,13 @@ class ArticleResource(BaseResource):
 
     publication_date = models.DateField()
 
-    source = models.CharField(max_length=255, help_text="Source/publisher of the article")
+    source = models.CharField(
+        max_length=255, help_text="Source/publisher of the article"
+    )
 
-    is_peer_reviewed = models.BooleanField(default=False, help_text="Indicates if the article is peer-reviewed")
+    is_peer_reviewed = models.BooleanField(
+        default=False, help_text="Indicates if the article is peer-reviewed"
+    )
 
     reading_time = models.PositiveIntegerField(
         help_text="Estimated reading time in minutes",
@@ -207,7 +227,9 @@ class CategoryExt(models.Model):
     mastery points, and learning path information.
     """
 
-    category = models.OneToOneField(Category, on_delete=models.CASCADE, related_name="extension")
+    category = models.OneToOneField(
+        Category, on_delete=models.CASCADE, related_name="extension"
+    )
 
     description = models.TextField(
         help_text="Comprehensive description of the category and its importance",
@@ -221,9 +243,13 @@ class CategoryExt(models.Model):
         help_text="Base points awarded for completing this category",
     )
 
-    estimated_hours = models.PositiveIntegerField(default=0, help_text="Estimated hours to achieve mastery")
+    estimated_hours = models.PositiveIntegerField(
+        default=0, help_text="Estimated hours to achieve mastery"
+    )
 
-    teacher_guide = models.TextField(blank=True, null=True, help_text="Guidance for teachers on category instruction")
+    teacher_guide = models.TextField(
+        blank=True, null=True, help_text="Guidance for teachers on category instruction"
+    )
 
     minimum_mastery_percentage = models.PositiveIntegerField(
         default=0,
@@ -245,11 +271,17 @@ class TopicMastery(models.Model):
     including points earned, achievements, and mastery status.
     """
 
-    user = models.ForeignKey(EdxUser, on_delete=models.CASCADE, related_name="topic_mastery")
+    user = models.ForeignKey(
+        EdxUser, on_delete=models.CASCADE, related_name="topic_mastery"
+    )
 
-    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name="topic_mastery")
+    topic = models.ForeignKey(
+        Topic, on_delete=models.CASCADE, related_name="topic_mastery"
+    )
 
-    points_earned = models.PositiveIntegerField(default=0, help_text="Total points earned in this topic")
+    points_earned = models.PositiveIntegerField(
+        default=0, help_text="Total points earned in this topic"
+    )
 
     mastery_achievements = models.JSONField(
         default=dict(),
@@ -268,7 +300,9 @@ class TopicMastery(models.Model):
         ("mastered", "Mastered"),
     ]
 
-    mastery_status = models.CharField(max_length=20, choices=MASTERY_STATUS_CHOICES, default="not_started")
+    mastery_status = models.CharField(
+        max_length=20, choices=MASTERY_STATUS_CHOICES, default="not_started"
+    )
 
     class Meta:
         verbose_name = "User Skill Mastery"

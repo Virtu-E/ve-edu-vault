@@ -9,7 +9,9 @@ class LearningHistoryRepository(ABC):
     """Repository interface for learning history operations"""
 
     @abstractmethod
-    def get_learning_history(self, user_id: str, block_id: str) -> Optional[LearningHistory]:
+    def get_learning_history(
+        self, user_id: int, block_id: str
+    ) -> Optional[LearningHistory]:
         """Retrieve learning history for a user and block"""
         pass
 
@@ -32,7 +34,9 @@ class MongoLearningHistoryRepository(LearningHistoryRepository):
 
     def get_learning_history(self, user_id: int, block_id: str) -> LearningHistory:
         query = {"userId": user_id, "block_id": block_id}
-        history = self.database_engine.fetch_one_from_db(self.collection_name, self.database_name, query)
+        history = self.database_engine.fetch_one_from_db(
+            self.collection_name, self.database_name, query
+        )
         if not history:
             return LearningHistory(userId=user_id, block_id=block_id, modeHistory={})
 

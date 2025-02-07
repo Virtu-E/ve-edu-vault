@@ -21,7 +21,12 @@ class TestCompletionAnalyzer:
 
     def test_all_questions_completed(self, analyzer):
         """Test analysis when all questions are completed successfully."""
-        questions = [QuestionAIContextFactory(attempts=AttemptsFactory(success=True, attemptNumber=1)) for _ in range(3)]
+        questions = [
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(success=True, attemptNumber=1)
+            )
+            for _ in range(3)
+        ]
 
         result = analyzer.analyze_completion(questions)
         assert result == {
@@ -32,7 +37,14 @@ class TestCompletionAnalyzer:
 
     def test_all_questions_max_attempts_failed(self, analyzer):
         """Test analysis when all questions reached max attempts but failed."""
-        questions = [QuestionAIContextFactory(attempts=AttemptsFactory(success=False, attemptNumber=CompletionAnalyzer.MAX_ATTEMPTS)) for _ in range(3)]
+        questions = [
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(
+                    success=False, attemptNumber=CompletionAnalyzer.MAX_ATTEMPTS
+                )
+            )
+            for _ in range(3)
+        ]
 
         result = analyzer.analyze_completion(questions)
         assert result == {
@@ -43,7 +55,12 @@ class TestCompletionAnalyzer:
 
     def test_all_questions_early_abandoned(self, analyzer):
         """Test analysis when all questions were abandoned early."""
-        questions = [QuestionAIContextFactory(attempts=AttemptsFactory(success=False, attemptNumber=1)) for _ in range(3)]
+        questions = [
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(success=False, attemptNumber=1)
+            )
+            for _ in range(3)
+        ]
 
         result = analyzer.analyze_completion(questions)
         assert result == {
@@ -56,13 +73,23 @@ class TestCompletionAnalyzer:
         """Test analysis with mixed completion scenarios."""
         questions = [
             # Completed successfully
-            QuestionAIContextFactory(attempts=AttemptsFactory(success=True, attemptNumber=2)),
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(success=True, attemptNumber=2)
+            ),
             # Failed at max attempts
-            QuestionAIContextFactory(attempts=AttemptsFactory(success=False, attemptNumber=CompletionAnalyzer.MAX_ATTEMPTS)),
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(
+                    success=False, attemptNumber=CompletionAnalyzer.MAX_ATTEMPTS
+                )
+            ),
             # Abandoned early
-            QuestionAIContextFactory(attempts=AttemptsFactory(success=False, attemptNumber=1)),
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(success=False, attemptNumber=1)
+            ),
             # Another successful completion
-            QuestionAIContextFactory(attempts=AttemptsFactory(success=True, attemptNumber=1)),
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(success=True, attemptNumber=1)
+            ),
         ]
 
         result = analyzer.analyze_completion(questions)
@@ -75,9 +102,17 @@ class TestCompletionAnalyzer:
     def test_rounding_behavior(self, analyzer):
         """Test that percentages are rounded to one decimal place."""
         questions = [
-            QuestionAIContextFactory(attempts=AttemptsFactory(success=True, attemptNumber=1)),
-            QuestionAIContextFactory(attempts=AttemptsFactory(success=True, attemptNumber=2)),
-            QuestionAIContextFactory(attempts=AttemptsFactory(success=False, attemptNumber=CompletionAnalyzer.MAX_ATTEMPTS)),
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(success=True, attemptNumber=1)
+            ),
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(success=True, attemptNumber=2)
+            ),
+            QuestionAIContextFactory(
+                attempts=AttemptsFactory(
+                    success=False, attemptNumber=CompletionAnalyzer.MAX_ATTEMPTS
+                )
+            ),
         ]
 
         result = analyzer.analyze_completion(questions)

@@ -23,11 +23,15 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "issuer",
-                    models.CharField(blank=True, max_length=255, null=True, unique=True),
+                    models.CharField(
+                        blank=True, max_length=255, null=True, unique=True
+                    ),
                 ),
                 (
                     "client_id",
-                    models.CharField(blank=True, max_length=255, null=True, unique=True),
+                    models.CharField(
+                        blank=True, max_length=255, null=True, unique=True
+                    ),
                 ),
                 ("auth_login_url", models.URLField(blank=True, null=True)),
                 ("auth_token_url", models.URLField(blank=True, null=True)),
