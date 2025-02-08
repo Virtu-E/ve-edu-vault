@@ -145,6 +145,19 @@ class GetQuestionsView(DatabaseQuestionViewBase):
             )
         )
 
+        grading_mode = UserQuestionSet.objects.get(
+            user_id=user, topic=topic
+        ).grading_mode
+        if grading_mode:
+            return Response(
+                {
+                    "username": self.serializer.validated_data["username"],
+                    "block_id": self.serializer.validated_data["block_id"],
+                    "questions": [],
+                    "grading_mode": grading_mode,
+                }
+            )
+
         object_ids = [ObjectId(id) for id in question_set_ids if ObjectId.is_valid(id)]
 
         if not object_ids:
@@ -170,6 +183,7 @@ class GetQuestionsView(DatabaseQuestionViewBase):
                 "username": self.serializer.validated_data["username"],
                 "block_id": self.serializer.validated_data["block_id"],
                 "questions": questions,
+                "grading_mode": grading_mode,
             }
         )
 
@@ -444,6 +458,8 @@ class QuizCompletionView(DatabaseQuestionViewBase):
             performance_stats=performance_stats,
         )
         grade_data = grader.evaluate_performance()
+        user_question_set.grading_mode = True
+        user_question_set.save()
 
         # will run through celery
         # task_id = trigger_orchestration(

@@ -275,7 +275,7 @@ class TopicMastery(models.Model):
         EdxUser, on_delete=models.CASCADE, related_name="topic_mastery"
     )
 
-    topic = models.ForeignKey(
+    topic = models.OneToOneField(
         Topic, on_delete=models.CASCADE, related_name="topic_mastery"
     )
 

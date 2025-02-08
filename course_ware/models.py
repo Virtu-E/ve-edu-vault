@@ -201,6 +201,8 @@ class UserQuestionSet(BaseQuestionSet):
     user = models.ForeignKey(
         EdxUser, on_delete=models.CASCADE, related_name="question_sets"
     )
+    # gets activated when grading starts.
+    grading_mode = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "User Question Set"
