@@ -42,6 +42,12 @@ class CategorySync(DatabaseSync):
         self._update_categories(structure)
 
     def _delete_removed_categories(self, removed_categories: Set[str]) -> None:
+        # First delete all topics that belong to categories that will be removed
+        Topic.objects.filter(
+            category__course=self.course, category__block_id__in=removed_categories
+        ).delete()
+
+        # Then delete the categories themselves
         Category.objects.filter(
             course=self.course, block_id__in=removed_categories
         ).delete()

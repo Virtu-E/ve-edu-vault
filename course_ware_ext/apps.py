@@ -6,4 +6,5 @@ class CourseWareExtConfig(AppConfig):
     name = "course_ware_ext"
 
     def ready(self):
+        import course_ware_ext.signals
         pass

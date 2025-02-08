@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
 from course_ware.models import Category
-
 from .models import (
     ArticleResource,
     BookResource,

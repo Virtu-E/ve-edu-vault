@@ -8,7 +8,8 @@ from course_ware.utils import (
     academic_class_from_course_id,
     get_examination_level_from_course_id,
 )
-from webhooks.edx_requests import EdxClient
+from elastic_search.tasks import elastic_search_sync
+from oauth_clients.edx_client import EdxClient
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +141,8 @@ class CourseUpdatedHandler(WebhookHandler):
             logger.info(
                 f"Successfully synced course structure for {course_instance.course_key}"
             )
+            # sync elastic search using celery
+            elastic_search_sync.delay(course_instance.course_key)
         else:
             logger.info(f"No changes detected for course {course_instance.course_key}")
 

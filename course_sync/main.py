@@ -28,6 +28,7 @@ class CourseSync:
         self.stored_structure = course.course_outline
         self.new_structure = new_structure
         self.comparator = StructureComparator()
+        # TODO : We should use dependency injection here
         self.category_sync = CategorySync(course, academic_class, examination_level)
         self.topic_sync = TopicSync(course, TopicCreationSideEffect(mongo_database))
 

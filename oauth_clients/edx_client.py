@@ -1,13 +1,16 @@
-from typing import Dict, Optional
+import logging
+from typing import Any, Dict, Optional
 
 from decouple import config
 
 from oauth_clients.services import OAuthClient
 
+log = logging.getLogger(__name__)
+
 
 # TODO : thinking of making this a singleton class instance
 class EdxClient:
-    def __init__(self, service_type: str):
+    def __init__(self, service_type=""):
         self.client = OAuthClient(service_type=service_type)
         self.studio_url = config("EDX_STUDIO_URL")
         self.lms_url = config("EDX_LMS_URL")
@@ -35,4 +38,14 @@ class EdxClient:
         response = self.make_request("GET", url, params=params)
         if response and response.status_code == 200:
             return response.json()
+        return None
+
+    # TODO : i need to add a proper data type return here
+    def get_public_course_outline(self, course_id: str) -> Any:
+        """Fetch public course outline from OpenEdX API."""
+        url = f"{self.lms_url}/api/course_home/outline/{course_id}"
+        response = self.make_request("GET", url)
+        if response and response.status_code == 200:
+            return response.json()
+        log.error(f"Error fetching course outline for {course_id}: {response}")
         return None

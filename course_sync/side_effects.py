@@ -7,7 +7,7 @@ from django.db.models import Model
 from course_ware.models import DefaultQuestionSet, Topic, TopicIframeID
 from edu_vault.settings import common
 from no_sql_database.nosql_database_engine import NoSqLDatabaseEngineInterface
-from webhooks.edx_requests import EdxClient
+from oauth_clients.edx_client import EdxClient
 
 log = logging.getLogger(__name__)
 
