@@ -7,5 +7,5 @@ class CourseSyncConfig(AppConfig):
 
     def ready(self):
         import course_sync.signals
-        pass
 
+        pass

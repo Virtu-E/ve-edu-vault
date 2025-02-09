@@ -10,6 +10,7 @@ from oauth_clients.edx_client import EdxClient
 
 log = logging.getLogger(__name__)
 
+
 @shared_task(
     name="course_sync.tasks.topic_creation_side_effect",
     ignore_result=True,
@@ -30,6 +31,6 @@ def process_topic_creation_side_effect(topic: int):
             f"Failed to process topic creation side effects for topic ID {topic.id}. "
             f"Error type: {type(e).__name__}. "
             f"Details: {str(e)}. "
-            #f"Retry attempt {task.request.retries + 1} of {task.max_retries}"
+            # f"Retry attempt {task.request.retries + 1} of {task.max_retries}"
         )
-        #raise task.retry(exc=e)
+        # raise task.retry(exc=e)

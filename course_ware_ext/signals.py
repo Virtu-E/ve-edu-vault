@@ -1,8 +1,9 @@
 import logging
-from django.db import transaction
-from django.db.models.signals import post_save, post_delete
-from django.dispatch import receiver
+
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
 
 from course_ware.models import Topic
 from course_ware_ext.models import CategoryExt
@@ -25,7 +26,9 @@ def update_category_points(category, action="update"):
     """
     try:
         with transaction.atomic():
-            category_ext_instance, _ = CategoryExt.objects.get_or_create(category=category)
+            category_ext_instance, _ = CategoryExt.objects.get_or_create(
+                category=category
+            )
             total_topics = Topic.objects.filter(category=category).count()
             total_points = total_topics * POINTS_PER_TOPIC
             category_ext_instance.base_mastery_points = total_points
@@ -97,12 +100,14 @@ def handle_topic_post_delete(sender, instance, **kwargs):
     """
     try:
         if not instance.category:
-            logger.error(f"Deleted topic has no associated category")
+            logger.error("Deleted topic has no associated category")
             return
 
         success = update_category_points(instance.category, "delete")
         if not success:
-            logger.error(f"Failed to process post_delete for topic category={instance.category.id}")
+            logger.error(
+                f"Failed to process post_delete for topic category={instance.category.id}"
+            )
 
     except ObjectDoesNotExist as e:
         logger.error(

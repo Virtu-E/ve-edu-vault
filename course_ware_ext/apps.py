@@ -7,4 +7,3 @@ class CourseWareExtConfig(AppConfig):
 
     def ready(self):
         import course_ware_ext.signals
-

@@ -28,15 +28,14 @@ def update_topic_document(sender, instance, **kwargs):
             )
             registry.update(category, raise_on_error=False)
         else:
-            log.warning("Topic has no associated category", extra={"topic_id": instance.id})
+            log.warning(
+                "Topic has no associated category", extra={"topic_id": instance.id}
+            )
     except Exception as e:
         log.error(
             "Error syncing course structure",
-            extra={
-                "topic_id": instance.id,
-                "error": str(e)
-            },
-            exc_info=True
+            extra={"topic_id": instance.id, "error": str(e)},
+            exc_info=True,
         )
 
 
@@ -55,11 +54,8 @@ def update_category_document(sender, instance, **kwargs):
     except Exception as e:
         log.error(
             "Error syncing course structure",
-            extra={
-                "category_id": instance.id,
-                "error": str(e)
-            },
-            exc_info=True
+            extra={"category_id": instance.id, "error": str(e)},
+            exc_info=True,
         )
 
 
@@ -85,16 +81,13 @@ def delete_topic_document(sender, instance, **kwargs):
         else:
             log.warning(
                 "Deleted Topic had no associated category",
-                extra={"topic_id": instance.id}
+                extra={"topic_id": instance.id},
             )
     except Exception as e:
         log.error(
             "Error syncing course structure",
-            extra={
-                "topic_id": instance.id,
-                "error": str(e)
-            },
-            exc_info=True
+            extra={"topic_id": instance.id, "error": str(e)},
+            exc_info=True,
         )
 
 
@@ -109,13 +102,10 @@ def delete_category_document(sender, instance, **kwargs):
                 "action": "delete",
             },
         )
-        registry.delete(instance,raise_on_error=False)
+        registry.delete(instance, raise_on_error=False)
     except Exception as e:
         log.error(
             "Error syncing course structure",
-            extra={
-                "category_id": instance.id,
-                "error": str(e)
-            },
-            exc_info=True
+            extra={"category_id": instance.id, "error": str(e)},
+            exc_info=True,
         )

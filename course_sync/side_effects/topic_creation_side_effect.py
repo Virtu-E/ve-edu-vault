@@ -1,7 +1,8 @@
 import logging
 from typing import Any, Dict, List, Optional
-from django.db import transaction
+
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 
 from course_sync.side_effects.abstract_type import CreationSideEffect
 from course_ware.models import DefaultQuestionSet, Topic, TopicIframeID
@@ -16,10 +17,10 @@ class TopicCreationSideEffect(CreationSideEffect):
     """Class to handle all related creation side effects in relation to a topic instance."""
 
     def __init__(
-            self,
-            no_sql_database_client: NoSqLDatabaseEngineInterface,
-            client: EdxClient,
-            topic: Topic,
+        self,
+        no_sql_database_client: NoSqLDatabaseEngineInterface,
+        client: EdxClient,
+        topic: Topic,
     ) -> None:
         """
         Initialize the TopicCreationSideEffect.
@@ -62,7 +63,9 @@ class TopicCreationSideEffect(CreationSideEffect):
                 )
                 results = self.no_sql_database_client.run_aggregation(
                     collection_name=self._topic.category.course.course_key,
-                    database_name=getattr(common, "NO_SQL_DATABASE_NAME", "virtu_educate"),
+                    database_name=getattr(
+                        common, "NO_SQL_DATABASE_NAME", "virtu_educate"
+                    ),
                     pipeline=pipeline,
                 )
 
@@ -87,10 +90,7 @@ class TopicCreationSideEffect(CreationSideEffect):
             log.error(
                 f"Required object not found while processing topic {self._topic.id}",
                 exc_info=True,
-                extra={
-                    "topic_id": self._topic.id,
-                    "error": str(e)
-                }
+                extra={"topic_id": self._topic.id, "error": str(e)},
             )
             raise
         except Exception as e:
@@ -99,16 +99,20 @@ class TopicCreationSideEffect(CreationSideEffect):
                 exc_info=True,
                 extra={
                     "topic_id": self._topic.id,
-                    "category": getattr(self._topic.category, 'name', None),
-                    "course_key": getattr(getattr(self._topic.category, 'course', None), 'course_key', None),
+                    "category": getattr(self._topic.category, "name", None),
+                    "course_key": getattr(
+                        getattr(self._topic.category, "course", None),
+                        "course_key",
+                        None,
+                    ),
                     "error_type": type(e).__name__,
-                    "error": str(e)
-                }
+                    "error": str(e),
+                },
             )
             raise
 
     def _create_default_question_set(
-            self, question_list_ids: List[Dict[str, str]]
+        self, question_list_ids: List[Dict[str, str]]
     ) -> None:
         """
         Create or update the DefaultQuestionSet for a topic.
@@ -125,11 +129,11 @@ class TopicCreationSideEffect(CreationSideEffect):
                 DefaultQuestionSet.objects.update_or_create(
                     topic=self._topic, defaults={"question_list_ids": question_list_ids}
                 )
-        except Exception as e:
+        except Exception:
             log.error(
                 f"Failed to create/update DefaultQuestionSet for topic {self._topic.id}",
                 exc_info=True,
-                extra={"question_count": len(question_list_ids)}
+                extra={"question_count": len(question_list_ids)},
             )
             raise
 
@@ -152,12 +156,14 @@ class TopicCreationSideEffect(CreationSideEffect):
                     else:
                         log.warning(f"No iframe ID found for topic {self._topic.name}")
                 else:
-                    log.warning(f"No course blocks available for topic {self._topic.name}")
-        except Exception as e:
+                    log.warning(
+                        f"No course blocks available for topic {self._topic.name}"
+                    )
+        except Exception:
             log.error(
                 f"Failed to create/update TopicIframeID for topic {self._topic.id}",
                 exc_info=True,
-                extra={"course_blocks_available": bool(course_blocks)}
+                extra={"course_blocks_available": bool(course_blocks)},
             )
             raise
 
@@ -259,6 +265,3 @@ class TopicCreationSideEffect(CreationSideEffect):
                 }
             },
         ]
-
-
-

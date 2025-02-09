@@ -3,6 +3,9 @@ from django_elasticsearch_dsl.registries import registry
 
 from course_ware.models import Category, Topic
 
+# TODO : add support for academic level filtering
+# TODO : add support for images and maybe even some AI input ?
+
 
 @registry.register_document
 class TopicDocument(Document):
@@ -49,7 +52,7 @@ class TopicDocument(Document):
         data = {
             "topic_name": instance.name,
             "topic_id": instance.block_id,
-            "course_id": instance.course.id,
+            "course_id": instance.course.course_key,
             "course_name": instance.course.name,
             "learning_objectives": learning_objectives,
             "metadata": {

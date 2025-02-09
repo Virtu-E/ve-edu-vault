@@ -215,4 +215,6 @@ ELASTICSEARCH_DSL = {
 }
 # ELASTICSEARCH_DSL_AUTOSYNC = False
 # ELASTICSEARCH_DSL_AUTO_REFRESH = False
-ELASTICSEARCH_DSL_SIGNAL_PROCESSOR = "elastic_search.custom_signal_processor.CustomCelerySignalProcessor"
+ELASTICSEARCH_DSL_SIGNAL_PROCESSOR = (
+    "elastic_search.custom_signal_processor.CustomCelerySignalProcessor"
+)

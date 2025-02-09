@@ -28,7 +28,8 @@ def trigger_topic_side_effect(sender, instance, **kwargs):
             },
         )
         try:
-            process_topic_creation_side_effect.delay(instance.id)
+            pk = instance.id
+            process_topic_creation_side_effect.delay(pk)
             log.debug(
                 f"Successfully queued topic creation side effect task for topic ID: {instance.id}"
             )

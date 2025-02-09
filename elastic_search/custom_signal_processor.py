@@ -1,12 +1,12 @@
 import logging
+from importlib import import_module
 
-from django_elasticsearch_dsl.registries import registry
-from django_elasticsearch_dsl.signals import CelerySignalProcessor
 from celery import shared_task
 from django.apps import apps
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from importlib import import_module
+from django_elasticsearch_dsl.registries import registry
+from django_elasticsearch_dsl.signals import CelerySignalProcessor
 
 log = logging.getLogger(__name__)
 
@@ -29,9 +29,9 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
                 extra={
                     "model": sender.__name__,
                     "instance_id": instance.id,
-                    "error": str(e)
+                    "error": str(e),
                 },
-                exc_info=True
+                exc_info=True,
             )
 
     def handle_pre_delete(self, sender, instance, **kwargs):
@@ -44,9 +44,9 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
                 extra={
                     "model": sender.__name__,
                     "instance_id": instance.id,
-                    "error": str(e)
+                    "error": str(e),
                 },
-                exc_info=True
+                exc_info=True,
             )
 
     def handle_delete(self, sender, instance, **kwargs):
@@ -59,14 +59,14 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
                 extra={
                     "model": sender.__name__,
                     "instance_id": instance.id,
-                    "error": str(e)
+                    "error": str(e),
                 },
-                exc_info=True
+                exc_info=True,
             )
 
     def prepare_registry_delete_related_task(self, instance):
         """Prepare registry delete related task with error handling."""
-        action = 'index'
+        action = "index"
         for doc in registry._get_related_doc(instance):
             try:
                 doc_instance = doc(related_instance_to_ignore=instance)
@@ -75,10 +75,7 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
                 except ObjectDoesNotExist:
                     log.warning(
                         "Related object does not exist",
-                        extra={
-                            "instance_id": instance.id,
-                            "doc_class": doc.__name__
-                        }
+                        extra={"instance_id": instance.id, "doc_class": doc.__name__},
                     )
                     related = None
 
@@ -88,17 +85,19 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
                         object_list = [related]
                     else:
                         object_list = related
-                    bulk_data = list(doc_instance._get_actions(object_list, action)),
-                    self.registry_delete_task.delay(doc_instance.__class__.__name__, bulk_data)
+                    bulk_data = (list(doc_instance._get_actions(object_list, action)),)
+                    self.registry_delete_task.delay(
+                        doc_instance.__class__.__name__, bulk_data
+                    )
             except Exception as e:
                 log.error(
                     "Error preparing registry delete related task",
                     extra={
                         "instance_id": instance.id,
                         "doc_class": doc.__name__,
-                        "error": str(e)
+                        "error": str(e),
                     },
-                    exc_info=True
+                    exc_info=True,
                 )
 
     @shared_task()
@@ -111,16 +110,13 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
         except Exception as e:
             log.error(
                 "Error in registry delete task",
-                extra={
-                    "doc_label": doc_label,
-                    "error": str(e)
-                },
-                exc_info=True
+                extra={"doc_label": doc_label, "error": str(e)},
+                exc_info=True,
             )
 
     def prepare_registry_delete_task(self, instance):
         """Prepare registry delete task with error handling."""
-        action = 'delete'
+        action = "delete"
         for doc in registry._get_related_doc(instance):
             try:
                 doc_instance = doc(related_instance_to_ignore=instance)
@@ -129,10 +125,7 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
                 except ObjectDoesNotExist:
                     log.warning(
                         "Related object does not exist for delete",
-                        extra={
-                            "instance_id": instance.id,
-                            "doc_class": doc.__name__
-                        }
+                        extra={"instance_id": instance.id, "doc_class": doc.__name__},
                     )
                     related = None
 
@@ -142,17 +135,19 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
                         object_list = [related]
                     else:
                         object_list = related
-                    bulk_data = list(doc_instance.get_actions(object_list, action)),
-                    self.registry_delete_task.delay(doc_instance.__class__.__name__, bulk_data)
+                    bulk_data = (list(doc_instance.get_actions(object_list, action)),)
+                    self.registry_delete_task.delay(
+                        doc_instance.__class__.__name__, bulk_data
+                    )
             except Exception as e:
                 log.error(
                     "Error preparing registry delete task",
                     extra={
                         "instance_id": instance.id,
                         "doc_class": doc.__name__,
-                        "error": str(e)
+                        "error": str(e),
                     },
-                    exc_info=True
+                    exc_info=True,
                 )
 
     @shared_task()
@@ -165,22 +160,14 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
         except LookupError:
             log.error(
                 f"Model {app_label}.{model_name} not found",
-                extra={
-                    "pk": pk,
-                    "app_label": app_label,
-                    "model_name": model_name
-                },
-                exc_info=True
+                extra={"pk": pk, "app_label": app_label, "model_name": model_name},
+                exc_info=True,
             )
         except ObjectDoesNotExist:
             log.error(
                 f"{model_name} matching query does not exist",
-                extra={
-                    "pk": pk,
-                    "app_label": app_label,
-                    "model_name": model_name
-                },
-                exc_info=True
+                extra={"pk": pk, "app_label": app_label, "model_name": model_name},
+                exc_info=True,
             )
         except Exception as e:
             log.error(
@@ -189,9 +176,9 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
                     "pk": pk,
                     "app_label": app_label,
                     "model_name": model_name,
-                    "error": str(e)
+                    "error": str(e),
                 },
-                exc_info=True
+                exc_info=True,
             )
 
     @shared_task()
@@ -204,22 +191,14 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
         except LookupError:
             log.error(
                 f"Model {app_label}.{model_name} not found for related update",
-                extra={
-                    "pk": pk,
-                    "app_label": app_label,
-                    "model_name": model_name
-                },
-                exc_info=True
+                extra={"pk": pk, "app_label": app_label, "model_name": model_name},
+                exc_info=True,
             )
         except ObjectDoesNotExist:
             log.error(
                 f"{model_name} matching query does not exist for related update",
-                extra={
-                    "pk": pk,
-                    "app_label": app_label,
-                    "model_name": model_name
-                },
-                exc_info=True
+                extra={"pk": pk, "app_label": app_label, "model_name": model_name},
+                exc_info=True,
             )
         except Exception as e:
             log.error(
@@ -228,7 +207,7 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
                     "pk": pk,
                     "app_label": app_label,
                     "model_name": model_name,
-                    "error": str(e)
+                    "error": str(e),
                 },
-                exc_info=True
+                exc_info=True,
             )
