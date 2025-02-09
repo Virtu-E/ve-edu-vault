@@ -1,8 +1,8 @@
 import logging
-from abc import ABC, abstractmethod
 from typing import Any, Dict, Tuple
 
-from course_sync.main import CourseSync
+from course_sync.course_sync import CourseSyncFactory
+from course_sync.extractor import StructureExtractor
 from course_ware.models import AcademicClass, Course, ExaminationLevel
 from course_ware.utils import (
     academic_class_from_course_id,
@@ -10,47 +10,51 @@ from course_ware.utils import (
 )
 from data_types.course_ware_schema import CourseSyncResponse
 from oauth_clients.edx_client import EdxClient
+from webhooks.handlers.abstract_type import WebhookHandler
 
 log = logging.getLogger(__name__)
 
 
-class WebhookHandler(ABC):
-    """Abstract base class for webhook event handlers"""
-
-    @abstractmethod
-    def handle(self, payload: Dict[str, Any]) -> CourseSyncResponse:
-        """Process the webhook payload and return a response"""
-        raise NotImplementedError()
-
-
-class CourseCreatedHandler(WebhookHandler):
-    """Handles OpenEdx Course Creation events"""
-
-    def handle(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        # Process course creation
-        course_id = payload["course"]["course_key"]
-        display_name = payload["course"]["display_name"]
-
-        Course.objects.get_or_create(
-            course_id=course_id, display_name=display_name, course_outline=dict()
-        )
-        academic_class = academic_class_from_course_id(course_id)
-        if academic_class:
-            AcademicClass.objects.get_or_create(name=academic_class)
-        log.info("Created course %s", course_id)
-
-        return {"status": "course created", "message": "course created successfully"}
-
-
-# TODO : class can be improved using SOLID principle
 class CourseUpdatedHandler(WebhookHandler):
     """
     Handles OpenEdx Course Update events with improved error handling and response tracking.
     """
 
-    @staticmethod
-    def _get_edx_client():
-        return EdxClient("OPENEDX")
+    def __init__(self, client: EdxClient):
+        self._client = client
+
+    def handle(self, payload: Dict[str, Any]) -> CourseSyncResponse:
+        """
+        Handles course update webhook.
+
+        Args:
+            payload: The webhook payload
+
+        Returns:
+            Dict containing status and message
+        """
+
+        course_id = payload["course"]["course_key"]
+
+        course_outline = self._client.get_course_outline(course_id)
+
+        course_instance, created = self._get_or_create_course(course_id, course_outline)
+
+        academic_class_instance = self._process_academic_class(course_id)
+        sync_result = self._sync_course_structure(
+            course_instance,
+            academic_class_instance,
+            course_outline,
+            get_examination_level_from_course_id(course_id),
+        )
+
+        status_message = "course created" if created else "course updated"
+        return CourseSyncResponse(
+            status="success",
+            message=f"Course successfully {status_message}",
+            course_id=course_id,
+            changes_made=sync_result.get("changes_made"),
+        )
 
     @staticmethod
     def _get_or_create_course(
@@ -75,7 +79,8 @@ class CourseUpdatedHandler(WebhookHandler):
             log.error(f"Error creating/updating course {course_id}: {str(e)}")
             raise ValueError(f"Failed to create/update course: {str(e)}")
 
-    def _process_academic_class(self, course_id: str) -> AcademicClass:
+    @staticmethod
+    def _process_academic_class(course_id: str) -> AcademicClass:
         """
         Processes and validates academic class information.
 
@@ -98,8 +103,8 @@ class CourseUpdatedHandler(WebhookHandler):
             log.error(f"Error processing academic class {academic_class}: {str(e)}")
             raise ValueError(f"Failed to process academic class: {str(e)}")
 
+    @staticmethod
     def _sync_course_structure(
-        self,
         course_instance: Course,
         academic_class_instance: AcademicClass,
         course_outline: Dict[str, Any],
@@ -114,11 +119,12 @@ class CourseUpdatedHandler(WebhookHandler):
                 - 'changes_made': Whether changes were detected and applied
         """
         try:
-            sync_result = CourseSync(
+            sync_result = CourseSyncFactory.create(
                 course=course_instance,
                 academic_class=academic_class_instance,
-                new_structure=course_outline,
                 examination_level=examination_level,
+                extractor=StructureExtractor,
+                new_structure=course_outline,
             ).sync()
 
             if sync_result:
@@ -133,45 +139,3 @@ class CourseUpdatedHandler(WebhookHandler):
         except Exception as e:
             log.error(f"Failed to sync course structure: {str(e)}")
             return {"success": False, "changes_made": False}
-
-    def handle(self, payload: Dict[str, Any]) -> CourseSyncResponse:
-        """
-        Handles course update webhook.
-
-        Args:
-            payload: The webhook payload
-
-        Returns:
-            Dict containing status and message
-        """
-
-        course_id = payload["course"]["course_key"]
-
-        course_outline = self._get_edx_client().get_course_outline(course_id)
-
-        course_instance, created = self._get_or_create_course(course_id, course_outline)
-
-        academic_class_instance = self._process_academic_class(course_id)
-        sync_result = self._sync_course_structure(
-            course_instance,
-            academic_class_instance,
-            course_outline,
-            get_examination_level_from_course_id(course_id),
-        )
-
-        status_message = "course created" if created else "course updated"
-        return CourseSyncResponse(
-            status="success",
-            message=f"Course successfully {status_message}",
-            course_id=course_id,
-            changes_made=sync_result.get("changes_made"),
-        )
-
-
-class UserRegistrationHandler(WebhookHandler):
-    """
-    Handles open Edx User Registration events
-    """
-
-    def handle(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        pass

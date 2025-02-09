@@ -1,8 +1,9 @@
 from typing import Dict, Optional
 
-from webhooks.handlers import CourseCreatedHandler, WebhookHandler
+from webhooks.handlers.abstract_type import WebhookHandler
+from webhooks.handlers.course_create_handler import CourseCreatedHandler
 from webhooks.task_manager import CourseTaskManager
-from webhooks.validators import EdxWebhookHandler
+from webhooks.validators import EdxWebhookValidator
 
 
 class WebhookRegistry:
@@ -26,4 +27,4 @@ webhook_registry = WebhookRegistry()
 webhook_registry.register(
     "org.openedx.content_authoring.course.created.v1", CourseCreatedHandler()
 )
-webhook_registry.register("course_published", CourseTaskManager(EdxWebhookHandler()))
+webhook_registry.register("course_published", CourseTaskManager(EdxWebhookValidator()))

@@ -1,22 +1,10 @@
-import logging
-from abc import ABC, abstractmethod
 from typing import Dict, Set
 
 from django.db.models.signals import post_delete
 
 from course_sync.extractor import StructureExtractor
-from course_sync.side_effects import CreationSideEffect
+from course_sync.sync_types.abstract_type import DatabaseSync
 from course_ware.models import AcademicClass, Category, Course, ExaminationLevel, Topic
-
-log = logging.getLogger(__name__)
-
-
-class DatabaseSync(ABC):
-    """Abstract base class for database synchronization"""
-
-    @abstractmethod
-    def sync(self, structure: Dict) -> None:
-        pass
 
 
 class CategorySync(DatabaseSync):
@@ -27,13 +15,15 @@ class CategorySync(DatabaseSync):
         course: Course,
         academic_class: AcademicClass,
         examination_level: ExaminationLevel,
+        extractor: StructureExtractor,
     ):
         self.course = course
         self.academic_class = academic_class
         self.examination_level = examination_level
+        self._extractor = extractor
 
     def sync(self, structure: Dict) -> None:
-        categories = StructureExtractor.extract(structure).categories
+        categories = self._extractor.extract(structure).categories
         existing_categories = set(
             Category.objects.filter(course=self.course).values_list(
                 "block_id", flat=True
@@ -76,50 +66,3 @@ class CategorySync(DatabaseSync):
                     "examination_level": self.examination_level,
                 },
             )
-
-
-class TopicSync(DatabaseSync):
-    """Responsible for synchronizing topics"""
-
-    def __init__(self, course: Course, creation_side_effect: CreationSideEffect):
-        self.course = course
-        self.creation_side_effect = creation_side_effect
-
-    def sync(self, structure: Dict) -> None:
-        structure_data = StructureExtractor.extract(structure)
-        existing_topics = set(
-            Topic.objects.filter(category__course=self.course).values_list(
-                "block_id", flat=True
-            )
-        )
-
-        self._delete_removed_topics(existing_topics - structure_data.topics)
-        self._update_topics(structure)
-
-    def _delete_removed_topics(self, removed_topics: Set[str]) -> None:
-        Topic.objects.filter(
-            category__course=self.course, block_id__in=removed_topics
-        ).delete()
-
-    def _update_topics(self, structure: Dict) -> None:
-        chapters = StructureExtractor.extract_chapters(structure)
-        for chapter in chapters:
-            try:
-                category = Category.objects.get(course=self.course, block_id=chapter.id)
-                objectives = StructureExtractor.extract_objectives(chapter)
-
-                for objective in objectives:
-                    topic_instance, created = Topic.objects.update_or_create(
-                        block_id=objective.id,
-                        defaults={
-                            "name": objective.name,
-                            "category": category,
-                        },
-                    )
-                    self.creation_side_effect.process_creation_side_effects(
-                        topic_instance
-                    )
-
-            except Category.DoesNotExist:
-                log.error(f"Category not found for chapter {chapter.id}")
-                continue

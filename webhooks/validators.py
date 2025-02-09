@@ -13,7 +13,7 @@ class WebhookValidator(ABC):
         raise NotImplementedError()
 
 
-class EdxWebhookHandler(WebhookValidator):
+class EdxWebhookValidator(WebhookValidator):
     def validate_payload(self, payload: Dict[str, Any]) -> Tuple[bool, str]:
         if not payload:
             return False, "Empty payload received"

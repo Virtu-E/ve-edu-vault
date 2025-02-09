@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict
 
 from data_types.course_ware_schema import CourseSyncResponse
-from webhooks.handlers import WebhookHandler
+from webhooks.handlers.abstract_type import WebhookHandler
 from webhooks.tasks import process_course_update
 from webhooks.validators import WebhookValidator
 

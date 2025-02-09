@@ -1,10 +1,11 @@
 from django.apps import AppConfig
 
 
-class CourseWareExtConfig(AppConfig):
+class CourseSyncConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "course_ware_ext"
+    name = "course_sync"
 
     def ready(self):
-        import course_ware_ext.signals
+        import course_sync.signals
+        pass
 
