@@ -3,7 +3,8 @@ from django.dispatch import receiver
 
 from course_ware.models import Category, Topic
 from course_ware_ext.models import CategoryExt
-from elastic_search.tasks import elastic_search_delete_index
+
+# from elastic_search.tasks import elastic_search_delete_index
 
 
 @receiver(post_save, sender=Topic)
@@ -47,7 +48,7 @@ def handle_topic_post_delete(sender, instance, **kwargs):
         instance (Topic): The specific instance of the Topic model being deleted.
         **kwargs: Additional keyword arguments.
     """
-    elastic_search_delete_index.delay(instance.block_id)
+    # elastic_search_delete_index.delay(instance.block_id)
     category = instance.category
     category_ext_instance, _ = CategoryExt.objects.update_or_create(category=category)
     # Deduct 100 points for the deleted topic
@@ -57,9 +58,9 @@ def handle_topic_post_delete(sender, instance, **kwargs):
     category_ext_instance.save()
 
 
-@receiver(post_delete, sender=Category)
-def handle_category_post_delete(sender, instance, **kwargs):
-    """
-    Signal handler triggered after a Category instance is deleted.
-    """
-    elastic_search_delete_index.delay(instance.block_id)
+# @receiver(post_delete, sender=Category)
+# def handle_category_post_delete(sender, instance, **kwargs):
+#     """
+#     Signal handler triggered after a Category instance is deleted.
+#     """
+#     elastic_search_delete_index.delay(instance.block_id)

@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "webhooks",
     # "oauth2_provider",
     "oauth_clients",
+    "django_elasticsearch_dsl",
 ]
 
 # TODO : csrf protection vs authentication
@@ -197,3 +198,22 @@ CELERY_TASK_TRACK_STARTED = True
 
 # Store task results for 7 days
 CELERY_RESULT_EXPIRES = 60 * 60 * 24 * 7
+
+# 'use_ssl': True,
+# 'verify_certs': True,
+
+ELASTICSEARCH_DSL = {
+    "default": {
+        "hosts": [
+            "https://d81dc60cb8b440b689c376163dfb471a.us-central1.gcp.cloud.es.io:443"
+        ],
+        "api_key": "YXZmaTVwUUJJTnJBNWlRcEY3bHA6dmozMFlXV3RTMzY3WjdaaGdqa0xpUQ==",
+        "timeout": 30,
+        "retry_on_timeout": True,
+    },
+}
+# ELASTICSEARCH_DSL_AUTOSYNC = False
+# ELASTICSEARCH_DSL_AUTO_REFRESH = False
+ELASTICSEARCH_DSL_SIGNAL_PROCESSOR = (
+    "django_elasticsearch_dsl.signals.CelerySignalProcessor"
+)

@@ -15,7 +15,9 @@ def academic_class_from_course_id(course_id: str) -> str | None:
     first_digit = int(number[0])
 
     if program == "MSCE":
-        if first_digit == 3 or first_digit == 4:
+        if first_digit == 3:
+            return "Form 3"
+        if first_digit == 4:
             return "Form 4"
     elif program == "JCE":
         if first_digit == 1:

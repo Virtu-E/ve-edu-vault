@@ -8,17 +8,17 @@ from course_ware.utils import (
     academic_class_from_course_id,
     get_examination_level_from_course_id,
 )
-from elastic_search.tasks import elastic_search_sync
+from data_types.course_ware_schema import CourseSyncResponse
 from oauth_clients.edx_client import EdxClient
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class WebhookHandler(ABC):
     """Abstract base class for webhook event handlers"""
 
     @abstractmethod
-    def handle(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def handle(self, payload: Dict[str, Any]) -> CourseSyncResponse:
         """Process the webhook payload and return a response"""
         raise NotImplementedError()
 
@@ -37,46 +37,27 @@ class CourseCreatedHandler(WebhookHandler):
         academic_class = academic_class_from_course_id(course_id)
         if academic_class:
             AcademicClass.objects.get_or_create(name=academic_class)
-        logger.info("Created course %s", course_id)
+        log.info("Created course %s", course_id)
 
         return {"status": "course created", "message": "course created successfully"}
 
 
+# TODO : class can be improved using SOLID principle
 class CourseUpdatedHandler(WebhookHandler):
     """
     Handles OpenEdx Course Update events with improved error handling and response tracking.
     """
 
-    # TODO : this can be improved
     @staticmethod
     def _get_edx_client():
         return EdxClient("OPENEDX")
 
     @staticmethod
-    def _validate_payload(payload: Dict[str, Any]) -> Tuple[bool, str]:
-        """
-        Validates the webhook payload structure.
-
-        Returns:
-            Tuple[bool, str]: (is_valid, error_message)
-        """
-        if not payload:
-            return False, "Empty payload received"
-
-        if not isinstance(payload.get("course", {}), dict):
-            return False, "Invalid course data structure"
-
-        if not payload.get("course", {}).get("course_key"):
-            return False, "Missing course key in payload"
-
-        return True, ""
-
-    @staticmethod
-    def _get_or_update_course(
+    def _get_or_create_course(
         course_id: str, course_outline: Dict[str, Any]
     ) -> Tuple[Course, bool]:
         """
-        Gets or updates course instance with proper change tracking.
+        Gets or creates course instance with proper change tracking.
 
         Returns:
             Tuple[Course, bool]: (course_instance, was_created)
@@ -85,13 +66,13 @@ class CourseUpdatedHandler(WebhookHandler):
             course_name = course_outline["course_structure"]["display_name"]
             course_instance, created = Course.objects.get_or_create(
                 course_key=course_id,
-                defaults={"name": course_name, "course_outline": course_outline},
+                defaults={"name": course_name, "course_outline": dict()},
             )
 
             return course_instance, created
 
         except Exception as e:
-            logger.error(f"Error creating/updating course {course_id}: {str(e)}")
+            log.error(f"Error creating/updating course {course_id}: {str(e)}")
             raise ValueError(f"Failed to create/update course: {str(e)}")
 
     def _process_academic_class(self, course_id: str) -> AcademicClass:
@@ -110,11 +91,11 @@ class CourseUpdatedHandler(WebhookHandler):
                 name=academic_class
             )
             if created:
-                logger.info(f"Created new academic class: {academic_class}")
+                log.info(f"Created new academic class: {academic_class}")
             return academic_class_instance
 
         except Exception as e:
-            logger.error(f"Error processing academic class {academic_class}: {str(e)}")
+            log.error(f"Error processing academic class {academic_class}: {str(e)}")
             raise ValueError(f"Failed to process academic class: {str(e)}")
 
     def _sync_course_structure(
@@ -123,32 +104,37 @@ class CourseUpdatedHandler(WebhookHandler):
         academic_class_instance: AcademicClass,
         course_outline: Dict[str, Any],
         examination_level: ExaminationLevel,
-    ) -> bool:
+    ) -> Dict[str, bool]:
         """
         Synchronizes course structure with proper error handling.
 
         Returns:
-            bool: Whether sync was successful
+            Dict[str, bool]: Dictionary containing:
+                - 'success': Whether sync completed without errors
+                - 'changes_made': Whether changes were detected and applied
         """
-        sync_result = CourseSync(
-            course=course_instance,
-            academic_class=academic_class_instance,
-            new_structure=course_outline,
-            examination_level=examination_level,
-        ).sync()
+        try:
+            sync_result = CourseSync(
+                course=course_instance,
+                academic_class=academic_class_instance,
+                new_structure=course_outline,
+                examination_level=examination_level,
+            ).sync()
 
-        if sync_result:
-            logger.info(
-                f"Successfully synced course structure for {course_instance.course_key}"
-            )
-            # sync elastic search using celery
-            elastic_search_sync.delay(course_instance.course_key)
-        else:
-            logger.info(f"No changes detected for course {course_instance.course_key}")
+            if sync_result:
+                log.info(
+                    f"Successfully synced course structure for {course_instance.course_key}"
+                )
+            else:
+                log.info(f"No changes detected for course {course_instance.course_key}")
 
-        return True
+            return {"success": True, "changes_made": sync_result}
 
-    def handle(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        except Exception as e:
+            log.error(f"Failed to sync course structure: {str(e)}")
+            return {"success": False, "changes_made": False}
+
+    def handle(self, payload: Dict[str, Any]) -> CourseSyncResponse:
         """
         Handles course update webhook.
 
@@ -158,19 +144,15 @@ class CourseUpdatedHandler(WebhookHandler):
         Returns:
             Dict containing status and message
         """
-        is_valid, error_message = self._validate_payload(payload)
-        if not is_valid:
-            logger.error(f"Invalid payload: {error_message}")
-            return {"status": "error", "message": f"Invalid payload: {error_message}"}
 
         course_id = payload["course"]["course_key"]
 
         course_outline = self._get_edx_client().get_course_outline(course_id)
 
-        course_instance, created = self._get_or_update_course(course_id, course_outline)
+        course_instance, created = self._get_or_create_course(course_id, course_outline)
 
         academic_class_instance = self._process_academic_class(course_id)
-        self._sync_course_structure(
+        sync_result = self._sync_course_structure(
             course_instance,
             academic_class_instance,
             course_outline,
@@ -178,12 +160,12 @@ class CourseUpdatedHandler(WebhookHandler):
         )
 
         status_message = "course created" if created else "course updated"
-        return {
-            "status": "success",
-            "message": f"Course successfully {status_message}",
-            "course_id": course_id,
-            "created": created,
-        }
+        return CourseSyncResponse(
+            status="success",
+            message=f"Course successfully {status_message}",
+            course_id=course_id,
+            changes_made=sync_result.get("changes_made"),
+        )
 
 
 class UserRegistrationHandler(WebhookHandler):

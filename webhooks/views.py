@@ -7,7 +7,7 @@ from django.views.decorators.http import require_http_methods
 
 from webhooks.registry import webhook_registry
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 def _validate_payload(data):
@@ -34,11 +34,6 @@ def _validate_payload(data):
 @csrf_exempt
 @require_http_methods(["POST"])
 def webhook_view(request, *args, **kwargs):
-    logger.debug("====== DEBUG INFO ======")
-    logger.debug(f"Headers: {request.headers}")
-    logger.debug(f"Content Type: {request.content_type}")
-    logger.debug(f"Request Data: {request.body}")
-    logger.debug("======================")
 
     try:
         # Parse JSON data from request body
@@ -57,19 +52,18 @@ def webhook_view(request, *args, **kwargs):
         handler = webhook_registry.get_handler(event_type)
 
         if handler:
-            result = handler.handle(data)
+            handler.handle(data)
 
             response_data = {
                 "status": "success",
                 "event_type": event_type,
                 "event_id": metadata.get("id"),
-                "result": result,
             }
 
             return JsonResponse(response_data, status=200)
         else:
             # No handler found, but still return 200 as requested
-            logger.info(f"No handler registered for event type: {event_type}")
+            log.info(f"No handler registered for event type: {event_type}")
             return JsonResponse(
                 {
                     "status": "received",
@@ -82,5 +76,5 @@ def webhook_view(request, *args, **kwargs):
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON payload"}, status=400)
     except Exception as e:
-        logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
+        log.error(f"Error processing webhook: {str(e)}", exc_info=True)
         return JsonResponse({"error": "Internal server error"}, status=500)

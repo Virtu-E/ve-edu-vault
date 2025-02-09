@@ -1,8 +1,11 @@
+import logging
 from typing import Any, Dict
 
 from elastic_search.api import DataFetcher
 from elastic_search.operations import ElasticsearchOperations, Sync
 from elastic_search.transformer import DataTransformer
+
+log = logging.getLogger(__name__)
 
 
 class ElasticSearchSync(Sync):
@@ -31,5 +34,5 @@ class ElasticSearchSync(Sync):
 
             return {"status": "success", "statistics": result}
         except Exception as e:
-            raise e
+            log.error(e)
             # return {"status": "error", "message": str(e)}

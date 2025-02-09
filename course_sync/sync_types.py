@@ -2,6 +2,8 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Dict, Set
 
+from django.db.models.signals import post_delete
+
 from course_sync.extractor import StructureExtractor
 from course_sync.side_effects import CreationSideEffect
 from course_ware.models import AcademicClass, Category, Course, ExaminationLevel, Topic
@@ -42,15 +44,25 @@ class CategorySync(DatabaseSync):
         self._update_categories(structure)
 
     def _delete_removed_categories(self, removed_categories: Set[str]) -> None:
-        # First delete all topics that belong to categories that will be removed
-        Topic.objects.filter(
+        topics_qs = Topic.objects.filter(
             category__course=self.course, category__block_id__in=removed_categories
-        ).delete()
-
-        # Then delete the categories themselves
-        Category.objects.filter(
+        )
+        categories_qs = Category.objects.filter(
             course=self.course, block_id__in=removed_categories
-        ).delete()
+        )
+
+        # Load objects into lists so we can send post_delete signals later.
+        topics_to_delete = list(topics_qs)
+        categories_to_delete = list(categories_qs)
+
+        topics_qs.delete()
+        categories_qs.delete()
+
+        # Manually trigger post_delete signals for each deleted instance.
+        for topic in topics_to_delete:
+            post_delete.send(sender=Topic, instance=topic)
+        for category in categories_to_delete:
+            post_delete.send(sender=Category, instance=category)
 
     def _update_categories(self, structure: Dict) -> None:
         chapters = StructureExtractor.extract_chapters(structure)

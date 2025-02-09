@@ -48,3 +48,10 @@ class Block(BaseModel):
 
 class BlocksData(BaseModel):
     blocks: Dict[str, Block]
+
+
+class CourseSyncResponse(BaseModel):
+    status: str
+    message: str
+    course_id: str
+    changes_made: bool
