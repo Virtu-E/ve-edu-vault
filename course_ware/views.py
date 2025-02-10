@@ -3,16 +3,25 @@ from typing import Any, Dict, Optional, Set, Tuple
 
 from bson import ObjectId
 from decouple import config
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ai_core.performance_calculators import AttemptBasedDifficultyRankerCalculator
-from ai_core.performance_engine import PerformanceEngine
+from ai_core.learning_mode_rules import LearningModeType
+from ai_core.performance.performance_engine import create_performance_engine
+from ai_core.validator.validator_engine import ValidationEngine
 from course_ware.mixins import RetrieveUserAndResourcesMixin
-from course_ware.models import Topic, User, UserQuestionAttempts
+from course_ware.models import (
+    Course,
+    EdxUser,
+    Topic,
+    UserQuestionAttempts,
+    UserQuestionSet,
+)
 from course_ware.serializers import (
     GetSingleQuestionSerializer,
     PostQuestionAttemptSerializer,
@@ -22,6 +31,8 @@ from course_ware.serializers import (
 from data_types.questions import Question, QuestionAttemptData
 from edu_vault.settings.common import NO_SQL_DATABASE_NAME
 from exceptions import ParsingError, QuestionNotFoundError
+from grade_book.grader import Gradebook
+from grade_book.strategy import StandardLearningModeStrategy
 from no_sql_database.nosql_database_engine import NoSqLDatabaseEngineInterface
 
 log = logging.getLogger(__name__)
@@ -38,7 +49,7 @@ class QuestionViewBase(RetrieveUserAndResourcesMixin, APIView):
             raise Exception("serializer_class must be set on the view")
         self.serializer = None
 
-    def validate_and_get_resources(self, data) -> Tuple[User, Topic, Set[str]]:
+    def validate_and_get_resources(self, data) -> Tuple[EdxUser, Topic, Set[str]]:
         """Common validation and resource retrieval logic."""
         self.serializer = self.serializer_class(data=data)
         if not self.serializer.is_valid():
@@ -114,7 +125,7 @@ class DatabaseQuestionViewBase(QuestionViewBase):
             )
         return collection_name
 
-    def validate_and_get_resources(self, data) -> Tuple[User, Topic, Set[str], str]:
+    def validate_and_get_resources(self, data) -> Tuple[EdxUser, Topic, Set[str], str]:
         """Extended validation that includes collection name."""
         user, topic, question_set_ids = super().validate_and_get_resources(data)
         collection_name = self._get_collection_name_from_topic(topic)
@@ -133,6 +144,19 @@ class GetQuestionsView(DatabaseQuestionViewBase):
                 data=({"username": username, "block_id": block_id}),
             )
         )
+
+        grading_mode = UserQuestionSet.objects.get(
+            user_id=user, topic=topic
+        ).grading_mode
+        if grading_mode:
+            return Response(
+                {
+                    "username": self.serializer.validated_data["username"],
+                    "block_id": self.serializer.validated_data["block_id"],
+                    "questions": [],
+                    "grading_mode": grading_mode,
+                }
+            )
 
         object_ids = [ObjectId(id) for id in question_set_ids if ObjectId.is_valid(id)]
 
@@ -159,6 +183,7 @@ class GetQuestionsView(DatabaseQuestionViewBase):
                 "username": self.serializer.validated_data["username"],
                 "block_id": self.serializer.validated_data["block_id"],
                 "questions": questions,
+                "grading_mode": grading_mode,
             }
         )
 
@@ -174,13 +199,13 @@ class PostQuestionAttemptView(DatabaseQuestionViewBase):
         if metadata["is_correct"]:
             return Response(
                 {"message": "Question already correctly answered"},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_409_CONFLICT,
             )
 
         if metadata["attempt_number"] >= self.MAX_ATTEMPTS:
             return Response(
                 {"message": f"Maximum attempts ({self.MAX_ATTEMPTS}) reached"},
-                status=status.HTTP_403_FORBIDDEN,
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
         return None
@@ -267,7 +292,7 @@ class PostQuestionAttemptView(DatabaseQuestionViewBase):
 
 
 class GetSingleQuestionAttemptView(QuestionViewBase):
-    """Retrieve a  question attempt for a user in regards to a single question ID"""
+    """Retrieve a  question attempt for a user in regard to a single question ID"""
 
     serializer_class = GetSingleQuestionSerializer
 
@@ -308,7 +333,7 @@ class GetSingleQuestionAttemptView(QuestionViewBase):
 
 class GetQuestionAttemptView(APIView):
     def get(self, request, username, block_id):
-        user = get_object_or_404(User, username=username)
+        user = get_object_or_404(EdxUser, username=username)
         topic = get_object_or_404(Topic, block_id=block_id)
 
         attempt, _ = UserQuestionAttempts.objects.get_or_create(
@@ -388,37 +413,196 @@ class QuizCompletionView(DatabaseQuestionViewBase):
         user_attempts_instance.save()
 
     def post(self, request):
-        #   TODO : the naming here already shows that my function is doing two things. Change that
+
         user, topic, question_set_ids, collection_name = (
             self.validate_and_get_resources(request.data)
         )
-        # we have to create a filler for all unattempted questions that the user has been assigned in the question set
         user_question_attempt = get_object_or_404(
             UserQuestionAttempts, user=user, topic=topic
         )
+        user_question_set = get_object_or_404(UserQuestionSet, user=user, topic=topic)
+        learning_mode = LearningModeType.from_string(
+            user_question_attempt.current_learning_mode
+        )
 
+        # we have to create a filler for all unattempted questions that the user has been assigned in the question set
         self._ensure_user_question_attempts_exist(
             question_set_ids, user_question_attempt, collection_name
         )
 
-        # we have to calculate the performance
-        performance_calculator_instance = AttemptBasedDifficultyRankerCalculator()
-        performance_engine = PerformanceEngine(
-            topic_id=topic.id,
-            user_id=user.id,
-            performance_calculator=performance_calculator_instance,
+        # perform validation before we run grading process
+
+        validator = ValidationEngine()
+
+        validation_result = validator.run_all_validators(
+            question_set=user_question_set,
+            user_question_attempt_instance=user_question_attempt,
+        )
+        if validation_result:
+            raise Exception(validation_result)
+
+        performance_engine = create_performance_engine(
+            user_id=user.id, topic_id=topic.id, learning_mode=learning_mode
         )
         performance_stats = performance_engine.get_topic_performance_stats()
-        return Response(performance_stats.model_dump(), status.HTTP_200_OK)
 
-        # what do we do during examination complete process ?
-        # we get the quiz details
-        # - course, topic, examination level etc
-        # RecommendationQuestionMetadata - of this instance
+        grader = Gradebook(
+            topic=topic,
+            user=user,
+            user_attempt=user_question_attempt,
+            user_question_set=user_question_set,
+            learning_mode_strategy=StandardLearningModeStrategy(
+                performance_stats=performance_stats,
+                current_mode=user_question_attempt.current_learning_mode,
+            ),
+            performance_stats=performance_stats,
+        )
+        grade_data = grader.evaluate_performance()
+        user_question_set.grading_mode = True
+        user_question_set.save()
 
-        # we calculate the grades for the user
-        # we pass the grades back to edx platform
-        # we suggest new question sets if the user has failed the exam
-        # we award them a completion badge and then turn the topic to just practice only
-        # where they can select the level of questions and they just randomly practice
-        # choose quiz difficulty, practice questions etc
+        # will run through celery
+        # task_id = trigger_orchestration(
+        #     user_id=user.id,
+        #     question_metadata=user_question_attempt.get_latest_question_metadata,
+        #     question_list_ids=list(user_question_set.get_question_set_ids),
+        #     course_id=course.id,
+        #     learning_mode=learning_mode,
+        #     performance_stats=performance_stats,
+        #     category_id=topic.category.id,
+        #     topic_id=topic.id,
+        #     block_id=str(topic.block_id),
+        # )
+        # print(task_id)
+
+        return Response(
+            grade_data.model_dump(),
+            status=status.HTTP_201_CREATED,
+        )
+
+
+@api_view(["GET"])
+def iframe_id_given_topic_id(request, topic_id):
+    """
+    Get the first vertical (unit) ID for a given sequential (topic) ID.
+    """
+
+    def _get_iframe_id_from_outline(topic_id, outline):
+        course_structure = outline.get("course_structure", {})
+
+        def find_sequential(structure):
+            if structure.get("id") == topic_id:
+                children = structure.get("child_info", {}).get("children", [])
+                if children:
+                    return children[0].get("id")
+                return None
+
+            child_info = structure.get("child_info", {})
+            if child_info:
+                children = child_info.get("children", [])
+                for child in children:
+                    result = find_sequential(child)
+                    if result:
+                        return result
+            return None
+
+        return find_sequential(course_structure)
+
+    if request.method == "GET":
+        topic = get_object_or_404(Topic, block_id=topic_id)
+        course = topic.category.course
+        course_outline = course.course_outline
+
+        iframe_id = _get_iframe_id_from_outline(topic_id, course_outline)
+
+        if not iframe_id:
+            raise Http404("No vertical found for this sequential")
+
+        return Response({"iframe_id": iframe_id})
+
+
+class CourseOutlinePathView(APIView):
+    """
+    APIView to get the hierarchical path of a sequential block in a course outline
+    Returns data in a nested dictionary structure by block category
+    """
+
+    def find_sequential_path(self, outline_data, sequential_id, current_path=None):
+        """
+        Recursively find the path to a sequential block in the course outline
+
+        Args:
+            outline_data (dict): Course outline data
+            sequential_id (str): ID of the sequential block to find
+            current_path (dict): Current path being built (used in recursion)
+
+        Returns:
+            dict: Dictionary containing block information organized by category
+        """
+        if current_path is None:
+            current_path = {}
+
+        if outline_data.get("id") and outline_data.get("display_name"):
+            block_type = outline_data["category"]
+            block_info = {
+                "id": outline_data["id"],
+                "name": outline_data["display_name"],
+                "type": block_type,
+            }
+            current_path[block_type] = block_info
+
+        if outline_data.get("id") == sequential_id:
+            return current_path
+
+        if outline_data.get("child_info") and outline_data["child_info"].get(
+            "children"
+        ):
+            for child in outline_data["child_info"]["children"]:
+                # Create a new dictionary for each recursive call
+                new_path = current_path.copy()
+                result = self.find_sequential_path(child, sequential_id, new_path)
+                if result:
+                    return result
+
+        return None
+
+    def get(self, request, course_id, sequential_id):
+        """
+        GET handler to retrieve the path to a sequential block
+
+        Args:
+            course_id (str): ID of the course
+            sequential_id (str): ID of the sequential block
+
+        Returns:
+            Response: Path information as nested dictionaries or error message
+        """
+        try:
+            course = get_object_or_404(Course, course_key=course_id)
+            outline_data = course.course_outline
+
+            path = self.find_sequential_path(
+                outline_data["course_structure"], sequential_id
+            )
+
+            if path:
+                return Response({"path": path, "status": "success"})
+            else:
+                return Response(
+                    {
+                        "error": "Sequential block not found in course outline",
+                        "status": "error",
+                    },
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        except Course.DoesNotExist:
+            return Response(
+                {"error": "Course not found", "status": "error"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e), "status": "error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

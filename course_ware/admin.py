@@ -9,9 +9,10 @@ from .models import (
     Category,
     Course,
     DefaultQuestionSet,
+    EdxUser,
+    ExaminationLevel,
     Topic,
-    User,
-    UserCategoryProgress,
+    TopicIframeID,
     UserQuestionAttempts,
     UserQuestionSet,
 )
@@ -174,21 +175,23 @@ class UserQuestionAttemptsAdmin(JsonWidgetModelAdmin):
     raw_id_fields = ["user", "topic"]
 
 
-@admin.register(User)
+@admin.register(EdxUser)
 class UserAdmin(admin.ModelAdmin):
     list_display = ["username", "email", "active"]
     search_fields = ["username", "email"]
     list_filter = ["active"]
 
 
-@admin.register(UserCategoryProgress)
-class UserCategoryProgressAdmin(admin.ModelAdmin):
-    list_display = ["user", "category", "progress_percentage", "is_completed"]
-    list_filter = ["is_completed"]
-    search_fields = ["user__username", "category__name"]
-
-
 @admin.register(AcademicClass)
 class AcademicClassAdmin(admin.ModelAdmin):
     list_display = ["name"]
     search_fields = ["name"]
+
+
+@admin.register(TopicIframeID)
+class TopicIframeIDAdmin(admin.ModelAdmin):
+    list_display = ["identifier", "topic"]
+    search_fields = ["identifier"]
+
+
+admin.site.register(ExaminationLevel)

@@ -1,53 +1,40 @@
 import re
-from typing import Any
+from typing import Any, Union
 
-from django.core.exceptions import ValidationError
 from django.db import models
 
-from ai_core.performance_calculators import log
-from edu_vault.settings import common
+from ai_core.performance.calculators.base_calculator import log
+from data_types.course_ware_schema import QuestionMetadata
 from exceptions import VersionParsingError
-
-# TODO : update the documentation below after alpha release --> things might have changes
-"""
-In Virtu Educate, challenges and quizzes are organized into categories.
-Every quiz or challenge is based on a specific category. For example, there can be a
-quiz on the mathematical "Quadratic" category. Within that category, we have topics that represent learning
-objectives or skills a user needs to master in order to fully understand the quadratic category.
-For every topic, there are questions of varying difficulty that the user must pass to clear the topic.
-Once the user has cleared all topics within a category, it indicates that they have mastered the category.
-
-Academic Class and Examination Level
-│
-├── Category
-│   ├── Topic 1
-│   │   ├── User Question Set (JSON: Question Set IDs)
-│   │   ├── User Topic Attempt (JSON: Attempt Data)
-│   │   └── User Progress (Tracks progress for Topic 1)
-│   ├── Topic 2
-│   │   ├── User Question Set (JSON: Question Set IDs)
-│   │   ├── User Topic Attempt (JSON: Attempt Data)
-│   │   └── User Progress (Tracks progress for Topic 2)
-│   └── ...
-│
-
-"""
-
-# Constants for examination levels
-EXAMINATION_LEVELS = [
-    ("MSCE", "MSCE"),
-    ("JCE", "JCE"),
-    ("IGCSE", "IGCSE"),
-]
-
-
-# TODO : formalize academic classes -- how they should look etc
 
 DEFAULT_VERSION = "v1.0.0"
 VERSION_PATTERN = re.compile(r"v(\d+)\.(\d+)\.(\d+)")
+LEARNING_MODES = [
+    ("Normal", "normal"),
+    ("Reinforcement", "reinforcement"),
+    ("Recovery", "recovery"),
+    ("Reset", "reset"),
+    ("Mastered", "mastered"),
+]
+CLASS_CHOICES = [
+    ("Form 1", "Form 1"),
+    ("Form 2", "Form 2"),
+    ("Form 3", "Form 3"),
+    ("Form 4", "Form 4"),
+]
+LEVEL_CHOICES = [
+    ("MSCE", "MSCE"),
+    ("JCE", "JCE"),
+    ("IGSCE", "IGSCE"),
+]
 
 
-class User(models.Model):
+# TODO : move to a separate django app
+class EdxUser(models.Model):
+    """
+    Holds Edx user information. Not the Django primary user Model
+    """
+
     id = models.PositiveIntegerField(
         primary_key=True, unique=True, help_text="edX user ID"
     )
@@ -55,15 +42,6 @@ class User(models.Model):
         null=True, blank=True, max_length=100, unique=True, help_text="edX username"
     )
     email = models.EmailField(null=True, blank=True, help_text="edX email")
-    # In case i need them in future
-    # edx_data = models.JSONField(
-    #     db_index=True, null=True, blank=True,
-    #     help_text="edX user metadata"
-    # )
-    # data = models.JSONField(
-    #     db_index=True, null=True, blank=True,
-    #     help_text="Additional user metadata"
-    # )
     active = models.BooleanField(default=True)
 
     class Meta:
@@ -75,7 +53,7 @@ class User(models.Model):
 
 
 class AcademicClass(models.Model):
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255, choices=CLASS_CHOICES, unique=True)
 
     def __str__(self):
         return self.name
@@ -116,16 +94,25 @@ class CoreElement(models.Model):
         return self.name
 
 
+class ExaminationLevel(models.Model):
+    """
+    Stores Examination Levels related to the Malawian School system
+    """
+
+    name = models.CharField(max_length=255, choices=LEVEL_CHOICES, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Category(models.Model):
     """
     Represents a unique question category within an academic class, course and examination level.
     For example, "Quadratic Equations".
     """
 
-    name = models.CharField(max_length=100)
-    examination_level = models.CharField(
-        choices=EXAMINATION_LEVELS, max_length=20, default="MSCE"
-    )
+    name = models.CharField(max_length=255)
+    examination_level = models.ForeignKey(ExaminationLevel, on_delete=models.CASCADE)
     block_id = models.TextField(unique=True, db_index=True, null=False, blank=False)
     academic_class = models.ForeignKey(AcademicClass, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -154,7 +141,7 @@ class Topic(models.Model):
     Represents a topic or theme under a category. For example, "Completing the Square".
     """
 
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=255)
     category = models.ForeignKey(
         Category, on_delete=models.CASCADE, related_name="topics"
     )
@@ -170,6 +157,17 @@ class Topic(models.Model):
 
     def __str__(self):
         return f"{self.category.name} - {self.name} - {self.category.academic_class}"
+
+
+class TopicIframeID(models.Model):
+    """
+    Model that holds the topic unique iframe identifier.
+    """
+
+    identifier = models.CharField(max_length=255, unique=True, db_index=True)
+    topic = models.OneToOneField(
+        Topic, on_delete=models.CASCADE, related_name="iframe_id"
+    )
 
 
 class BaseQuestionSet(models.Model):
@@ -196,41 +194,19 @@ class BaseQuestionSet(models.Model):
     def get_question_set_ids(self) -> set[str]:
         return {str(item["id"]) for item in self.question_list_ids}
 
-    def clean_question_list_ids(self):
-        if len(self.question_list_ids) != getattr(
-            common, "MINIMUM_QUESTIONS_THRESHOLD", 9
-        ):
-            raise ValidationError(
-                f"Question set must contain exactly 9 questions. Current count: {len(self.question_list_ids)}"
-            )
-        return self.question_list_ids
-
-    def clean(self):
-        cleaned_data = super().clean()
-        self.clean_question_list_ids()
-        return cleaned_data
-
 
 class UserQuestionSet(BaseQuestionSet):
     """User-specific question set."""
 
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="question_sets"
+        EdxUser, on_delete=models.CASCADE, related_name="question_sets"
     )
+    # gets activated when grading starts.
+    grading_mode = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "User Question Set"
         verbose_name_plural = "User Question Sets"
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(
-                    question_list_ids__len=getattr(
-                        common, "MINIMUM_QUESTIONS_THRESHOLD", 9
-                    )
-                ),
-                name="user_question_list_length_check",
-            )
-        ]
 
     def __str__(self):
         return f"{self.user.username} - {self.topic.name}"
@@ -242,16 +218,6 @@ class DefaultQuestionSet(BaseQuestionSet):
     class Meta:
         verbose_name = "Default Question Set"
         verbose_name_plural = "Default Question Sets"
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(
-                    question_list_ids__len=getattr(
-                        common, "MINIMUM_QUESTIONS_THRESHOLD", 9
-                    )
-                ),
-                name="default_question_list_length_check",
-            )
-        ]
 
     def __str__(self):
         return f"{self.topic.name} Default Question Set"
@@ -268,7 +234,7 @@ class UserQuestionAttempts(models.Model):
     """
 
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="question_attempts"
+        EdxUser, on_delete=models.CASCADE, related_name="question_attempts"
     )
     topic = models.OneToOneField(
         Topic, on_delete=models.CASCADE, related_name="topic_attempts"
@@ -279,6 +245,9 @@ class UserQuestionAttempts(models.Model):
         help_text="Metadata for questions attempted by the user.",
         default={"v1.0.0": {}},
     )
+    current_learning_mode = models.CharField(
+        choices=LEARNING_MODES, default="normal", max_length=255
+    )
 
     question_metadata_description = models.JSONField(
         help_text="Stores status information and guidance for questions",
@@ -286,6 +255,8 @@ class UserQuestionAttempts(models.Model):
             "v1.0.0": {
                 "status": "Not Started",
                 "guidance": "Complete the practice set to assess your knowledge level",
+                "learning_mode": "normal",
+                "mode_guidance": "Answer and complete 2 out of 3 questions for each difficulty level (easy, medium, and hard) to finish the section.",
             }
         },
     )
@@ -323,13 +294,13 @@ class UserQuestionAttempts(models.Model):
         return max(self.question_metadata.keys(), key=self._parse_version)
 
     @property
-    def get_latest_question_metadata(self) -> dict[str, Any]:
+    def get_latest_question_metadata(self) -> dict[str, QuestionMetadata | Any]:
         """
         Get the current (latest) question version from metadata.
 
         Returns:
             Dictionary containing the question metadata (
-               -> Top-level key: Question ID,
+               -> Top-level key: Question ID,ƒ
                -> Second-level key: QuestionMetadata )
         """
         return self.question_metadata[self.get_current_version]
@@ -382,40 +353,31 @@ class UserQuestionAttempts(models.Model):
             log.error(f"Version parsing error: {str(e)}")
             raise VersionParsingError(f"Version parsing error: {str(e)}")
 
+    @property
+    def get_questions_by_status(self) -> list[dict[str, Union[str, int]]]:
+        """
+        Returns a list of questions with their status (correct, incorrect, or unattempted)
+        and question text from the latest question metadata.
+
+        Returns:
+            List of dictionaries, each containing:
+            - id: Question ID (number)
+            - status: Status of the question (correct/incorrect/unattempted)
+            - text: Question text
+        """
+        question_metadata = self.get_latest_question_metadata
+        questions_list = []
+
+        for question_id, metadata in question_metadata.items():
+            questions_list.append(
+                {
+                    "id": str(question_id),
+                    "status": "correct" if metadata.get("is_correct") else "incorrect",
+                    "question_pos": 10,
+                }
+            )
+
+        return questions_list
+
     def __str__(self):
         return f"{self.user.username} - {self.topic.name} Attempts"
-
-
-class UserCategoryProgress(models.Model):
-    """
-    Tracks the user's category progress by keeping track of the cleared/uncleared topics in the category
-    """
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="progress")
-    category = models.OneToOneField(
-        Category, on_delete=models.CASCADE, related_name="category_progress"
-    )
-    last_activity = models.DateTimeField(auto_now=True)
-    # TODO : retire the is_completed field below because it is redundant
-    is_completed = models.BooleanField(default=False)
-
-    @property
-    def get_cleared_topics_count(self):
-        return self.category.topic_set.filter(is_completed=True).count()
-
-    @property
-    def get_topics_count(self):
-        return self.category.topics.count()
-
-    @property
-    def progress_percentage(self):
-        total_topics = self.get_topics_count()
-        completed_topics = self.get_cleared_topics_count()
-        return (completed_topics / total_topics) * 100 if total_topics > 0 else 0
-
-    class Meta:
-        verbose_name = "User Progress"
-        verbose_name_plural = "User Progress"
-
-    def __str__(self):
-        return f"{self.user.username} - {self.category.name} Progress"

@@ -2,7 +2,14 @@ from rest_framework import serializers
 
 from course_ware.models import Category
 
-from .models import ArticleResource, BookResource, CategoryExt, TopicExt, VideoResource
+from .models import (
+    ArticleResource,
+    BookResource,
+    CategoryExt,
+    TopicExt,
+    TopicMastery,
+    VideoResource,
+)
 
 
 class CategoryExtSerializer(serializers.ModelSerializer):
@@ -14,11 +21,9 @@ class CategoryExtSerializer(serializers.ModelSerializer):
             "category_name",
             "description",
             "base_mastery_points",
-            "bonus_points_available",
             "estimated_hours",
             "teacher_guide",
             "minimum_mastery_percentage",
-            "total_available_points",
         ]
 
 
@@ -80,6 +85,7 @@ class TopicExtSerializer(serializers.ModelSerializer):
     topic_name = serializers.CharField(source="topic.name", read_only=True)
     category_name = serializers.CharField(source="topic.category.name", read_only=True)
     resources = serializers.SerializerMethodField()
+    points_earned = serializers.SerializerMethodField()
 
     class Meta:
         model = TopicExt
@@ -92,12 +98,20 @@ class TopicExtSerializer(serializers.ModelSerializer):
             "teacher_notes",
             "assessment_criteria",
             "resources",
+            "points_earned",
         ]
 
+    def get_points_earned(self, obj):
+        request = self.context.get("request")
+        if request and request.user:
+            try:
+                topic_mastery = TopicMastery.objects.get(topic=obj.topic)
+                return topic_mastery.points_earned
+            except TopicMastery.DoesNotExist:
+                return 0
+        return 0
+
     def get_resources(self, obj):
-        """
-        Safely get all resources handling the case where some might not exist
-        """
         try:
             return {
                 "videos": VideoResourceSerializer(

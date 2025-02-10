@@ -46,8 +46,10 @@ INSTALLED_APPS = [
     "course_ware_ext",
     "django_json_widget",
     "webhooks",
-    "oauth2_provider",
+    # "oauth2_provider",
     "oauth_clients",
+    "django_elasticsearch_dsl",
+    "course_sync",
 ]
 
 # TODO : csrf protection vs authentication
@@ -120,8 +122,7 @@ LOGGING = {
         },
         "detailed": {
             "format": (
-                "%(asctime)s [%(levelname)s] %(name)s (%(filename)s:%(lineno)d) "
-                "%(message)s"
+                "%(asctime)s [%(levelname)s] %(name)s (%(filename)s:%(lineno)d) %(message)s"
             )
         },
         "simple": {"format": "%(asctime)s::%(name)s::%(levelname)s::%(message)s"},
@@ -181,3 +182,39 @@ COMPLETION_THRESHOLD = 2 / 3
 
 ENCRYPTION_KEY = "gk79FsqK0sTh03Xo6MFkQW6g44-bk4cXj3gFvmpk8kA="
 LTI_LAUNCH_URL = "https://vault.virtueducate.edly.io/lti/launch/"
+LEARNING_HISTORY_COLLECTION_NAME = "learning_history"
+
+
+# CELERY SETTINGS
+CELERY_BROKER_URL = "redis://default:1oynQcxAlVNul3J3RCND3w53y4AGNHPj@redis-19292.c36439.af-south-1-mz.ec2.cloud.rlrcp.com:19292"
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "UTC"
+
+# Track started tasks in addition to pending
+CELERY_TASK_TRACK_STARTED = True
+
+# Store task results for 7 days
+CELERY_RESULT_EXPIRES = 60 * 60 * 24 * 7
+
+# 'use_ssl': True,
+# 'verify_certs': True,
+
+ELASTICSEARCH_DSL = {
+    "default": {
+        "hosts": [
+            "https://d81dc60cb8b440b689c376163dfb471a.us-central1.gcp.cloud.es.io:443"
+        ],
+        "api_key": "YXZmaTVwUUJJTnJBNWlRcEY3bHA6dmozMFlXV3RTMzY3WjdaaGdqa0xpUQ==",
+        "timeout": 30,
+        "retry_on_timeout": True,
+    },
+}
+# ELASTICSEARCH_DSL_AUTOSYNC = False
+# ELASTICSEARCH_DSL_AUTO_REFRESH = False
+ELASTICSEARCH_DSL_SIGNAL_PROCESSOR = (
+    "elastic_search.custom_signal_processor.CustomCelerySignalProcessor"
+)

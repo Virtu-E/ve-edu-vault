@@ -42,3 +42,6 @@ def get_embedding(query_str, api_key):
         print("Failed to get embedding")
         print(error)
         return None
+
+
+# embeddings creator

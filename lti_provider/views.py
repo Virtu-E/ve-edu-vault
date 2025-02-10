@@ -5,8 +5,9 @@ import base64
 
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
+from decouple import config
 from django.http import JsonResponse
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
 from pylti1p3.contrib.django import (
     DjangoDbToolConf,
@@ -14,6 +15,7 @@ from pylti1p3.contrib.django import (
     DjangoOIDCLogin,
 )
 
+from course_ware.models import TopicIframeID
 from edu_vault.settings import common
 
 tool_conf_2 = DjangoDbToolConf()
@@ -42,17 +44,17 @@ def lti_launch(request):
         launch = DjangoMessageLaunch(request, tool_conf_2)
 
         launch_data = launch.get_launch_data()
+
         resource_link = launch_data[
             "https://purl.imsglobal.org/spec/lti/claim/resource_link"
         ]
-        print()  # resource link that links to our block ID
-        print(
-            launch_data["https://purl.imsglobal.org/spec/lti/claim/context"]
-        )  # claim context that contains the course ID
-
-        # Example: You can store or process payload data here
+        claim_context = launch_data["https://purl.imsglobal.org/spec/lti/claim/context"]
+        course_id = claim_context.get("id", "")
+        iframe_id = get_object_or_404(
+            TopicIframeID, identifier=resource_link.get("id", "")
+        )
         return redirect(
-            f"https://virtueducate.edly.io/assesment/{resource_link.get("id","")}/"
+            f"{config('FRONT_END_URL')}/assessment/{course_id}/{iframe_id.topic.block_id}/"
         )
 
     except Exception as e:

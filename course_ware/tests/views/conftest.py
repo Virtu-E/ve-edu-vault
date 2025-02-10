@@ -24,7 +24,6 @@ def api_client():
 
 @pytest.fixture
 def mock_db_client():
-
     mock_client = Mock(spec=MongoDatabaseEngine)
     mock_client.disconnect.side_effect = lambda: None
 

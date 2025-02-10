@@ -50,7 +50,7 @@ class OAuthClientConfig(models.Model):
             ).exclude(pk=self.pk)
             if active_configs.exists():
                 raise ValidationError(
-                    f"There can only be one active configuration per service type."
+                    "There can only be one active configuration per service type."
                 )
 
     def save(self, *args, **kwargs):

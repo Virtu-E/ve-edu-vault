@@ -1,9 +1,17 @@
 import logging
+from abc import ABC, abstractmethod
 from typing import Dict, List
 
 from course_sync.models import ChapterData, CourseStructure, ObjectiveData
 
 log = logging.getLogger(__name__)
+
+
+class EdxStructureExtractorInterface(ABC):
+
+    @abstractmethod
+    def extract(self, structure: Dict) -> CourseStructure:
+        raise NotImplementedError()
 
 
 class StructureExtractor:
@@ -56,9 +64,5 @@ class StructureExtractor:
         objectives = []
         for obj in chapter.objectives:
             if obj.get("id"):
-                objectives.append(
-                    ObjectiveData(
-                        id=obj["id"], name=obj["display_name"], category_id=chapter.id
-                    )
-                )
+                objectives.append(ObjectiveData(id=obj["id"], name=obj["display_name"]))
         return objectives

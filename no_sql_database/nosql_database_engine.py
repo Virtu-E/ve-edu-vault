@@ -32,6 +32,16 @@ class NoSqLDatabaseEngineInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def fetch_one_from_db(
+        self,
+        collection_name: str,
+        database_name: str,
+        query: Dict = None,
+        projection: Dict = None,
+    ) -> Any:
+        raise NotImplementedError
+
+    @abstractmethod
     def write_to_db(
         self,
         data: Union[Dict, list],
@@ -116,7 +126,10 @@ class MongoDatabaseEngine(NoSqLDatabaseEngineInterface):
             self._client = MongoClient(
                 self._url,
                 tlsCAFile=certifi.where(),
-                serverSelectionTimeoutMS=5000,  # 5 second timeout
+                serverSelectionTimeoutMS=10000,  # Increased timeout
+                maxPoolSize=100,  # Add connection pooling
+                waitQueueTimeoutMS=2500,  # Queue timeout for pool
+                retryWrites=True,
             )
             # Verify connection
             # self._client.server_info()
@@ -188,6 +201,38 @@ class MongoDatabaseEngine(NoSqLDatabaseEngineInterface):
         except Exception as e:
             self.logger.error(f"Error fetching from {collection_name}: {str(e)}")
             raise MongoDbOperationError(f"Failed to fetch data: {str(e)}")
+
+    def fetch_one_from_db(
+        self,
+        collection_name: str,
+        database_name: str,
+        query: Dict = None,
+        projection: Dict = None,
+    ) -> Optional[Dict]:
+        """
+        Fetch a single document from MongoDB collection.
+
+        Args:
+            collection_name: Name of the collection
+            database_name: Name of the database
+            query: MongoDB query filter
+            projection: Fields to include/exclude in the result
+
+        Returns:
+            Dict: Single document matching the query or None if no match found
+
+        Raises:
+            MongoDbOperationError: If the fetch operation fails
+        """
+        query = query or {}
+        projection = projection or {}
+
+        try:
+            with self.get_collection(collection_name, database_name) as collection:
+                return collection.find_one(query, projection)
+        except Exception as e:
+            self.logger.error(f"Error fetching one from {collection_name}: {str(e)}")
+            raise MongoDbOperationError(f"Failed to fetch single document: {str(e)}")
 
     def run_aggregation(
         self,

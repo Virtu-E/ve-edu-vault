@@ -1,4 +1,4 @@
-# lti_provider/utils.py
+# lti_provider/shared.py
 # TODO : this file will probably be deleted in future. Still debating its importance
 import json
 

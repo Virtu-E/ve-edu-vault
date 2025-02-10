@@ -5,7 +5,12 @@ from course_ware.factory_views import (
     get_questions_view_factory,
     post_question_attempt_view_factory,
 )
-from course_ware.views import GetQuestionAttemptView, GetSingleQuestionAttemptView
+from course_ware.views import (
+    CourseOutlinePathView,
+    GetQuestionAttemptView,
+    GetSingleQuestionAttemptView,
+    iframe_id_given_topic_id,
+)
 
 app_name = "course_ware"
 
@@ -14,6 +19,11 @@ urlpatterns = [
         "get_questions/<str:username>/<str:block_id>/",
         get_questions_view_factory(),
         name="get_questions_view",
+    ),
+    path(
+        "complete_quiz/",
+        complete_quiz_view_factory(),
+        name="complete_quiz",
     ),
     path(
         "post_question_attempt/",
@@ -31,8 +41,13 @@ urlpatterns = [
         name="get_question_attempt_view",
     ),
     path(
-        "complete_quiz/",
-        complete_quiz_view_factory(),
-        name="complete_quiz",
+        "get_iframe_id/<str:topic_id>/",
+        iframe_id_given_topic_id,
+        name="get_iframe_id",
+    ),
+    path(
+        "outline/<str:course_id>/sequential/<str:sequential_id>/path/",
+        CourseOutlinePathView.as_view(),
+        name="course-sequential-path",
     ),
 ]
