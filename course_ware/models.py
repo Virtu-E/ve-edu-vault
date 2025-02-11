@@ -145,6 +145,10 @@ class Topic(models.Model):
     category = models.ForeignKey(
         Category, on_delete=models.CASCADE, related_name="topics"
     )
+    # this field is used to populate the description of the flash cards
+    flash_card_description = models.TextField(
+        blank=True, default="FlashCard Description"
+    )
     block_id = models.TextField(
         unique=True, db_index=True, null=False, blank=False
     )  # edx block ID associated with the topic

@@ -18,6 +18,7 @@ class TopicDocument(Document):
         properties={
             "name": fields.TextField(),
             "id": fields.KeywordField(),
+            "description": fields.TextField(),
         }
     )
 
@@ -46,7 +47,12 @@ class TopicDocument(Document):
 
         # Create learning objectives list from topics
         learning_objectives = [
-            {"name": topic.name, "id": topic.block_id} for topic in topics
+            {
+                "name": topic.name,
+                "id": topic.block_id,
+                "description": topic.flash_card_description,
+            }
+            for topic in topics
         ]
 
         data = {

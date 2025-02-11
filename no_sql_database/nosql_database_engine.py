@@ -113,7 +113,8 @@ class MongoDatabaseEngine(NoSqLDatabaseEngineInterface):
             self._url = mongo_url
             self._client = None
             self._initialized = True
-            self._connect()
+            # need to find a better way of doing this. Where ever
+            # self._connect()
 
     def _connect(self) -> None:
         """
