@@ -10,6 +10,11 @@ class LearningModeType(str, Enum):
     RESET = "reset"
     MASTERED = "mastered"
 
+    def get_required_correct_questions(self, value ):
+
+
+
+
     @classmethod
     def from_string(cls, value: Union[str, "LearningModeType"]) -> "LearningModeType":
         if isinstance(value, cls):

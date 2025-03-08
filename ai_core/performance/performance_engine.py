@@ -1,75 +1,117 @@
+"""
+ai_core.performance.performance_stats
+~~~~~~~~~~~~~
+
+This module contains the code that's responsible for calculating
+the users score statistics on a sub_topic i.e failed difficulties,
+passed difficulties
+"""
+
 import logging
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from ai_core.learning_mode_rules import LearningModeType
-from ai_core.performance.calculators.base_calculator import (
-    PerformanceCalculatorInterface,
-)
-from ai_core.performance.calculators.calculator_factory import (
-    PerformanceCalculatorFactory,
-)
 from course_ware.models import UserQuestionAttempts
-from data_types.ai_core import PerformanceStats
 from data_types.course_ware_schema import QuestionMetadata, UserQuestionAttemptsSchema
 from exceptions import DatabaseQueryError
+
+from .data_types import PerformanceStatsData
+from .metrics_aggregator import MetricsCalculator
 
 log = logging.getLogger(__name__)
 
 
-class PerformanceEngineInterface(ABC):
-    @abstractmethod
-    def get_topic_performance_stats(self) -> PerformanceStats:
+class UserAttemptsNotFoundError(Exception):
+    """Exception raised when no question attempts are found for a user on a particular sub_topic."""
+
+    def __init__(self, user_id: int, sub_topic_id: int):
+        self.user_id = user_id
+        self.sub_topic_id = sub_topic_id
+        self.message = f"No question attempts found for user_id={user_id}, topic_id={sub_topic_id}."
+        super().__init__(self.message)
+
+    def __str__(self) -> str:
+        return self.message
+
+
+class PerformanceStatsBase(ABC):
+    """
+    Base class for performance statistics.
+    """
+
+    def __call__(self) -> PerformanceStatsData:
         """
-        Abstract method to get user's performance on a topic.
+        Gets the users performance statistics on a sub_topic.
 
         Returns:
-            PerformanceStats: Performance statistics including ranked_difficulties and difficulty_status
+            PerformanceStatsData: The user performance statistics
         """
-        raise NotImplementedError
+        raise NotImplementedError("The Performance Stats must be callable")
 
 
-class PerformanceEngine(PerformanceEngineInterface):
+class PerformanceStats(PerformanceStatsBase):
     """
-    Responsible for calculating the user's performance on a topic.
+    Responsible for aggregating user performance statistics.
     """
+
+    __slots__ = ("_sub_topic_id", "_user_id", "_metrics_aggregator")
 
     def __init__(
         self,
-        topic_id: int,
+        sub_topic_id: int,
         user_id: int,
-        performance_calculator: PerformanceCalculatorInterface,
+        metrics_aggregator: MetricsCalculator,
     ):
         """
         Initialize the PerformanceEngine instance.
 
         Args:
-            topic_id (str): The ID of the topic for which performance is being calculated.
-            user_id (int): The ID of the user for whom performance is being calculated.
-            performance_calculator (PerformanceCalculatorInterface): An instance responsible for calculating performance metrics.
+            sub_topic_id (str): The ID of the sub_topic for which the statistics
+            should be calculated.
+            user_id (int): The ID of the user for whom the statistics are being calculated.
+            metrics_aggregator (StatisticsCalculatorInterface): An instance
+            responsible for aggregating user performance statistics.
         """
 
-        self.topic_id = topic_id
-        self.user_id = user_id
-        self.performance_calculator = performance_calculator
+        self._sub_topic_id = sub_topic_id
+        self._user_id = user_id
+        self._metrics_aggregator = metrics_aggregator
 
-    def get_topic_performance_stats(self) -> PerformanceStats:
+    def __call__(self) -> PerformanceStatsData:
         """
-        Calculate and retrieve the user's performance statistics for the specified topic.
+        Gets the users performance statistics on a topic
 
         Returns:
-            PerformanceStats: Contains performance metrics such as ranked_difficulties and difficulty_status.
-
-        If no question attempts are available for the topic, the method returns an empty PerformanceStats object.
+           PerformanceStatsData: The user performance statistics
         """
-        question_attempt_instance = self._get_user_attempt_question_attempt_instance()
+        return self._get_sub_topic_performance_stats()
 
-        if not question_attempt_instance:
-            log.info("No question attempt data for topic {}".format(self.topic_id))
-            return PerformanceStats(ranked_difficulties=[], difficulty_status={})
+    def _get_sub_topic_performance_stats(self) -> PerformanceStatsData:
+        """
+        Calculate and retrieve the user's performance statistics for the specified sub_topic.
+
+        Returns:
+            PerformanceStatsData: Contains performance metrics such a
+            s ranked_difficulties and difficulty_status.
+
+        If no question attempts are available for the sub_topic,
+        the method returns an empty PerformanceStats object.
+        """
+        question_attempts = self._get_user_attempt_question_attempt_instance()
+        if not question_attempts:
+            log.info(
+                "No question attempts found for sub_topic %s and for user %s",
+                self._sub_topic_id,
+                self._user_id,
+            )
+            return PerformanceStatsData(
+                ranked_difficulties=[], difficulty_completion={}, difficulty_scores={}
+            )
+
         question_metadata_current_version = (
-            question_attempt_instance.get_latest_question_metadata
+            question_attempts.get_latest_question_metadata
         )
-        return self.performance_calculator.calculate_performance(
+        return self._metrics_aggregator.aggregate_metrics(
             {
                 key: QuestionMetadata(**value)
                 for key, value in question_metadata_current_version.items()
@@ -78,51 +120,70 @@ class PerformanceEngine(PerformanceEngineInterface):
 
     def _get_user_attempt_question_attempt_instance(
         self,
-    ) -> UserQuestionAttempts | None:
+    ) -> UserQuestionAttempts:
         """
-        Retrieve the user's question attempt data for the specified topic.
+        Retrieve the user's question attempt data for the specified sub_topic.
 
         Returns:
-            UserQuestionAttempts | None: The user's question attempt instance, or None if no data is found.
+            UserQuestionAttempts | None: The user's question attempt
+             instance, or None if no data is found.
 
         Raises:
-            DatabaseQueryError: Raised if an unexpected error occurs while querying the database.
+            DatabaseQueryError: Raised if an unexpected error
+            occurs while querying the database.
         """
         try:
             question_attempt_instance = UserQuestionAttempts.objects.get(
-                user_id=self.user_id, topic_id=self.topic_id
+                user_id=self._user_id, sub_topic_id=self._sub_topic_id
             )
             UserQuestionAttemptsSchema.model_validate(question_attempt_instance)
             return question_attempt_instance
-        except UserQuestionAttempts.DoesNotExist:
-            log.info(
-                f"No question attempts found for user_id={self.user_id}, topic_id={self.topic_id}."
+        except UserQuestionAttempts.DoesNotExist as exc:
+            log.error(
+                "No question attempts found for user_id= %s, sub_topic_id= %s.",
+                self._user_id,
+                self._sub_topic_id,
             )
-            return None
+            raise UserAttemptsNotFoundError(self._user_id, self._sub_topic_id) from exc
         except Exception as e:
             log.error(
-                f"Error retrieving question metadata for user_id={self.user_id}, topic_id={self.topic_id}: {e}"
+                "Error retrieving question metadata for user_id= %s, sub_topic_id=%s",
+                self._user_id,
+                self._sub_topic_id,
             )
-            raise DatabaseQueryError(f"An unexpected error occurred: {e}")
+            raise DatabaseQueryError("An unexpected error occurred") from e
 
+    @classmethod
+    def create_performance_stats(
+        cls, user_id: int, sub_topic_id: int, learning_mode: LearningModeType
+    ) -> "PerformanceStats":
+        """
+        Factory method to create a new PerformanceStats instance.
 
-def create_performance_engine(
-    user_id: int, topic_id: int, learning_mode: LearningModeType
-) -> PerformanceEngine:
-    """
-    Creates and initializes an instance of the PerformanceEngine.
+        Args:
+            user_id (int): The ID of the user for whom the performance engine is created.
+            sub_topic_id (int): The ID of the sub_topic for which performance is being calculated.
+            learning_mode (LearningModeType): The learning mode to determine the type
+            of performance calculator.
 
-    Args:
-        user_id (int): The ID of the user for whom the performance engine is created.
-        topic_id (int): The ID of the topic for which performance is being calculated.
-        learning_mode (LearningModeType): The learning mode to determine the type of performance calculator.
+        Returns:
+            PerformanceStats: The created PerformanceStats instance.
+        """
+        metrics_aggregator = MetricsCalculator.get_metric_calculator(learning_mode)
+        return cls(
+            user_id=user_id,
+            sub_topic_id=sub_topic_id,
+            metrics_aggregator=metrics_aggregator,
+        )
 
-    Returns:
-        PerformanceEngine: An instance of the PerformanceEngine configured with the provided user, topic, and learning mode.
-    """
-    factory = PerformanceCalculatorFactory()
-    return PerformanceEngine(
-        user_id=user_id,
-        topic_id=topic_id,
-        performance_calculator=factory.create_calculator(learning_mode),
-    )
+    def __repr__(self) -> str:
+        return (
+            f"{type(self).__name__}({self._sub_topic_id}, {self._user_id},"
+            f" {self._metrics_aggregator})"
+        )
+
+    def __str__(self) -> str:
+        """Return a user-friendly string representation of the performance statistics."""
+        return (
+            f"Performance Stats for User {self._user_id} on Topic {self._sub_topic_id}"
+        )

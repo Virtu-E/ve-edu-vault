@@ -100,8 +100,7 @@ class SearchQueryBuilder:
             )
 
         start = (self.page - 1) * self.size
-        return self.search[start: start + self.size]
-
+        return self.search[start : start + self.size]
 
 
 # @lru_cache(maxsize=128) TODO : implement cache system
