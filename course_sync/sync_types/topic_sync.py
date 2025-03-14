@@ -3,7 +3,7 @@ from typing import Dict, Set
 
 from django.db.models.signals import post_delete
 
-from course_sync.extractor import StructureExtractor
+from course_sync.data_transformer import StructureExtractor
 from course_sync.sync_types.abstract_type import DatabaseSync
 from course_ware.models import Category, Course, Topic
 
@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 
 class TopicSync(DatabaseSync):
-    """Responsible for synchronizing topics / learning objectives"""
+    """Responsible for synchronizing topics into database"""
 
     def __init__(self, course: Course, extractor: StructureExtractor):
         self.course = course

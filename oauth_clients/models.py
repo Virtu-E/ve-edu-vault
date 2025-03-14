@@ -41,7 +41,7 @@ class OAuthClientConfig(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.name} ({self.get_service_type_display()})"
+        return f"{self.name})"
 
     def clean(self):
         if self.is_active:

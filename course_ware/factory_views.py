@@ -4,7 +4,7 @@ from course_ware.views import (
     QuizCompletionView,
 )
 from edu_vault.settings import common
-from no_sql_database.nosql_database_engine import MongoDatabaseEngine
+from repository.databases.no_sql_database import MongoDatabaseEngine
 
 
 def create_view_with_db(view_class):

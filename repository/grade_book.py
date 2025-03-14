@@ -3,16 +3,6 @@ from abc import ABC, abstractmethod
 from data_types.ai_core import EvaluationResult
 
 
-class LearningHistoryRepository(ABC):
-    """Interface Segregation - Separate database operations"""
-
-    @abstractmethod
-    def save_learning_history(
-        self, user_id: str, block_id: str, evaluation_result: EvaluationResult
-    ) -> None:
-        pass
-
-
 class MongoLearningHistoryRepository(LearningHistoryRepository):
     """Concrete implementation of learning history repository"""
 

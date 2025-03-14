@@ -14,7 +14,7 @@ from course_ware.tests.course_ware_factory import (
     UserQuestionSetFactory,
 )
 from course_ware.views import DatabaseQuestionViewBase
-from no_sql_database.nosql_database_engine import MongoDatabaseEngine
+from repository.databases.no_sql_database import MongoDatabaseEngine
 
 
 @pytest.fixture

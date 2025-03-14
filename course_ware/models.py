@@ -1,11 +1,13 @@
+import logging
 import re
 from typing import Any, Union
 
 from django.db import models
 
-from ai_core.performance.calculators.base_calculator import log
 from data_types.course_ware_schema import QuestionMetadata
 from exceptions import VersionParsingError
+
+log = logging.getLogger(__name__)
 
 DEFAULT_VERSION = "v1.0.0"
 VERSION_PATTERN = re.compile(r"v(\d+)\.(\d+)\.(\d+)")
@@ -29,17 +31,14 @@ LEVEL_CHOICES = [
 ]
 
 
-# TODO : move to a separate django app
 class EdxUser(models.Model):
-    """
-    Holds Edx user information. Not the Django primary user Model
-    """
+    """Holds Edx user information. Not the Django primary user Model"""
 
     id = models.PositiveIntegerField(
         primary_key=True, unique=True, help_text="edX user ID"
     )
     username = models.CharField(
-        null=True, blank=True, max_length=100, unique=True, help_text="edX username"
+        null=True, blank=True, max_length=255, unique=True, help_text="edX username"
     )
     email = models.EmailField(null=True, blank=True, help_text="edX email")
     active = models.BooleanField(default=True)
@@ -53,6 +52,8 @@ class EdxUser(models.Model):
 
 
 class AcademicClass(models.Model):
+    """Holds Academic class information. E.g.: Form 1"""
+
     name = models.CharField(max_length=255, choices=CLASS_CHOICES, unique=True)
 
     def __str__(self):
@@ -60,9 +61,7 @@ class AcademicClass(models.Model):
 
 
 class Course(models.Model):
-    """
-    Stores open edx course information.
-    """
+    """Stores open edx course information."""
 
     name = models.CharField(max_length=255)
     course_key = models.CharField(max_length=255, unique=True)
@@ -72,10 +71,9 @@ class Course(models.Model):
         return self.name
 
 
+# TODO : will probably be deprecated
 class CoreElement(models.Model):
-    """
-    Core curriculum element representing a subject area or theme (e.g. Algebra, Geometry)
-    """
+    """Core curriculum element representing a subject area or theme (e.g. Algebra, Geometry)"""
 
     name = models.CharField(max_length=255, unique=True)
     tags = models.JSONField(default=dict)
@@ -95,9 +93,7 @@ class CoreElement(models.Model):
 
 
 class ExaminationLevel(models.Model):
-    """
-    Stores Examination Levels related to the Malawian School system
-    """
+    """Stores Examination Levels related to the Malawian School system"""
 
     name = models.CharField(max_length=255, choices=LEVEL_CHOICES, unique=True)
 
@@ -105,9 +101,10 @@ class ExaminationLevel(models.Model):
         return self.name
 
 
-class Category(models.Model):
+# TODO : should i add database constraints ?
+class Topic(models.Model):
     """
-    Represents a unique question category within an academic class, course and examination level.
+    Represents a unique question topic within an academic class, course and examination level.
     For example, "Quadratic Equations".
     """
 
@@ -129,22 +126,20 @@ class Category(models.Model):
     )
 
     class Meta:
-        verbose_name = "Skill"
-        verbose_name_plural = "Skills"
+        verbose_name = "Topic"
+        verbose_name_plural = "Topics"
 
     def __str__(self):
-        return f"{self.name} - {self.academic_class}"
+        return f"Topic: {self.name} - Class: {self.academic_class}"
 
 
-class Topic(models.Model):
+class SubTopic(models.Model):
     """
-    Represents a topic or theme under a category. For example, "Completing the Square".
+    Represents a subtopic or theme under a topic. For example, "Completing the Square".
     """
 
     name = models.CharField(max_length=255)
-    category = models.ForeignKey(
-        Category, on_delete=models.CASCADE, related_name="topics"
-    )
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name="topics")
     # this field is used to populate the description of the flash cards
     flash_card_description = models.TextField(
         blank=True, default="FlashCard Description"
@@ -156,28 +151,28 @@ class Topic(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Learning Objective"
-        verbose_name_plural = "Learning Objectives"
+        verbose_name = "Subtopic"
+        verbose_name_plural = "Subtopics"
 
     def __str__(self):
-        return f"{self.category.name} - {self.name} - {self.category.academic_class}"
+        return f"SubTopic: {self.name} - Class: {self.topic.academic_class}"
 
 
-class TopicIframeID(models.Model):
+class SubTopicIframeID(models.Model):
     """
-    Model that holds the topic unique iframe identifier.
+    Model that holds the subtopic unique iframe identifier.
     """
 
     identifier = models.CharField(max_length=255, unique=True, db_index=True)
-    topic = models.OneToOneField(
-        Topic, on_delete=models.CASCADE, related_name="iframe_id"
+    sub_topic = models.OneToOneField(
+        SubTopic, on_delete=models.CASCADE, related_name="iframe_id"
     )
 
 
 class BaseQuestionSet(models.Model):
     """Base abstract model for question sets."""
 
-    topic = models.OneToOneField(Topic, on_delete=models.CASCADE)
+    sub_topic = models.OneToOneField(SubTopic, on_delete=models.CASCADE)
     """
     Array of question reference objects
     Example:
@@ -213,7 +208,7 @@ class UserQuestionSet(BaseQuestionSet):
         verbose_name_plural = "User Question Sets"
 
     def __str__(self):
-        return f"{self.user.username} - {self.topic.name}"
+        return f"{self.user.username} - {self.sub_topic.name}"
 
 
 class DefaultQuestionSet(BaseQuestionSet):
@@ -224,30 +219,34 @@ class DefaultQuestionSet(BaseQuestionSet):
         verbose_name_plural = "Default Question Sets"
 
     def __str__(self):
-        return f"{self.topic.name} Default Question Set"
+        return f"Sub Topic: {self.sub_topic.name} Default Question Set"
 
 
+# TODO : store the question sets in Mongo
 class UserQuestionAttempts(models.Model):
     """
-    Stores user attempts for questions within a specific topic. Instead of creating a separate table for each question attempt,
-    we use a JSON field to store the attempt data. This design choice accommodates the dynamic nature of the questions,
-    which can change or be updated at any time based on user progress or other factors.
+    Stores user attempts for questions within a specific sub topic.
 
-    Using a JSON field is more efficient than managing hundreds of tables, as it simplifies operations such as deleting,
+    Instead of creating a separate table for each question attempt,
+    we use a JSON field to store the attempt data. This design choice
+    accommodates the dynamic nature of the questions,
+    which can change or be updated at any time based on user progress or other factors.
+    Using a JSON field is more efficient than managing hundreds of tables,
+    as it simplifies operations such as deleting,
     modifying, or updating questions without requiring extensive structural changes to the database.
     """
 
     user = models.ForeignKey(
         EdxUser, on_delete=models.CASCADE, related_name="question_attempts"
     )
-    topic = models.OneToOneField(
-        Topic, on_delete=models.CASCADE, related_name="topic_attempts"
+    sub_topic = models.OneToOneField(
+        SubTopic, on_delete=models.CASCADE, related_name="sub_topic_attempts"
     )
     # the data is stored in this format :  dict[str, dict[str, QuestionMetadata | Any]]. Check in data types module
     # for more info ( course_ware_schema.py )
     question_metadata = models.JSONField(
         help_text="Metadata for questions attempted by the user.",
-        default={"v1.0.0": {}},
+        default={"v1.0.0": dict},
     )
     current_learning_mode = models.CharField(
         choices=LEARNING_MODES, default="normal", max_length=255
@@ -298,7 +297,7 @@ class UserQuestionAttempts(models.Model):
         return max(self.question_metadata.keys(), key=self._parse_version)
 
     @property
-    def get_latest_question_metadata(self) -> dict[str, QuestionMetadata | Any]:
+    def get_latest_question_metadata(self) -> dict[str, dict | Any]:
         """
         Get the current (latest) question version from metadata.
 
@@ -384,4 +383,4 @@ class UserQuestionAttempts(models.Model):
         return questions_list
 
     def __str__(self):
-        return f"{self.user.username} - {self.topic.name} Attempts"
+        return f"{self.user.username} - {self.sub_topic.name} Attempts"

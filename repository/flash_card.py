@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from data_types.flash_cards import FlashCardQuestion
-from no_sql_database.nosql_database_engine import MongoDatabaseEngine
+from repository.databases.no_sql_database import MongoDatabaseEngine
 
 
 class FlashCardRepositoryInterface(ABC):

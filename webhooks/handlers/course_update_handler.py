@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, Tuple
 
 from course_sync.course_sync import CourseSyncFactory
-from course_sync.extractor import StructureExtractor
+from course_sync.data_transformer import StructureExtractor
 from course_ware.models import AcademicClass, Course, ExaminationLevel
 from course_ware.utils import (
     academic_class_from_course_id,

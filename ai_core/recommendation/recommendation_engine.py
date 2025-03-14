@@ -23,7 +23,7 @@ from exceptions import (
     InsufficientQuestionsError,
     QuestionFetchError,
 )
-from no_sql_database.nosql_database_engine import NoSqLDatabaseEngineInterface
+from repository.databases.no_sql_database import NoSqLDatabaseEngineInterface
 
 from ..performance.data_types import DifficultyEnum, RankedDifficulty
 from ..performance.performance_engine import PerformanceStats

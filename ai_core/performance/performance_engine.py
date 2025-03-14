@@ -11,12 +11,12 @@ import logging
 from abc import ABC
 
 from ai_core.learning_mode_rules import LearningModeType
+from ai_core.performance.metrics.metrics_aggregator import MetricsCalculator
 from course_ware.models import UserQuestionAttempts
 from data_types.course_ware_schema import QuestionMetadata, UserQuestionAttemptsSchema
 from exceptions import DatabaseQueryError
 
 from .data_types import PerformanceStatsData
-from .metrics_aggregator import MetricsCalculator
 
 log = logging.getLogger(__name__)
 
@@ -169,7 +169,8 @@ class PerformanceStats(PerformanceStatsBase):
         Returns:
             PerformanceStats: The created PerformanceStats instance.
         """
-        metrics_aggregator = MetricsCalculator.get_metric_calculator(learning_mode)
+        # TODO : required correct questions should be dynamic
+        metrics_aggregator = MetricsCalculator(required_correct_questions=0)
         return cls(
             user_id=user_id,
             sub_topic_id=sub_topic_id,

@@ -22,9 +22,9 @@ from course_ware.models import Category, Course, Topic
 from data_types.ai_core import PerformanceStats, QuestionPromptGeneratorConfig
 from data_types.course_ware_schema import QuestionMetadata
 from exceptions import OrchestrationError, ValidationError
-from no_sql_database.nosql_database_engine import NoSqLDatabaseEngineInterface
 from repository.ai_core.learning_history import MongoLearningHistoryRepository
 from repository.ai_core.prompt_engine import MongoQuestionBankRepository
+from repository.databases.no_sql_database import NoSqLDatabaseEngineInterface
 from repository.shared import MongoQuestionRepository, MongoQuestionValidator
 
 logger = logging.getLogger(__name__)
