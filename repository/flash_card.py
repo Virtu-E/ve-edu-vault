@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from data_types.flash_cards import FlashCardQuestion
-from repository.databases.no_sql_database import MongoDatabaseEngine
 
 
 class FlashCardRepositoryInterface(ABC):
@@ -17,7 +16,7 @@ class FlashCardRepository(FlashCardRepositoryInterface):
         self,
         database_name: str,
         collection_name: str,
-        database_engine: MongoDatabaseEngine,
+        database_engine,
     ):
         self._database_name = database_name
         self._collection_name = collection_name
@@ -39,5 +38,5 @@ class FlashCardRepoFactory:
         return FlashCardRepository(
             database_name="flashcards",
             collection_name=collection_name,
-            database_engine=MongoDatabaseEngine(),
+            database_engine={},
         )
