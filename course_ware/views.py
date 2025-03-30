@@ -8,7 +8,6 @@ from rest_framework.decorators import api_view
 from rest_framework.generics import RetrieveAPIView, UpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from scipy.special import kwargs
 
 from ai_core.learning_mode_rules import LearningModeType
 from ai_core.validator.validator_engine import ValidationEngine

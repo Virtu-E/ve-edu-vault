@@ -7,8 +7,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from course_ware.documents import TopicDocument
-
+TopicDocument = {}
 # Constants
 # CACHE_TTL = getattr(settings, 'SEARCH_CACHE_TTL', 300)  # 5 minutes default
 MAX_PAGE_SIZE = getattr(settings, "MAX_SEARCH_PAGE_SIZE", 100)
