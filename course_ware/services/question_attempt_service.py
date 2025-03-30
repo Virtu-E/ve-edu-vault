@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from decouple import config
 from rest_framework import status

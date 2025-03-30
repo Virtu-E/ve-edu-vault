@@ -43,7 +43,8 @@ class MetricsCalculator:
             metrics: List of BaseMetric subclasses to register
 
         Raises:
-            ValueError: If any metric is not a subclass of BaseMetric or not registered with PerformanceStatsData
+            ValueError: If any metric is not a subclass of BaseMetric or
+            not registered with PerformanceStatsData
         """
         log.info(f"Registering {len(metrics)} metrics")
 

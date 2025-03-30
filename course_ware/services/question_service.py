@@ -1,6 +1,6 @@
 import logging
 from collections import namedtuple
-from typing import Set, List
+from typing import List, Set
 
 from rest_framework.exceptions import ValidationError
 
@@ -47,7 +47,7 @@ class QuestionService(RetrieveUserAndResourcesMixin):
             raise ValidationError("User and sub-topic must be provided.")
         self._question_set_ids = self.get_user_question_set(self._user, self._sub_topic)
 
-    def validate_question_exists(self, question_id: str) -> bool:
+    def _validate_question_exists(self, question_id: str) -> bool:
         """
         Validate that a question ID exists in the given question set for a user.
 
@@ -109,6 +109,10 @@ class QuestionService(RetrieveUserAndResourcesMixin):
             A Resources namedtuple containing the user, sub_topic, question_set_ids,
             and collection_name.
         """
+        if "question_id" in self._serializer.validated_data:
+            self._validate_question_exists(
+                self._serializer.validated_data["question_id"]
+            )
 
         return Resources(
             self._user, self._sub_topic, self._question_set_ids, self._collection_name

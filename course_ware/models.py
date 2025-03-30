@@ -4,7 +4,6 @@ from typing import Any, Union
 
 from django.db import models
 
-from data_types.course_ware_schema import QuestionMetadata
 from exceptions import VersionParsingError
 
 log = logging.getLogger(__name__)

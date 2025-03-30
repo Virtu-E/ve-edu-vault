@@ -1,3 +1,8 @@
+"""
+
+"""
+
+from abc import ABC
 from fractions import Fraction
 from typing import Dict, List, Literal, Optional, Protocol
 
@@ -5,15 +10,17 @@ from ai_core.learning_mode_rules import LearningModeType, LearningRuleFactory
 from data_types.ai_core import DifficultyScore, NextMode, PerformanceStats, PreviousMode
 
 
-class LearningModeStrategy(Protocol):
-    """Interface for learning mode strategies - Open/Closed Principle"""
+class BaseStrategy(ABC):
+    def __init__(self):
+        self._next = None
 
-    def get_next_mode(self) -> NextMode:
-        """Determine the next learning mode"""
+    def set_next(self, next: NextMode):
         pass
 
-    def get_previous_mode(self) -> Optional[PreviousMode]:
-        """Get previous mode details"""
+    def process_next(self, next: NextMode) -> Optional[DifficultyScore]:
+        pass
+
+    def handle_mode(self, mode: LearningModeType) -> Optional[DifficultyScore]:
         pass
 
 

@@ -1,52 +1,49 @@
-from django.db.models import Sum
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from course_ware.models import Category
-from course_ware_ext.models import TopicMastery
-from course_ware_ext.serializers import CategoryDetailSerializer
+from course_ware.models import Topic
+
+from .models import TopicExt, TopicMastery
+from .serializers import TopicDetailSerializer
 
 
-class CategoryDetailView(generics.RetrieveAPIView):
+class TopicDetailView(generics.RetrieveAPIView):
     """
-    Retrieve category details with its extension and topics (including their extensions).
+    Retrieve topic details with its extension and subtopics (including their extensions).
     """
 
-    serializer_class = CategoryDetailSerializer
-    lookup_url_kwarg = "block_id"
+    serializer_class = TopicDetailSerializer
+    lookup_url_kwarg = "id"
 
     def get_object(self):
-        block_id = self.kwargs.get(self.lookup_url_kwarg)
+        topic_id = self.kwargs.get(self.lookup_url_kwarg)
         try:
             return (
-                Category.objects.select_related("extension")
+                Topic.objects.select_related("extension")
                 .prefetch_related(
-                    "topics__extension",
-                    "topics__extension__videoresource",
-                    "topics__extension__bookresource",
-                    "topics__extension__articleresource",
+                    "subtopic_set__extension",
                 )
-                .get(block_id=block_id)
+                .get(id=topic_id)
             )
-        except Category.DoesNotExist:
-            raise NotFound(f"No category found for block ID: {block_id}")
+        except Topic.DoesNotExist:
+            raise NotFound(f"No topic found with ID: {topic_id}")
         except Exception as e:
-            raise NotFound(f"Error retrieving category: {str(e)}")
+            raise NotFound(f"Error retrieving topic: {str(e)}")
 
 
-class UserTopicPointsView(APIView):
+class UserSubtopicPointsView(APIView):
     """
-    Returns a user's points earned and mastery status for a specific topic.
+    Returns a user's points earned and mastery status for a specific subtopic.
     """
 
-    def get(self, request, block_id, username):
-        category = get_object_or_404(Category, block_id=block_id)
+    def get(self, request, topic_id, username):
+        topic = get_object_or_404(Topic, id=topic_id)
         topic_mastery = get_object_or_404(
             TopicMastery,
-            topic__category=category,  # Filter topics by category
+            topic=topic,  # Filter topics directly
             user__username=username,
         )
         return Response(
@@ -58,27 +55,32 @@ class UserTopicPointsView(APIView):
         )
 
 
-class CategoryMasteryView(APIView):
+class TopicMasteryView(APIView):
     """
-    Returns total points earned and possible points for all topics in a category.
+    Returns total points earned and possible points for all subtopics in a topic.
     """
 
-    def get(self, request, block_id, username):
-        category = get_object_or_404(Category, block_id=block_id)
+    def get(self, request, topic_id, username):
+        topic = get_object_or_404(Topic, id=topic_id)
 
-        total_points = (
-            TopicMastery.objects.filter(
-                topic__category=category, user__username=username
-            ).aggregate(total=Sum("points_earned"))["total"]
-            or 0
+        # Get the user's mastery record for this topic
+        topic_mastery = get_object_or_404(
+            TopicMastery, topic=topic, user__username=username
         )
 
-        possible_points = category.extension.base_mastery_points
+        # Get the possible points from the topic extension
+        try:
+            topic_ext = TopicExt.objects.get(topic=topic)
+            possible_points = topic_ext.base_mastery_points
+        except TopicExt.DoesNotExist:
+            possible_points = 0
 
         return Response(
             {
-                "category": category.name,
-                "total_points": total_points,
+                "topic": topic.name,
+                "points_earned": topic_mastery.points_earned,
                 "possible_points": possible_points,
+                "mastery_status": topic_mastery.mastery_status,
+                "mastery_status_display": topic_mastery.get_mastery_status_display(),
             }
         )

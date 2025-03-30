@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from course_ware.models import ExaminationLevel
 

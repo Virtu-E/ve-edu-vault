@@ -6,7 +6,6 @@ from course_sync.side_effects.topic_creation_side_effect import TopicCreationSid
 from course_ware.models import Topic
 from edu_vault.settings.common import MONGO_URL
 from oauth_clients.edx_client import EdxClient
-from repository.databases.no_sql_database import MongoDatabaseEngine
 
 log = logging.getLogger(__name__)
 

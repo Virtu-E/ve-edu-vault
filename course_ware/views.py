@@ -2,43 +2,69 @@ import logging
 
 from bson import ObjectId
 from django.http import Http404
+from django.shortcuts import get_object_or_404
+from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.generics import RetrieveAPIView, UpdateAPIView
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from scipy.special import kwargs
 
 from ai_core.learning_mode_rules import LearningModeType
 from ai_core.validator.validator_engine import ValidationEngine
-from course_ware.models import (
-    Course,
-    UserQuestionSet,
-)
-from course_ware.serializers import (
-    PostQuestionAttemptSerializer,
-)
+from course_ware.models import Course, UserQuestionSet
+from course_ware.serializers import PostQuestionAttemptSerializer
 from course_ware.services.question_service import QuestionService
 from data_types.questions import QuestionAttemptData
 from edu_vault.settings.common import NO_SQL_DATABASE_NAME
 from grade_book.grader import Gradebook
 from grade_book.strategy import StandardLearningModeStrategy
+
+from .models import EdxUser, SubTopic, UserQuestionAttempts
+from .serializers import (
+    GetSingleQuestionSerializer,
+    QueryParamsSerializer,
+    UserQuestionAttemptSerializer,
+)
 from .services.question_attempt_service import QuestionAttemptService
 from .utils import find_sequential_path, get_iframe_id_from_outline
 
 log = logging.getLogger(__name__)
 
-from rest_framework.views import APIView
 
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.generics import RetrieveAPIView, UpdateAPIView
-from django.shortcuts import get_object_or_404
+class CustomRetrieveAPIView(RetrieveAPIView):
+    """
+    Custom RetrieveAPIView that overrides the get_object method.
 
-from .models import EdxUser, UserQuestionAttempts, SubTopic
-from .serializers import (
-    QueryParamsSerializer,
-    GetSingleQuestionSerializer,
-    UserQuestionAttemptSerializer,
-)
+    This view is designed for cases where standard object retrieval
+    logic is not needed, allowing for custom response generation without
+    relying on a database object.
+    """
+
+    def get_object(self):
+        """
+        Override the default get_object method.
+
+        Returns:
+            None: No object retrieval is performed.
+        """
+        return None
 
 
-class GetQuestionsView(RetrieveAPIView):
+class CustomUpdateAPIView(UpdateAPIView):
+    """Custom UpdateAPIView that overrides the get_object method."""
+
+    def get_object(self):
+        """
+        Override the default get_object method.
+
+        Returns:
+            None: No object retrieval is performed.
+        """
+        return None
+
+
+class GetQuestionsView(CustomRetrieveAPIView):
     """
     API view to retrieve questions for a specific user and topic.
 
@@ -48,31 +74,23 @@ class GetQuestionsView(RetrieveAPIView):
 
     serializer_class = QueryParamsSerializer
 
-    def get_object(self):
-        """
-        Instead of retrieving a specific object, we use this method
-        to set up the serializer with the correct data.
-        """
-        return {
-            "username": self.kwargs["username"],
-            "block_id": self.kwargs["block_id"],
-        }
-
     def retrieve(self, request, *args, **kwargs):
         """
         Override the retrieve method to implement our custom logic.
         """
-        serializer = self.get_serializer(self.get_object())
+        serializer = self.get_serializer(**kwargs)
+        username = serializer.data.get("username")
+        block_id = serializer.data.get("block_id")
 
         qn_service = QuestionService(serializer=serializer)
         resources = qn_service.get_resources()
         question_data = []
 
         if not resources.question_set_ids:
-            log.info("No valid question IDs found for user %s", self.kwargs["username"])
+            log.info("No valid question IDs found for user %s", username)
             return Response(
                 {
-                    "message": f"No valid question IDs found for user {self.kwargs['username']}"
+                    "message": f"No valid question IDs found for user {username}",
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
@@ -85,8 +103,8 @@ class GetQuestionsView(RetrieveAPIView):
 
         return Response(
             {
-                "username": self.kwargs["username"],
-                "block_id": self.kwargs["block_id"],
+                "username": username,
+                "block_id": block_id,
                 "questions": question_data,
                 "grading_mode": grading_mode,
             },
@@ -94,7 +112,7 @@ class GetQuestionsView(RetrieveAPIView):
         )
 
 
-class GetSingleQuestionAttemptView(RetrieveAPIView):
+class GetSingleQuestionAttemptView(CustomRetrieveAPIView):
     """
     API view to retrieve a single question attempt for a specific user.
 
@@ -104,37 +122,23 @@ class GetSingleQuestionAttemptView(RetrieveAPIView):
 
     serializer_class = GetSingleQuestionSerializer
 
-    def get_object(self):
-        """
-        Instead of retrieving a specific object, we use this method
-        to set up the serializer with the correct data.
-        """
-        return {
-            "username": self.kwargs["username"],
-            "block_id": self.kwargs["block_id"],
-            "question_id": self.kwargs["question_id"],
-        }
-
     def retrieve(self, request, *args, **kwargs):
         """
         Override the retrieve method to implement our custom logic.
         """
-        serializer = self.get_serializer(self.get_object())
+        # automatically validates the serializer
+        serializer = self.get_serializer(**kwargs)
+        question_id = serializer.data.get("question_id")
 
         qn_service = QuestionService(serializer=serializer)
         resources = qn_service.get_resources()
-
-        # Validate that the question exists in the user's question set
-        qn_service.validate_question_exists(question_id=self.kwargs["question_id"])
 
         user_question_attempt = get_object_or_404(
             UserQuestionAttempts, user=resources.user, sub_topic=resources.sub_topic
         )
 
         # Get metadata for this specific question
-        response = user_question_attempt.get_latest_question_metadata.get(
-            self.kwargs["question_id"]
-        )
+        response = user_question_attempt.get_latest_question_metadata.get(question_id)
 
         # Build response with summary counts
         total_correct = user_question_attempt.get_correct_questions_count
@@ -161,7 +165,7 @@ class GetSingleQuestionAttemptView(RetrieveAPIView):
         )
 
 
-class GetQuestionAttemptView(RetrieveAPIView):
+class GetQuestionAttemptView(CustomRetrieveAPIView):
     """
     API view to retrieve all question attempts for a user and topic.
 
@@ -171,27 +175,26 @@ class GetQuestionAttemptView(RetrieveAPIView):
 
     serializer_class = UserQuestionAttemptSerializer
 
-    def get_object(self):
-        """
-        Return the UserQuestionAttempts object for the specified user and topic.
-        """
-        user = get_object_or_404(EdxUser, username=self.kwargs["username"])
-        sub_topic = get_object_or_404(SubTopic, block_id=self.kwargs["block_id"])
+    def retrieve(self, request, *args, **kwargs):
+        serializer = self.get_serializer(**kwargs)
+        username = serializer.data.get("username")
+        block_id = serializer.data.get("block_id")
+        user = get_object_or_404(EdxUser, username=username)
+        sub_topic = get_object_or_404(SubTopic, block_id=block_id)
 
-        # Get or create the attempt record
         attempt, created = UserQuestionAttempts.objects.get_or_create(
             user=user,
             sub_topic=sub_topic,
         )
-
         if created:
             log.info(
                 "Created new UserQuestionAttempts for user %s, topic %s",
-                self.kwargs["username"],
-                self.kwargs["block_id"],
+                username,
+                block_id,
             )
 
-        return attempt
+        response_serializer = UserQuestionAttemptSerializer(attempt)
+        return Response(response_serializer.data)
 
 
 class CourseOutlinePathView(APIView):
@@ -281,32 +284,17 @@ def iframe_id_given_topic_id(request, sub_topic_id: str) -> Response:
     return Response({"iframe_id": iframe_id}, status=status.HTTP_200_OK)
 
 
-class PostQuestionAttemptView(UpdateAPIView):
+class PostQuestionAttemptView(CustomUpdateAPIView):
     """Handle posting and processing of question attempts."""
 
     serializer_class = PostQuestionAttemptSerializer
 
-    def get_object(self):
-        """
-        Instead of retrieving a specific object, we use this method
-        to set up the serializer with the correct data.
-        """
-        return {
-            "username": self.kwargs["username"],
-            "block_id": self.kwargs["block_id"],
-            "question_id": self.kwargs["question_id"],
-            "difficulty": self.kwargs["difficulty"],
-            "choice_id": self.kwargs["choice_id"],
-        }
-
     def post(self, request):
 
-        serializer = self.get_serializer(self.get_object())
+        serializer = self.get_serializer(**kwargs)
 
         qn_service = QuestionService(serializer=serializer)
         resources = qn_service.get_resources()
-
-        qn_service.validate_question_exists(question_id=self.kwargs["question_id"])
 
         user_question_attempt = get_object_or_404(
             UserQuestionAttempts, user=resources.user, sub_topic=resources.sub_topic
@@ -324,7 +312,7 @@ class PostQuestionAttemptView(UpdateAPIView):
         return result
 
 
-class QuizCompletionView(DatabaseQuestionViewBase):
+class QuizCompletionView(CustomUpdateAPIView):
     # TODO : one thing we need to implement is Authorization, Authentication and Auditing for the API endpoints
     """
     View to handle the completion of a quiz/challenge.
@@ -393,13 +381,18 @@ class QuizCompletionView(DatabaseQuestionViewBase):
 
     def post(self, request):
 
-        user, topic, question_set_ids, collection_name = (
-            self.validate_and_get_resources(request.data)
-        )
+        serializer = self.get_serializer(**kwargs)
+
+        qn_service = QuestionService(serializer=serializer)
+        resources = qn_service.get_resources()
+
         user_question_attempt = get_object_or_404(
-            UserQuestionAttempts, user=user, topic=topic
+            UserQuestionAttempts, user=resources.user, sub_topic=resources.sub_topic
         )
-        user_question_set = get_object_or_404(UserQuestionSet, user=user, topic=topic)
+        user_question_set = get_object_or_404(
+            UserQuestionSet, user=resources.user, sub_topic=resources.sub_topic
+        )
+
         learning_mode = LearningModeType.from_string(
             user_question_attempt.current_learning_mode
         )

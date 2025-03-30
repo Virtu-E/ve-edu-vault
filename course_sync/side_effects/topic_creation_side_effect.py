@@ -5,10 +5,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 
 from course_sync.side_effects.abstract_type import CreationSideEffect
-from course_ware.models import DefaultQuestionSet, Topic, TopicIframeID
+from course_ware.models import DefaultQuestionSet, Topic
 from edu_vault.settings import common
 from oauth_clients.edx_client import EdxClient
-from repository.databases.no_sql_database import NoSqLDatabaseEngineInterface
 
 log = logging.getLogger(__name__)
 

@@ -1,24 +1,17 @@
 from rest_framework import serializers
 
-from course_ware.models import Category
+from course_ware.models import Topic
 
-from .models import (
-    ArticleResource,
-    BookResource,
-    CategoryExt,
-    TopicExt,
-    TopicMastery,
-    VideoResource,
-)
+from .models import SubTopicExt, TopicExt, TopicMastery
 
 
-class CategoryExtSerializer(serializers.ModelSerializer):
-    category_name = serializers.CharField(source="category.name", read_only=True)
+class TopicExtSerializer(serializers.ModelSerializer):
+    topic_name = serializers.CharField(source="topic.name", read_only=True)
 
     class Meta:
-        model = CategoryExt
+        model = TopicExt
         fields = [
-            "category_name",
+            "topic_name",
             "description",
             "base_mastery_points",
             "estimated_hours",
@@ -27,77 +20,52 @@ class CategoryExtSerializer(serializers.ModelSerializer):
         ]
 
 
-class CategoryDetailSerializer(serializers.ModelSerializer):
-    extension = CategoryExtSerializer()
-    topics = serializers.SerializerMethodField()
-    total_topics = serializers.SerializerMethodField()
+class TopicDetailSerializer(serializers.ModelSerializer):
+    extension = TopicExtSerializer()
+    sub_topics = serializers.SerializerMethodField()
+    total_sub_topics = serializers.SerializerMethodField()
 
     class Meta:
-        model = Category
+        model = Topic
         fields = [
             "id",
             "name",
-            "examination_level",
-            "block_id",
             "extension",
-            "topics",
-            "total_topics",
+            "sub_topics",
+            "total_sub_topics",
         ]
 
-    def _get_related_topics(self, obj):
-        return obj.topics.select_related("extension").all()
+    def _get_related_sub_topics(self, obj):
+        return obj.subtopic_set.select_related("extension").all()
 
-    def get_topics(self, obj):
-        related_topics = self._get_related_topics(obj)
-        topics_dict = {
-            topic.block_id: (
-                TopicExtSerializer(topic.extension).data
-                if hasattr(topic, "extension")
+    def get_sub_topics(self, obj):
+        related_sub_topics = self._get_related_sub_topics(obj)
+        sub_topics_dict = {
+            sub_topic.id: (
+                SubTopicExtSerializer(sub_topic.extension).data
+                if hasattr(sub_topic, "extension")
                 else {}
             )
-            for topic in related_topics
+            for sub_topic in related_sub_topics
         }
-        return topics_dict
+        return sub_topics_dict
 
-    def get_total_topics(self, obj):
-        return self._get_related_topics(obj).count()
-
-
-class VideoResourceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = VideoResource
-        fields = ["id", "title", "url", "duration", "is_featured"]
+    def get_total_sub_topics(self, obj):
+        return self._get_related_sub_topics(obj).count()
 
 
-class BookResourceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BookResource
-        fields = ["id", "title", "author", "isbn", "is_featured", "url"]
-
-
-class ArticleResourceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ArticleResource
-        fields = ["id", "title", "url", "author", "is_featured"]
-
-
-class TopicExtSerializer(serializers.ModelSerializer):
-    topic_name = serializers.CharField(source="topic.name", read_only=True)
-    category_name = serializers.CharField(source="topic.category.name", read_only=True)
-    resources = serializers.SerializerMethodField()
+class SubTopicExtSerializer(serializers.ModelSerializer):
+    sub_topic_name = serializers.CharField(source="sub_topic.name", read_only=True)
     points_earned = serializers.SerializerMethodField()
 
     class Meta:
-        model = TopicExt
+        model = SubTopicExt
         fields = [
-            "topic_name",
-            "category_name",
+            "sub_topic_name",
             "description",
             "estimated_duration",
             "metadata",
-            "teacher_notes",
             "assessment_criteria",
-            "resources",
             "points_earned",
         ]
 
@@ -105,24 +73,15 @@ class TopicExtSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request and request.user:
             try:
-                topic_mastery = TopicMastery.objects.get(topic=obj.topic)
+                # This assumes there's a way to get from SubTopic to Topic
+                # and that TopicMastery tracks points at the Topic level
+                topic_mastery = TopicMastery.objects.get(
+                    topic=obj.sub_topic.topic, user=request.user
+                )
                 return topic_mastery.points_earned
             except TopicMastery.DoesNotExist:
                 return 0
+            except AttributeError:
+                # In case the relation path is incorrect
+                return 0
         return 0
-
-    def get_resources(self, obj):
-        try:
-            return {
-                "videos": VideoResourceSerializer(
-                    getattr(obj, "videoresource", []).all(), many=True
-                ).data,
-                "books": BookResourceSerializer(
-                    getattr(obj, "bookresource", []).all(), many=True
-                ).data,
-                "articles": ArticleResourceSerializer(
-                    getattr(obj, "articleresource", []).all(), many=True
-                ).data,
-            }
-        except AttributeError:
-            return {"videos": [], "books": [], "articles": []}

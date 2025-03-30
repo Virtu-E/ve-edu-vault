@@ -1,8 +1,10 @@
-from typing import List, Dict, Any, Iterable
 import logging
+from typing import Any, Dict, Iterable, List
+
 from bson import ObjectId, errors
 
 from edu_vault.settings import common
+
 from .data_types import Question
 from .databases.no_sql_database.mongodb import _AsyncMongoDatabaseEngine, mongo_database
 from .repository_mixin import QuestionRepositoryMixin
