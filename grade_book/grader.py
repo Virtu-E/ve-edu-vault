@@ -5,7 +5,6 @@ from django.db import transaction
 from course_ware.models import EdxUser, Topic, UserQuestionAttempts, UserQuestionSet
 from course_ware_ext.models import TopicMastery
 from data_types.ai_core import EvaluationResult, PerformanceStats
-from grade_book.strategy import LearningModeStrategy
 
 log = logging.getLogger(__name__)
 
@@ -13,7 +12,7 @@ log = logging.getLogger(__name__)
 class Gradebook:
     def __init__(
         self,
-        learning_mode_strategy: LearningModeStrategy,
+        learning_mode_strategy,
         user_question_set: UserQuestionSet,
         topic: Topic,
         user: EdxUser,

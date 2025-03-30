@@ -6,6 +6,4 @@ class CourseSyncConfig(AppConfig):
     name = "course_sync"
 
     def ready(self):
-        import course_sync.signals
-
         pass
