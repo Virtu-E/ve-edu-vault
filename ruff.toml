@@ -1,0 +1,13 @@
+line-length = 1000
+target-version = "py313"
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+preview = true
+
+[lint.isort]
+combine-as-imports = true
+force-wrap-aliases = true

@@ -1,0 +1,9 @@
+from setuptools import setup
+
+setup(
+    name="data_types",
+    # other setup parameters...
+    package_data={"data_types": ["py.typed"]},
+    # or if using a src layout:
+    # package_data={"": ["py.typed"]},
+)

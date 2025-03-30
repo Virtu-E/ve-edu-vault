@@ -9,6 +9,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+.env
 build/
 develop-eggs/
 dist/
@@ -104,3 +105,5 @@ dmypy.json
 # Windows
 Thumbs.db
 ehthumbs.db
+
+ .mypy_cache/

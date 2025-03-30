@@ -18,8 +18,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+# TODO : version the URLs
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("lti/", include("lti_provider.urls")),
-    path("lti/", include("lti_provider.urls")),
+    path("lti/", include("lti_provider.urls", namespace="lti_provider")),
+    path("course/", include("course_ware.urls")),
+    path("api/v1/extension/", include("course_ware_ext.urls")),
+    path("api/v1/webhook/", include("webhooks.urls")),
+    path("api/v1/topics/", include("elastic_search.urls")),
+    path("api/v1/flashcards/", include("flash_cards.urls")),
 ]

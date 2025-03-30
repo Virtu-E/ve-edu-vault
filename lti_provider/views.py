@@ -1,8 +1,17 @@
-# lti_provider/views.py
+"""
+lti_provider.views
+~~~~~~~~~~~
 
-from cryptography.hazmat.primitives import serialization
+Main view for lti functionality
+"""
+
+import base64
+
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
+from decouple import config
 from django.http import JsonResponse
-from django.urls import reverse
+from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
 from pylti1p3.contrib.django import (
     DjangoDbToolConf,
@@ -10,52 +19,45 @@ from pylti1p3.contrib.django import (
     DjangoOIDCLogin,
 )
 
+from course_ware.models import SubTopicIframeID
+from edu_vault.settings import common
+
 tool_conf_2 = DjangoDbToolConf()
 
 
 @csrf_exempt
 def lti_login(request):
-    """
-    Handles the OpenID Connect (OIDC) login flow.
-    """
+    """Handles the OpenID Connect (OIDC) login flow."""
     try:
         oidc_login = DjangoOIDCLogin(request, tool_conf_2)
-        get_launch_url(request)
-        return oidc_login.redirect("https://virtueducate.edly.io/lti/launch/")
+        return oidc_login.redirect(getattr(common, "LTI_LAUNCH_URL", ""))
     except Exception as e:
         print(e)
         return JsonResponse({"error": str(e)}, status=400)
 
 
-def get_launch_url(request) -> str:
-    """
-    Constructs the LTI launch URL to which the OIDC login flow will redirect.
-    """
-    # TODO : Need to dynamically get the target uri from the platform tool here
-    launch_url = request.build_absolute_uri(reverse("lti_launch"))
-    return launch_url
-
-
 @csrf_exempt
 def lti_launch(request):
-    """
-    Handles the LTI launch request after successful OIDC login.
-    """
+    """Handles the LTI launch request after successful OIDC login."""
     try:
         # Validate the LTI launch request
         launch = DjangoMessageLaunch(request, tool_conf_2)
 
         launch_data = launch.get_launch_data()
 
-        print(launch_data)
-
-        # Example: You can store or process payload data here
-        return JsonResponse(
-            {"message": "LTI Launch Successful", "payload": "sample payload"}
+        resource_link = launch_data[
+            "https://purl.imsglobal.org/spec/lti/claim/resource_link"
+        ]
+        claim_context = launch_data["https://purl.imsglobal.org/spec/lti/claim/context"]
+        course_id = claim_context.get("id", "")
+        iframe_id = get_object_or_404(
+            SubTopicIframeID, identifier=resource_link.get("id", "")
+        )
+        return redirect(
+            f"{config('FRONT_END_URL')}/assessment/{course_id}/{iframe_id.topic.block_id}/"
         )
 
     except Exception as e:
-        print(e, "here here is an error message")
         return JsonResponse({"error": str(e)}, status=400)
 
 
@@ -68,26 +70,57 @@ def load_public_key():
     return public_key
 
 
-# TODO : dont make it hard coded
+def generate_kid(public_key: RSAPublicKey) -> str:
+    """
+    Generate a Key ID (kid) based on the public key.
+    """
+    # Serialize the public key to DER format
+    der_public_key = public_key.public_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    # Compute the SHA-256 hash of the serialized key
+    digest = hashes.Hash(hashes.SHA256())
+    digest.update(der_public_key)
+    hashed_key = digest.finalize()
+    # Encode the hash in URL-safe base64 format without padding
+    kid = base64.urlsafe_b64encode(hashed_key).decode("utf-8").rstrip("=")
+    return kid
+
+
+# TODO : dont make it hard coded -- Might deprecate it in future as well
 def jwks_view(request):
     """
     Expose the public key in JWKS format.
     """
     public_key = load_public_key()
-    public_key.public_numbers()
+    public_numbers = public_key.public_numbers()
+
+    # Base64 encode the modulus and exponent
+    n = (
+        base64.urlsafe_b64encode(
+            public_numbers.n.to_bytes(
+                (public_numbers.n.bit_length() + 7) // 8, byteorder="big"
+            )
+        )
+        .decode("utf-8")
+        .rstrip("=")
+    )
+    e = (
+        base64.urlsafe_b64encode(
+            public_numbers.e.to_bytes(
+                (public_numbers.e.bit_length() + 7) // 8, byteorder="big"
+            )
+        )
+        .decode("utf-8")
+        .rstrip("=")
+    )
+
+    # Generate the dynamic Key ID
+    kid = generate_kid(public_key)
 
     # Construct the JWK (JSON Web Key)
-    jwk = {
-        "e": "AQAB",  # Public exponent
-        "kid": "q2IZGBMbJQdpokvk4-yvf7G3g_AD9AUl1JU5dJWXZ-g",  # Key ID
-        "kty": "RSA",  # Key type (RSA)
-        # This is a very long string that exceeds the line length limit, but we are ignoring it  # noqa: E501
-        "n": "yGp6gbpugPvgg3W_joITFYSqYUT6fYPvHGjZjPL_7d9wVZFM2sLRMjPkYxff4hEuEmTjwPTByKD5oYeyiqUKKZCgbZ5Jhh9hOfMaKZ0bOM2VG2wSk8ucPmxoTqEUQtxbOqj8sDwsTo7Wr6bA6fB2KjWqV32giHBVFiiPIBx0UieZRyCI8gwDhtSGJx3i9dFDrssokhBRqsPI9xlYpVulN7DLjk00SYG6w62kKuUAaabYe8cUEg0Kt8KwpUvZPSirJqwXqsX4s6GlUQ4qQ6Yt_mvFtxsElmzWJ5-zbKNJ3JO9zvtNAx1pC_lVFkC20T1YWm96Zcd-JUl0afUvnU13Fw",  # noqa: E501
-        "alg": "RS256",  # Algorithm (RS256)
-        "use": "sig",  # Intended use (signature)
-    }
-
-    # Wrap the JWK in a JSON Web Key Set (JWKS)
+    jwk = {}
     jwks = {"keys": [jwk]}
 
     # Return the JWKS as a JSON response

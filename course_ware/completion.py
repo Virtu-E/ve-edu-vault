@@ -1,6 +1,9 @@
+import logging
+
 from course_ware.models import Topic, UserCategoryProgress, UserQuestionAttempts
 from data_types.questions import QuestionAttemptData
-from exceptions import QuestionNotFoundError
+
+logger = logging.getLogger(__name__)
 
 
 class ProgressUpdater:
@@ -36,7 +39,10 @@ class ProgressUpdater:
         # Ensure the question exists in the metadata
         question_data_instance = question_metadata.get(self.question_data.question_id)
         if question_data_instance is None:
-            raise QuestionNotFoundError()
+            # TODO : need to fix this
+            raise Exception(
+                f"Question metadata {self.question_data.question_id} does not exist"
+            )
 
         # Update the question metadata if the question has never been answered correctly
         if not question_data_instance.get("is_correct", False):
