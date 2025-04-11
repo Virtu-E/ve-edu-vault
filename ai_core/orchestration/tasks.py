@@ -7,7 +7,7 @@ from ai_core.orchestration.orchestration_engine import OrchestrationEngine
 from data_types.ai_core import PerformanceStats
 from data_types.course_ware_schema import QuestionMetadata
 from edu_vault.settings.common import MONGO_URL
-from no_sql_database.nosql_database_engine import MongoDatabaseEngine
+from repository.databases.no_sql_database import MongoDatabaseEngine
 
 log = logging.getLogger(__name__)
 

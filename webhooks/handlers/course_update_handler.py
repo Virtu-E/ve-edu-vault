@@ -1,15 +1,13 @@
 import logging
 from typing import Any, Dict, Tuple
 
-from course_sync.course_sync import CourseSyncFactory
-from course_sync.extractor import StructureExtractor
+
 from course_ware.models import AcademicClass, Course, ExaminationLevel
 from course_ware.utils import (
     academic_class_from_course_id,
     get_examination_level_from_course_id,
 )
 from data_types.course_ware_schema import CourseSyncResponse
-from oauth_clients.edx_client import EdxClient
 from webhooks.handlers.abstract_type import WebhookHandler
 
 log = logging.getLogger(__name__)
@@ -20,7 +18,7 @@ class CourseUpdatedHandler(WebhookHandler):
     Handles OpenEdx Course Update events with improved error handling and response tracking.
     """
 
-    def __init__(self, client: EdxClient):
+    def __init__(self, client):
         self._client = client
 
     def handle(self, payload: Dict[str, Any]) -> CourseSyncResponse:
@@ -119,22 +117,23 @@ class CourseUpdatedHandler(WebhookHandler):
                 - 'changes_made': Whether changes were detected and applied
         """
         try:
-            sync_result = CourseSyncFactory.create(
-                course=course_instance,
-                academic_class=academic_class_instance,
-                examination_level=examination_level,
-                extractor=StructureExtractor,
-                new_structure=course_outline,
-            ).sync()
+            pass
+            # sync_result = CourseSyncFactory.create(
+            #     course=course_instance,
+            #     academic_class=academic_class_instance,
+            #     examination_level=examination_level,
+            #     extractor=StructureExtractor,
+            #     new_structure=course_outline,
+            # ).sync()
 
-            if sync_result:
-                log.info(
-                    f"Successfully synced course structure for {course_instance.course_key}"
-                )
-            else:
-                log.info(f"No changes detected for course {course_instance.course_key}")
-
-            return {"success": True, "changes_made": sync_result}
+            # if sync_result:
+            #     log.info(
+            #         f"Successfully synced course structure for {course_instance.course_key}"
+            #     )
+            # else:
+            #     log.info(f"No changes detected for course {course_instance.course_key}")
+            #
+            # return {"success": True, "changes_made": sync_result}
 
         except Exception as e:
             log.error(f"Failed to sync course structure: {str(e)}")

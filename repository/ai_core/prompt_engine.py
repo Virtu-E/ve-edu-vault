@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from data_types.ai_core import QuestionBank
-from no_sql_database.nosql_database_engine import NoSqLDatabaseEngineInterface
+from repository.databases.no_sql_database import NoSqLDatabaseEngineInterface
 from repository.shared import QuestionValidator
 
 

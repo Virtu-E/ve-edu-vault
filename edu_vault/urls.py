@@ -26,4 +26,5 @@ urlpatterns = [
     path("api/v1/extension/", include("course_ware_ext.urls")),
     path("api/v1/webhook/", include("webhooks.urls")),
     path("api/v1/topics/", include("elastic_search.urls")),
+    path("api/v1/flashcards/", include("flash_cards.urls")),
 ]

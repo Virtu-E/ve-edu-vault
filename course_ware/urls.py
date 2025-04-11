@@ -1,14 +1,12 @@
 from django.urls import path
 
-from course_ware.factory_views import (
-    complete_quiz_view_factory,
-    get_questions_view_factory,
-    post_question_attempt_view_factory,
-)
-from course_ware.views import (
+from .views import (
     CourseOutlinePathView,
     GetQuestionAttemptView,
+    GetQuestionsView,
     GetSingleQuestionAttemptView,
+    PostQuestionAttemptView,
+    QuizCompletionView,
     iframe_id_given_topic_id,
 )
 
@@ -17,17 +15,17 @@ app_name = "course_ware"
 urlpatterns = [
     path(
         "get_questions/<str:username>/<str:block_id>/",
-        get_questions_view_factory(),
+        GetQuestionsView.as_view(),
         name="get_questions_view",
     ),
     path(
         "complete_quiz/",
-        complete_quiz_view_factory(),
+        QuizCompletionView.as_view(),
         name="complete_quiz",
     ),
     path(
         "post_question_attempt/",
-        post_question_attempt_view_factory(),
+        PostQuestionAttemptView.as_view(),
         name="post_question_attempt_view",
     ),
     path(

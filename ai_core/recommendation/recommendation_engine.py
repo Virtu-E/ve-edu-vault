@@ -1,16 +1,21 @@
+"""
+ai_core.recommendation.recommendation_engine
+~~~~~~~~~~~~~~
+
+This module implements the recommendation engine.
+Which is responsible for question recommendation
+based on a users performance stats ( See ai_core.performance.performance_engine )
+on a particular topic.
+"""
+
 import asyncio
 import json
 import logging
 from functools import lru_cache
-from typing import List, Literal, Set, TypeVar
+from typing import List, Set
 
-from ai_core.performance.performance_engine import PerformanceEngineInterface
 from ai_core.utils import fetch_from_model
 from course_ware.models import UserQuestionAttempts, UserQuestionSet
-from data_types.ai_core import (
-    RecommendationEngineConfig,
-    RecommendationQuestionMetadata,
-)
 from data_types.questions import Question
 from exceptions import (
     DatabaseQueryError,
@@ -18,12 +23,49 @@ from exceptions import (
     InsufficientQuestionsError,
     QuestionFetchError,
 )
-from no_sql_database.nosql_database_engine import NoSqLDatabaseEngineInterface
+from repository.databases.no_sql_database import NoSqLDatabaseEngineInterface
 
-# Type variables for generics
-T = TypeVar("T")
+from ..performance.data_types import DifficultyEnum, RankedDifficulty
+from ..performance.performance_engine import PerformanceStats
 
 log = logging.getLogger(__name__)
+
+from dataclasses import dataclass
+
+
+@dataclass
+class RecommendationEngineConfig:
+    """Configuration for the recommendation engine."""
+
+    database_name: str
+    collection_name: str
+    topic: str
+    examination_level: str
+    academic_class: str
+    sub_topic: str
+    user_id: int
+    sub_topic_id: int
+
+
+@dataclass
+class RecommendationQuestionMetadata:
+    """
+    Dataclass for the recommendation question metadata format.
+
+    Attributes:
+        topic (str): The topic of the question, e.g., 'Algebra', 'Arithmetics'.
+        sub_topic (str): The sub_topic under the current topic, e.g.,
+        'completing the square', 'Division'.
+        examination_level (str): The examination level, e.g., 'MSCE', 'JCE'.
+        academic_class (str): The academic class, e.g., 'Form1', 'Grade 12'.
+        difficulty (str): The difficulty level of the question, e.g., 'easy', 'medium', 'hard'.
+    """
+
+    topic: str
+    sub_topic: str
+    examination_level: str
+    academic_class: str
+    difficulty: DifficultyEnum | None
 
 
 class RecommendationEngine:
@@ -36,7 +78,7 @@ class RecommendationEngine:
 
     def __init__(
         self,
-        performance_engine: PerformanceEngineInterface,
+        performance_stats: PerformanceStats,
         database_engine: NoSqLDatabaseEngineInterface,
         config: RecommendationEngineConfig,
         question_threshold: int,
@@ -45,41 +87,28 @@ class RecommendationEngine:
         Initialize the recommendation engine.
 
         Args:
-            performance_engine: Engine for calculating user performance metrics
+            performance_stats: User performance metrics
             database_engine: NoSQL database interface
             config: Configuration parameters
-            question_threshold: Threshold for question recommendations
+            question_threshold: number of questions to recommend
         """
-        self.performance_engine = performance_engine
-        self.database_engine = database_engine
-        self.config = config
-        self.question_threshold = question_threshold
+        self._performance_metrics = performance_stats
+        self._database_engine = database_engine
+        self._config = config
+        self._question_threshold = question_threshold
 
         # Initialize database attributes
         self._init_database_attributes()
 
     def _init_database_attributes(self) -> None:
         """Initialize attributes from config"""
-        self.database_name = self.config.database_name
-        self.collection_name = self.config.collection_name
         self.metadata = RecommendationQuestionMetadata(
-            category=self.config.category,
-            topic=self.config.topic,
-            examination_level=self.config.examination_level,
-            academic_class=self.config.academic_class,
-            difficulty=None,  # this will be set after we have decided what
-            # level of recommended questions we want to recommend to the user
+            topic=self._config.topic,
+            sub_topic=self._config.sub_topic,
+            examination_level=self._config.examination_level,
+            academic_class=self._config.academic_class,
+            difficulty=None,  # this will be set based on the difficulty
         )
-
-    @property
-    def user_id(self) -> int:
-        """Get user ID from config"""
-        return self.config.user_id
-
-    @property
-    def topic_id(self) -> int:
-        """Get topic ID from config"""
-        return self.config.topic_id
 
     async def set_users_recommended_questions(self) -> None:
         """
@@ -122,14 +151,14 @@ class RecommendationEngine:
 
     @lru_cache(maxsize=128)
     async def _get_questions_list_from_database(
-        self, difficulty: str
+        self, difficulty: DifficultyEnum
     ) -> List[Question]:
         """
         Fetches questions from the database based on Recommendation Question Metadata.
         Uses caching to improve performance for repeated requests.
 
         Args:
-            difficulty: The difficulty level of questions to fetch
+            difficulty (DifficultyEnum): The difficulty level of questions to fetch
 
         Returns:
             List of Question objects matching the criteria
@@ -188,7 +217,7 @@ class RecommendationEngine:
 
     async def _process_ranked_difficulties(
         self,
-        ranked_difficulties: list[tuple[Literal["easy", "medium", "hard"], float]],
+        ranked_difficulties: RankedDifficulty,
     ) -> List[Question]:
         """
         Processes ranked difficulties to fetch corresponding questions.
@@ -216,12 +245,9 @@ class RecommendationEngine:
         Raises:
             InsufficientQuestionsError: If not enough questions are available
         """
-        (
-            ranked_difficulties,
-            stats,
-        ) = await self.performance_engine.get_topic_performance_stats()
+        metrics = self._performance_metrics()
         recommended_questions = await self._process_ranked_difficulties(
-            ranked_difficulties
+            metrics.ranked_difficulties
         )
 
         current_ids = await self._get_question_ids()

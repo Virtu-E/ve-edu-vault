@@ -1,5 +1,9 @@
-# lti_provider/views.py
+"""
+lti_provider.views
+~~~~~~~~~~~
 
+Main view for lti functionality
+"""
 
 import base64
 
@@ -15,7 +19,7 @@ from pylti1p3.contrib.django import (
     DjangoOIDCLogin,
 )
 
-from course_ware.models import TopicIframeID
+from course_ware.models import SubTopicIframeID
 from edu_vault.settings import common
 
 tool_conf_2 = DjangoDbToolConf()
@@ -23,9 +27,7 @@ tool_conf_2 = DjangoDbToolConf()
 
 @csrf_exempt
 def lti_login(request):
-    """
-    Handles the OpenID Connect (OIDC) login flow.
-    """
+    """Handles the OpenID Connect (OIDC) login flow."""
     try:
         oidc_login = DjangoOIDCLogin(request, tool_conf_2)
         return oidc_login.redirect(getattr(common, "LTI_LAUNCH_URL", ""))
@@ -36,9 +38,7 @@ def lti_login(request):
 
 @csrf_exempt
 def lti_launch(request):
-    """
-    Handles the LTI launch request after successful OIDC login.
-    """
+    """Handles the LTI launch request after successful OIDC login."""
     try:
         # Validate the LTI launch request
         launch = DjangoMessageLaunch(request, tool_conf_2)
@@ -51,7 +51,7 @@ def lti_launch(request):
         claim_context = launch_data["https://purl.imsglobal.org/spec/lti/claim/context"]
         course_id = claim_context.get("id", "")
         iframe_id = get_object_or_404(
-            TopicIframeID, identifier=resource_link.get("id", "")
+            SubTopicIframeID, identifier=resource_link.get("id", "")
         )
         return redirect(
             f"{config('FRONT_END_URL')}/assessment/{course_id}/{iframe_id.topic.block_id}/"

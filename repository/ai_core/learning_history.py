@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from data_types.ai_core import LearningHistory
-from no_sql_database.nosql_database_engine import NoSqLDatabaseEngineInterface
+from repository.databases.no_sql_database import NoSqLDatabaseEngineInterface
 
 
 class LearningHistoryRepository(ABC):

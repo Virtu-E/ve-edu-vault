@@ -4,9 +4,39 @@ from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django_elasticsearch_dsl.registries import registry
 
-from .models import Category, Topic
+from .models import SubTopic, Topic
 
 log = logging.getLogger(__name__)
+
+
+@receiver(post_save, sender=SubTopic)
+def update_subtopic_document(sender, instance, **kwargs):
+    try:
+        log.info(
+            "Updating SubTopic document",
+            extra={
+                "subtopic_id": instance.id,
+                "subtopic_title": instance.name,
+                "action": "update",
+            },
+        )
+        topic = instance.topic
+        if topic:
+            log.debug(
+                "Updating associated Topic document",
+                extra={"topic_id": topic.id, "topic_name": topic.name},
+            )
+            registry.update(topic, raise_on_error=False)
+        else:
+            log.warning(
+                "SubTopic has no associated topic", extra={"subtopic_id": instance.id}
+            )
+    except Exception as e:
+        log.error(
+            "Error syncing course structure",
+            extra={"subtopic_id": instance.id, "error": str(e)},
+            exc_info=True,
+        )
 
 
 @receiver(post_save, sender=Topic)
@@ -16,21 +46,11 @@ def update_topic_document(sender, instance, **kwargs):
             "Updating Topic document",
             extra={
                 "topic_id": instance.id,
-                "topic_title": instance.name,
+                "topic_name": instance.name,
                 "action": "update",
             },
         )
-        category = instance.category
-        if category:
-            log.debug(
-                "Updating associated Category document",
-                extra={"category_id": category.id, "category_name": category.name},
-            )
-            registry.update(category, raise_on_error=False)
-        else:
-            log.warning(
-                "Topic has no associated category", extra={"topic_id": instance.id}
-            )
+        registry.update(instance, raise_on_error=False)
     except Exception as e:
         log.error(
             "Error syncing course structure",
@@ -39,22 +59,34 @@ def update_topic_document(sender, instance, **kwargs):
         )
 
 
-@receiver(post_save, sender=Category)
-def update_category_document(sender, instance, **kwargs):
+@receiver(post_delete, sender=SubTopic)
+def delete_subtopic_document(sender, instance, **kwargs):
     try:
         log.info(
-            "Updating Category document",
+            "Deleting SubTopic document",
             extra={
-                "category_id": instance.id,
-                "category_name": instance.name,
-                "action": "update",
+                "subtopic_id": instance.id,
+                "subtopic_title": instance.name,
+                "action": "delete",
             },
         )
-        registry.update(instance, raise_on_error=False)
+
+        topic = instance.topic
+        if topic:
+            log.debug(
+                "Updating associated Topic document after SubTopic deletion",
+                extra={"topic_id": topic.id, "topic_name": topic.name},
+            )
+            registry.update(topic, raise_on_error=False)
+        else:
+            log.warning(
+                "Deleted SubTopic had no associated topic",
+                extra={"subtopic_id": instance.id},
+            )
     except Exception as e:
         log.error(
             "Error syncing course structure",
-            extra={"category_id": instance.id, "error": str(e)},
+            extra={"subtopic_id": instance.id, "error": str(e)},
             exc_info=True,
         )
 
@@ -66,39 +98,7 @@ def delete_topic_document(sender, instance, **kwargs):
             "Deleting Topic document",
             extra={
                 "topic_id": instance.id,
-                "topic_title": instance.name,
-                "action": "delete",
-            },
-        )
-
-        category = instance.category
-        if category:
-            log.debug(
-                "Updating associated Category document after Topic deletion",
-                extra={"category_id": category.id, "category_name": category.name},
-            )
-            registry.update(category, raise_on_error=False)
-        else:
-            log.warning(
-                "Deleted Topic had no associated category",
-                extra={"topic_id": instance.id},
-            )
-    except Exception as e:
-        log.error(
-            "Error syncing course structure",
-            extra={"topic_id": instance.id, "error": str(e)},
-            exc_info=True,
-        )
-
-
-@receiver(post_delete, sender=Category)
-def delete_category_document(sender, instance, **kwargs):
-    try:
-        log.info(
-            "Deleting Category document",
-            extra={
-                "category_id": instance.id,
-                "category_name": instance.name,
+                "topic_name": instance.name,
                 "action": "delete",
             },
         )
@@ -106,6 +106,6 @@ def delete_category_document(sender, instance, **kwargs):
     except Exception as e:
         log.error(
             "Error syncing course structure",
-            extra={"category_id": instance.id, "error": str(e)},
+            extra={"topic_id": instance.id, "error": str(e)},
             exc_info=True,
         )

@@ -46,7 +46,7 @@ class QuestionFetchError(DatabaseError):
 
 
 class DatabaseQueryError(DatabaseError):
-    """Raised when there is an error querying the database."""
+    """Raised when there is an error querying the django database."""
 
     def __init__(self, message="Error querying the database", *args):
         self.message = message

@@ -1,8 +1,8 @@
 import pytest
 
 from course_ware.tests.course_ware_factory import (
-    CategoryFactory,
     CourseFactory,
+    SubTopicFactory,
     TopicFactory,
 )
 from data_types.course_ware_models import EdxUserData
@@ -24,10 +24,10 @@ def course():
 
 
 @pytest.fixture
-def category(course):
-    return CategoryFactory(course=course)
+def topic(course):
+    return TopicFactory(course=course)
 
 
 @pytest.fixture
-def topics(category):
-    return [TopicFactory(category=category), TopicFactory(category=category)]
+def sub_topics(category):
+    return [SubTopicFactory(category=category), SubTopicFactory(category=category)]
