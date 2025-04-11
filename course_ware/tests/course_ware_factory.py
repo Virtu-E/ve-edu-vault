@@ -7,17 +7,17 @@ from factory.django import DjangoModelFactory
 
 from course_ware.models import (
     AcademicClass,
-    Category,
     CoreElement,
     Course,
     EdxUser,
     ExaminationLevel,
+    SubTopic,
     Topic,
     UserQuestionAttempts,
     UserQuestionSet,
 )
 from data_types.course_ware_schema import QuestionMetadata
-from data_types.questions import Choice, Metadata, Question, Solution
+from repository.data_types import Choice, Metadata, Question, Solution
 
 
 class UserFactory(DjangoModelFactory):
@@ -72,9 +72,9 @@ class CoreElementFactory(DjangoModelFactory):
     name = Faker("word")
 
 
-class CategoryFactory(DjangoModelFactory):
+class TopicFactory(DjangoModelFactory):
     class Meta:
-        model = Category
+        model = Topic
 
     name = Faker("word")
     course = SubFactory(CourseFactory)
@@ -86,12 +86,12 @@ class CategoryFactory(DjangoModelFactory):
     updated_at = factory.LazyFunction(datetime.utcnow)
 
 
-class TopicFactory(DjangoModelFactory):
+class SubTopicFactory(DjangoModelFactory):
     class Meta:
-        model = Topic
+        model = SubTopic
 
     name = Faker("word")
-    category = SubFactory(CategoryFactory)
+    category = SubFactory(TopicFactory)
     block_id = factory.Sequence(lambda n: f"chapter{n}")
 
 
@@ -127,7 +127,7 @@ class UserQuestionAttemptsFactory(DjangoModelFactory):
         model = UserQuestionAttempts
 
     user = SubFactory(UserFactory)
-    topic = SubFactory(TopicFactory)
+    topic = SubFactory(SubTopicFactory)
     question_metadata = factory.LazyFunction(generate_question_metadata)
 
 
@@ -136,7 +136,7 @@ class UserQuestionSetFactory(DjangoModelFactory):
         model = UserQuestionSet
 
     user = SubFactory(UserFactory)
-    topic = SubFactory(TopicFactory)
+    topic = SubFactory(SubTopicFactory)
     question_list_ids = []
 
 
