@@ -1,6 +1,6 @@
 import logging
 from collections import namedtuple
-from typing import List, Set
+from typing import List
 
 from rest_framework.exceptions import ValidationError
 

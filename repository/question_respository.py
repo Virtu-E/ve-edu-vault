@@ -6,8 +6,7 @@ from bson import ObjectId, errors
 from edu_vault.settings import common
 
 from .data_types import Question
-from .databases.no_sql_database.mongodb import (_AsyncMongoDatabaseEngine,
-                                                mongo_database)
+from .databases.no_sql_database.mongodb import _AsyncMongoDatabaseEngine, mongo_database
 from .repository_mixin import QuestionRepositoryMixin
 
 log = logging.getLogger(__name__)
@@ -84,6 +83,7 @@ class MongoQuestionRepository(QuestionRepositoryMixin):
                     by_alias=True, exclude={"choices": {"is_correct"}}
                 )
                 result.append(question_obj)
+                # TODO : dont catch all exceptions like that, very bad
             except Exception as e:
                 log.error(
                     "Error processing question data: %s. Error: %s",
@@ -146,6 +146,66 @@ class MongoQuestionRepository(QuestionRepositoryMixin):
         )
         result = response[0] if isinstance(response, list) else response
         return Question(**{**result, "_id": str(question_id)})
+
+    @staticmethod
+    def _normalize_name(name: str) -> str:
+        """
+        Normalize a name by converting to lowercase and replacing spaces with underscores.
+
+        Args:
+            name: The name to normalize
+
+        Returns:
+            Normalized name
+        """
+        normalized = name.lower().replace(" ", "_").lstrip("_")
+        log.debug(f"Normalized name '{name}' to '{normalized}'")
+        return normalized
+
+    async def get_questions_by_aggregation(
+        self,
+        collection_name: str,
+        examination_level: str,
+        academic_class: str,
+        subtopic_name: str,
+        topic_name: str,
+    ) -> List[Question]:
+        normalized_topic_name = self._normalize_name(subtopic_name)
+        normalized_subtopic_name = self._normalize_name(topic_name)
+
+        pipeline = [
+            {
+                "$match": {
+                    "academic_class": academic_class,
+                    "examination_level": examination_level,
+                    "subtopic": normalized_subtopic_name,
+                    "topic": normalized_topic_name,
+                }
+            },
+            {
+                "$facet": {
+                    "easy": [
+                        {"$match": {"difficulty": "easy"}},
+                        {"$sample": {"size": 3}},
+                    ],
+                    "medium": [
+                        {"$match": {"difficulty": "medium"}},
+                        {"$sample": {"size": 3}},
+                    ],
+                    "hard": [
+                        {"$match": {"difficulty": "hard"}},
+                        {"$sample": {"size": 3}},
+                    ],
+                }
+            },
+        ]
+
+        questions = await self.database_engine.run_aggregation(
+            collection_name, self.database_name, pipeline
+        )
+
+        result = self._process_mongo_question_data(questions)
+        return result
 
     @classmethod
     def get_repo(cls):
