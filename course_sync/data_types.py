@@ -69,7 +69,9 @@ class EdxCourseOutline:
         if not topic:
             return []
         return [
-            SubTopics(id=obj.id, name=obj.name) for obj in topic.sub_topics if obj.id
+            SubTopics(id=obj.id, name=obj.name, topic_id=obj.topic_id)
+            for obj in topic.sub_topics
+            if obj.id
         ]
 
 

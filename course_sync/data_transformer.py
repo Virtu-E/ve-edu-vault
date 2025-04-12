@@ -9,8 +9,7 @@ into our domain model objects for processing
 import logging
 from typing import Dict, List
 
-from course_sync.data_types import (CourseStructure, EdxCourseOutline,
-                                    SubTopics, Topic)
+from course_sync.data_types import CourseStructure, EdxCourseOutline, SubTopics, Topic
 
 log = logging.getLogger(__name__)
 
@@ -32,23 +31,18 @@ class EdxDataTransformer:
         sub_topics_set = set()
         topic_to_sub_topic = {}
 
-        try:
-            course_data = structure.get("course_structure", {})
-            for topic in course_data.get("child_info", {}).get("children", []):
-                topic_id = topic.get("id")
-                if topic_id:
-                    topics_set.add(topic_id)
+        course_data = structure.get("course_structure", {})
+        for topic in course_data.get("child_info", {}).get("children", []):
+            topic_id = topic.get("id")
+            if topic_id:
+                topics_set.add(topic_id)
 
-                if topic.get("has_children"):
-                    for sub_topic in topic.get("child_info", {}).get("children", []):
-                        sub_topic_id = sub_topic.get("id")
-                        if sub_topic_id:
-                            sub_topics_set.add(sub_topic_id)
-                            topic_to_sub_topic[sub_topic_id] = topic_id
-
-        except Exception as e:
-            log.error(f"Error transforming course structure: {e}")
-            raise ValueError(f"Invalid course structure format: {e}") from e
+            if topic.get("has_children"):
+                for sub_topic in topic.get("child_info", {}).get("children", []):
+                    sub_topic_id = sub_topic.get("id")
+                    if sub_topic_id:
+                        sub_topics_set.add(sub_topic_id)
+                        topic_to_sub_topic[sub_topic_id] = topic_id
 
         return CourseStructure(topics_set, sub_topics_set, topic_to_sub_topic)
 
