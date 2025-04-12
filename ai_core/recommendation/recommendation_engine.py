@@ -17,12 +17,8 @@ from typing import List, Set
 from ai_core.utils import fetch_from_model
 from course_ware.models import UserQuestionAttempts, UserQuestionSet
 from data_types.questions import Question
-from exceptions import (
-    DatabaseQueryError,
-    DatabaseUpdateError,
-    InsufficientQuestionsError,
-    QuestionFetchError,
-)
+from exceptions import (DatabaseQueryError, DatabaseUpdateError,
+                        InsufficientQuestionsError, QuestionFetchError)
 from repository.databases.no_sql_database import NoSqLDatabaseEngineInterface
 
 from ..performance.data_types import DifficultyEnum, RankedDifficulty

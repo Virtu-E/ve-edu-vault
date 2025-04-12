@@ -6,4 +6,5 @@ class CourseWareConfig(AppConfig):
     name = "course_ware"
 
     def ready(self):
-        import course_ware.signals
+        pass
+        # import course_ware.signals

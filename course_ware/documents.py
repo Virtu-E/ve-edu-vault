@@ -6,8 +6,10 @@ from course_ware.models import SubTopic, Topic
 # TODO : add support for academic level filtering
 # TODO : add support for images and maybe even some AI input ?
 
+# need to exclude the below from running when testing
 
-@registry.register_document
+
+# @registry.register_document
 class SubTopicDocument(Document):
     sub_topic_name = fields.TextField()
     sub_topic_id = fields.KeywordField()

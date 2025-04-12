@@ -1,6 +1,7 @@
 import logging
 
-from course_ware.models import Topic, UserCategoryProgress, UserQuestionAttempts
+from course_ware.models import (Topic, UserCategoryProgress,
+                                UserQuestionAttempts)
 from data_types.questions import QuestionAttemptData
 
 logger = logging.getLogger(__name__)

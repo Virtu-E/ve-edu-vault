@@ -2,7 +2,8 @@ import logging
 
 from celery import shared_task
 
-from course_sync.side_effects.topic_creation_side_effect import TopicCreationSideEffect
+from course_sync.side_effects.topic_creation_side_effect import \
+    TopicCreationSideEffect
 from course_ware.models import Topic
 from edu_vault.settings.common import MONGO_URL
 from oauth_clients.edx_client import EdxClient

@@ -21,3 +21,14 @@ DATABASES = {
         "timeout": 30,  # seconds
     },
 }
+
+# Disable Celery tasks for testing
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+
+# Disable Elasticsearch indexing
+ELASTICSEARCH_DSL_AUTOSYNC = False
+ELASTICSEARCH_DSL_INDEX_SETTINGS = {}
+
+
+DISABLE_CUSTOM_SIGNAL_PROCESSOR = True

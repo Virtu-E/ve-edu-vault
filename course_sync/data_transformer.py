@@ -9,7 +9,8 @@ into our domain model objects for processing
 import logging
 from typing import Dict, List
 
-from course_sync.data_types import CourseStructure, EdxCourseOutline, SubTopics, Topic
+from course_sync.data_types import (CourseStructure, EdxCourseOutline,
+                                    SubTopics, Topic)
 
 log = logging.getLogger(__name__)
 
