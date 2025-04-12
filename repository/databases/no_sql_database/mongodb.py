@@ -17,11 +17,8 @@ import pymongo.errors
 from django.conf import settings
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from .exceptions import (
-    MongoDbConfigurationError,
-    MongoDbConnectionError,
-    MongoDbOperationError,
-)
+from .exceptions import (MongoDbConfigurationError, MongoDbConnectionError,
+                         MongoDbOperationError)
 from .nosql_database_engine import AsyncBaseNoSqLDatabaseEngine
 
 log = logging.getLogger(__name__)

@@ -7,7 +7,8 @@ from fractions import Fraction
 from typing import Dict, List, Literal, Optional, Protocol
 
 from ai_core.learning_mode_rules import LearningModeType, LearningRuleFactory
-from data_types.ai_core import DifficultyScore, NextMode, PerformanceStats, PreviousMode
+from data_types.ai_core import (DifficultyScore, NextMode, PerformanceStats,
+                                PreviousMode)
 
 
 class BaseStrategy(ABC):

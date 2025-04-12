@@ -13,7 +13,8 @@ from abc import ABC
 from ai_core.learning_mode_rules import LearningModeType
 from ai_core.performance.metrics.metrics_aggregator import MetricsCalculator
 from course_ware.models import UserQuestionAttempts
-from data_types.course_ware_schema import QuestionMetadata, UserQuestionAttemptsSchema
+from data_types.course_ware_schema import (QuestionMetadata,
+                                           UserQuestionAttemptsSchema)
 from exceptions import DatabaseQueryError
 
 from .data_types import PerformanceStatsData

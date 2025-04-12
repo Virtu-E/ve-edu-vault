@@ -12,13 +12,10 @@ from typing import Any, Dict, TypeAlias
 
 import pandas as pd
 
-from ai_core.performance.data_types import (
-    CompletionStatusEnum,
-    DifficultyCompletion,
-    DifficultyEnum,
-    DifficultyScore,
-    RankedDifficulty,
-)
+from ai_core.performance.data_types import (CompletionStatusEnum,
+                                            DifficultyCompletion,
+                                            DifficultyEnum, DifficultyScore,
+                                            RankedDifficulty)
 from course_ware.data_types import QuestionMetadata
 
 SubTopicQuestionData: TypeAlias = Dict[str, QuestionMetadata]

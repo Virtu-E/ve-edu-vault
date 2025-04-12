@@ -26,7 +26,7 @@ help:
 # Run tests with default options
 .PHONY: test
 test:
-	$(PYTEST) --maxfail=5 --disable-warnings --cov=. --cov-report=term-missing
+	$(PYTEST)
 
 # Run tests with verbose output
 .PHONY: test-verbose

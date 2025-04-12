@@ -2,7 +2,8 @@ import logging
 
 from django.db import transaction
 
-from course_ware.models import EdxUser, Topic, UserQuestionAttempts, UserQuestionSet
+from course_ware.models import (EdxUser, Topic, UserQuestionAttempts,
+                                UserQuestionSet)
 from course_ware_ext.models import TopicMastery
 from data_types.ai_core import EvaluationResult, PerformanceStats
 

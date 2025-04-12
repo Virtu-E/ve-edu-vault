@@ -166,3 +166,16 @@ class OrchestrationError(Exception):
     """Custom exception for orchestration related errors"""
 
     pass
+
+
+class InvalidChangeDataTypeError(VirtuEducateError):
+    """Exception raised when an incorrect change data type is provided for an operation."""
+
+    def __init__(self, expected_type: str, actual_type: str, operation: str):
+        self.expected_type = expected_type
+        self.actual_type = actual_type
+        self.operation = operation
+        message = (
+            f"Expected {expected_type} for {operation}, but received {actual_type}"
+        )
+        super().__init__(message)

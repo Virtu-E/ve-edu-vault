@@ -6,17 +6,14 @@ from typing import Any, Dict, List
 from decouple import config
 
 from ai_core.ai.edu_ai_engine import EduAIEngine
-from ai_core.ai.prompt_generators.base_prompt_generator import (
-    BaseQuestionPromptGenerator,
-)
-from ai_core.ai.prompt_generators.lang_chain_prompt_generator import (
-    LangChainQuestionPromptGenerator,
-)
+from ai_core.ai.prompt_generators.base_prompt_generator import \
+    BaseQuestionPromptGenerator
+from ai_core.ai.prompt_generators.lang_chain_prompt_generator import \
+    LangChainQuestionPromptGenerator
 from ai_core.contextual_analyzer.context_builder import QuestionContextBuilder
 from ai_core.contextual_analyzer.context_engine import ContextEngine
-from ai_core.contextual_analyzer.stats.stats_calculator import (
-    create_difficulty_stats_calculator,
-)
+from ai_core.contextual_analyzer.stats.stats_calculator import \
+    create_difficulty_stats_calculator
 from ai_core.learning_mode_rules import BaseLearningModeRule, LearningModeType
 from course_ware.models import Category, Course, Topic
 from data_types.ai_core import PerformanceStats, QuestionPromptGeneratorConfig

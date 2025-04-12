@@ -4,7 +4,8 @@ from django.db.models.signals import post_delete
 
 from course_sync.data_transformer import StructureExtractor
 from course_sync.sync_types.abstract_type import DatabaseSync
-from course_ware.models import AcademicClass, Category, Course, ExaminationLevel, Topic
+from course_ware.models import (AcademicClass, Category, Course,
+                                ExaminationLevel, Topic)
 
 
 class CategorySync(DatabaseSync):
