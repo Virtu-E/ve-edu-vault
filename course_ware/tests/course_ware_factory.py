@@ -91,7 +91,7 @@ class SubTopicFactory(DjangoModelFactory):
         model = SubTopic
 
     name = Faker("word")
-    category = SubFactory(TopicFactory)
+    topic = SubFactory(TopicFactory)
     block_id = factory.Sequence(lambda n: f"chapter{n}")
 
 
@@ -173,8 +173,8 @@ class QuestionFactory(factory.Factory):
     _id = factory.LazyFunction(lambda: str(ObjectId()))
     question_id = factory.LazyFunction(lambda: str(ObjectId()))
     text = factory.Faker("sentence")
+    sub_topic = factory.Faker("word")
     topic = factory.Faker("word")
-    category = factory.Faker("word")
     academic_class = factory.Faker("word")
     examination_level = factory.Faker("word")
     difficulty = factory.Faker("word")
