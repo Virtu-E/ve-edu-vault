@@ -1,5 +1,5 @@
 """
-ai_core.course_sync.data_types
+course_sync.data_types
 ~~~~~~~~~~~~~~~~
 
 Holds data types for the course sync module
@@ -69,7 +69,9 @@ class EdxCourseOutline:
         if not topic:
             return []
         return [
-            SubTopics(id=obj.id, name=obj.name) for obj in topic.sub_topics if obj.id
+            SubTopics(id=obj.id, name=obj.name, topic_id=obj.topic_id)
+            for obj in topic.sub_topics
+            if obj.id
         ]
 
 
@@ -118,4 +120,4 @@ class ChangeOperation:
     operation: OperationType
     entity_type: EntityType
     entity_id: str
-    data: Union[CourseChangeData, SubTopicChangeData]
+    data: Union[CourseChangeData, SubTopicChangeData | None]

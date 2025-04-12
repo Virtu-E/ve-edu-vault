@@ -10,15 +10,18 @@ import asyncio
 import gc
 import logging
 from datetime import datetime, timezone
-from typing import AsyncGenerator, Dict, List, Optional, Union
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
 import certifi
 import pymongo.errors
 from django.conf import settings
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from .exceptions import (MongoDbConfigurationError, MongoDbConnectionError,
-                         MongoDbOperationError)
+from .exceptions import (
+    MongoDbConfigurationError,
+    MongoDbConnectionError,
+    MongoDbOperationError,
+)
 from .nosql_database_engine import AsyncBaseNoSqLDatabaseEngine
 
 log = logging.getLogger(__name__)
@@ -268,7 +271,7 @@ class _AsyncMongoDatabaseEngine(AsyncBaseNoSqLDatabaseEngine):
         self,
         collection_name: str,
         database_name: str,
-        pipeline: List[Dict],
+        pipeline: List[Any],
     ) -> list:
         """
         Execute an aggregation pipeline on a MongoDB collection asynchronously.
@@ -296,6 +299,7 @@ class _AsyncMongoDatabaseEngine(AsyncBaseNoSqLDatabaseEngine):
                 pipeline,
             )
             return results
+        # TODO : dont catch generic exceptions
         except Exception as e:
             self._logger.error(
                 "Error running aggregation on %s: %s", collection_name, e

@@ -3,13 +3,13 @@ import logging
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from course_sync.side_effects.tasks import process_topic_creation_side_effect
-from course_ware.models import Topic
+from course_sync.side_effects.tasks import process_subtopic_creation_side_effect
+from course_ware.models import SubTopic
 
 log = logging.getLogger(__name__)
 
 
-@receiver(post_save, sender=Topic)
+@receiver(post_save, sender=SubTopic)
 def trigger_topic_side_effect(sender, instance, **kwargs):
     """
     Signal receiver to handle topic creation side effects.
@@ -29,7 +29,7 @@ def trigger_topic_side_effect(sender, instance, **kwargs):
         )
         try:
             pk = instance.id
-            process_topic_creation_side_effect.delay(pk)
+            process_subtopic_creation_side_effect.delay(pk)
             log.debug(
                 f"Successfully queued topic creation side effect task for topic ID: {instance.id}"
             )

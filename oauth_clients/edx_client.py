@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 # TODO : thinking of making this a singleton class instance
 class EdxClient:
-    def __init__(self, client):
+    def __init__(self, client: OAuthClient):
         self.client = client
         self.studio_url = config("EDX_STUDIO_URL")
         self.lms_url = config("EDX_LMS_URL")
@@ -25,7 +25,7 @@ class EdxClient:
     async def make_request(self, method: str, url: str, params: Optional[Dict] = None):
         """Helper method to make a request."""
         try:
-            return self.client.make_request(method, url, params=params)
+            return await self.client.make_request(method, url, params=params)
         except Exception as e:
             log.error(f"Error making {method} request to {url}: {e}")
             raise e
@@ -56,7 +56,3 @@ class EdxClient:
             return await response.json()
         log.error(f"Error fetching course outline for {course_id}: {response}")
         return None
-
-
-with OAuthClient(service_type="OPENEDX") as _client:
-    EdxClient(_client)

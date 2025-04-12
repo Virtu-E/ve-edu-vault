@@ -9,6 +9,7 @@ from course_ware.models import (
     AcademicClass,
     CoreElement,
     Course,
+    DefaultQuestionSet,
     EdxUser,
     ExaminationLevel,
     SubTopic,
@@ -93,6 +94,14 @@ class SubTopicFactory(DjangoModelFactory):
     name = Faker("word")
     topic = SubFactory(TopicFactory)
     block_id = factory.Sequence(lambda n: f"chapter{n}")
+
+
+class DefaultQuestionSetFactory(DjangoModelFactory):
+    class Meta:
+        model = DefaultQuestionSet
+
+    sub_topic = factory.SubFactory(SubTopicFactory)
+    question_list_ids = factory.List([{"id": "q1"}, {"id": "q2"}])
 
 
 class QuestionMetadataFactory(Factory):

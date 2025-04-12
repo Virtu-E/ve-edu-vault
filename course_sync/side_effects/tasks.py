@@ -1,36 +1,85 @@
+import asyncio
 import logging
 
 from celery import shared_task
+from celery.exceptions import MaxRetriesExceededError
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import DatabaseError
 
-from course_sync.side_effects.topic_creation_side_effect import \
-    TopicCreationSideEffect
-from course_ware.models import Topic
-from edu_vault.settings.common import MONGO_URL
-from oauth_clients.edx_client import EdxClient
+from course_sync.side_effects.creation_side_effect import SubTopicCreationSideEffect
+from course_ware.models import SubTopic
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @shared_task(
-    name="course_sync.tasks.topic_creation_side_effect",
-    ignore_result=True,
+    name="course_sync.tasks.subtopic_creation_side_effect",
+    ignore_result=False,  # Changed to track task results
     max_retries=3,
     default_retry_delay=60,
+    autoretry_for=(
+        DatabaseError,
+        ConnectionError,
+        TimeoutError,
+    ),  # Auto-retry for common errors
+    retry_backoff=True,  # Use exponential backoff
+    retry_backoff_max=300,  # Maximum retry delay
+    acks_late=True,  # Only acknowledge after task completes or fails
+    task_time_limit=300,  # 5-minute timeout
 )
-def process_topic_creation_side_effect(topic: int):
+def process_subtopic_creation_side_effect(subtopic_id: int) -> bool:
+    """
+    Process side effects for a newly created subtopic.
+
+    Args:
+        subtopic_id: The ID of the subtopic to process
+
+    Returns:
+        Boolean indicating success or failure
+    """
+    logger.info(
+        "Starting subtopic creation side effects for subtopic ID: %s", subtopic_id
+    )
+
+    # Get current task instance for retries
+    task = process_subtopic_creation_side_effect
+
     try:
-        topic = Topic.objects.get(pk=topic)
-        mongo = MongoDatabaseEngine(MONGO_URL)
-        client = EdxClient("OPENEDX")
-        side_effect = TopicCreationSideEffect(
-            no_sql_database_client=mongo, client=client, topic=topic
+        try:
+            subtopic = SubTopic.objects.get(pk=subtopic_id)
+        except ObjectDoesNotExist:
+            logger.error("Subtopic with ID %s does not exist", subtopic_id)
+            return False
+
+        side_effect = SubTopicCreationSideEffect(subtopic=subtopic)
+        # Execute async operations through sync wrapper
+        try:
+            # Run the async process_creation_side_effects in a new event loop
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+            try:
+                loop.run_until_complete(side_effect.process_creation_side_effects())
+                logger.info(
+                    "Successfully processed side effects for subtopic ID: %s",
+                    subtopic_id,
+                )
+                return True
+            finally:
+                loop.close()
+
+        except asyncio.CancelledError:
+            logger.warning(
+                "Async operation was cancelled for subtopic ID: %s", subtopic_id
+            )
+            raise task.retry()
+
+    except MaxRetriesExceededError:
+        logger.error(
+            "Maximum retries exceeded for subtopic ID %s. Side effects were not fully processed.",
+            subtopic_id,
         )
-        side_effect.process_creation_side_effects()
-    except Exception as e:
-        log.error(
-            f"Failed to process topic creation side effects for topic ID {topic.id}. "
-            f"Error type: {type(e).__name__}. "
-            f"Details: {str(e)}. "
-            # f"Retry attempt {task.request.retries + 1} of {task.max_retries}"
-        )
-        # raise task.retry(exc=e)
+        # Consider sending alert or notification here
+        return False
+
+    return True
