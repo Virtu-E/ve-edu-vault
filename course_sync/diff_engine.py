@@ -1,5 +1,5 @@
 """
-ai_core.course_sync.diff_engine
+course_sync.diff_engine
 ~~~~~~~~~~~~
 
 Contains code that is used to compare and detect course changes from
@@ -11,8 +11,14 @@ from abc import ABC, abstractmethod
 from functools import wraps
 from typing import List, Optional
 
-from course_sync.data_types import (ChangeOperation, EdxCourseOutline,
-                                    EntityType, OperationType)
+from course_sync.data_types import (
+    ChangeOperation,
+    CourseChangeData,
+    EdxCourseOutline,
+    EntityType,
+    OperationType,
+    SubTopicChangeData,
+)
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +77,9 @@ class CourseDiffHandler(BaseDiffHandler):
                     operation=OperationType.CREATE,
                     entity_type=EntityType.COURSE,
                     entity_id=new_course.course_id,
-                    data=new_course,
+                    data=CourseChangeData(
+                        name=new_course.title, course_outline=new_course
+                    ),
                 )
             ]
 
@@ -108,7 +116,9 @@ class CourseDiffHandler(BaseDiffHandler):
                     operation=OperationType.UPDATE,
                     entity_type=EntityType.COURSE,
                     entity_id=new_course.course_id,
-                    data=new_course.title,
+                    data=CourseChangeData(
+                        name=new_course.title, course_outline=new_course
+                    ),
                 )
             )
 
@@ -162,67 +172,153 @@ class SubtopicDiffHandler(BaseDiffHandler):
         changes = []
 
         # Compare subtopics for each topic that exists in both versions
-        for old_topic in old_course.topics:
+        for old_course_topic in old_course.topics:
             # Find corresponding topic in new course
-            new_topic = next(
-                (topic for topic in new_course.topics if topic.id == old_topic.id), None
+            new_course_topic = next(
+                (
+                    topic
+                    for topic in new_course.topics
+                    if topic.id == old_course_topic.id
+                ),
+                None,
             )
 
-            if new_topic:
+            if new_course_topic:
                 # Get subtopic ID sets
-                old_subtopic_ids = {subtopic.id for subtopic in old_topic.sub_topics}
-                new_subtopic_ids = {subtopic.id for subtopic in new_topic.sub_topics}
+                old_subtopic_ids = {
+                    subtopic.id for subtopic in old_course_topic.sub_topics
+                }
+                new_subtopic_ids = {
+                    subtopic.id for subtopic in new_course_topic.sub_topics
+                }
 
                 # Handle deleted subtopics
-                for subtopic_id in old_subtopic_ids - new_subtopic_ids:
-                    log.info("Subtopic deleted: %s", subtopic_id)
-                    changes.append(
-                        ChangeOperation(
-                            operation=OperationType.DELETE,
-                            entity_type=EntityType.SUBTOPIC,
-                            entity_id=subtopic_id,
-                            data=None,
-                        )
-                    )
+                changes.extend(
+                    self._handle_deleted_subtopics(old_subtopic_ids, new_subtopic_ids)
+                )
 
                 # Handle created or updated subtopics
-                for new_subtopic in new_topic.sub_topics:
-                    old_subtopic = next(
-                        (
-                            subtopic
-                            for subtopic in old_topic.sub_topics
-                            if subtopic.id == new_subtopic.id
-                        ),
-                        None,
+                changes.extend(
+                    self._handle_created_or_updated_subtopics(
+                        old_course_topic, new_course_topic
                     )
-
-                    if old_subtopic is None:
-                        # New subtopic
-                        log.info("New subtopic detected: %s", new_subtopic.id)
-                        changes.append(
-                            ChangeOperation(
-                                operation=OperationType.CREATE,
-                                entity_type=EntityType.SUBTOPIC,
-                                entity_id=new_subtopic.id,
-                                data=new_subtopic,
-                            )
-                        )
-                    else:
-                        # Check for subtopic changes
-                        name_changed = old_subtopic.name != new_subtopic.name
-
-                        if name_changed:
-                            log.info("Subtopic name changed: %s", new_subtopic.id)
-                            changes.append(
-                                ChangeOperation(
-                                    operation=OperationType.UPDATE,
-                                    entity_type=EntityType.SUBTOPIC,
-                                    entity_id=new_subtopic.id,
-                                    data=new_subtopic,
-                                )
-                            )
+                )
 
         return changes
+
+    @staticmethod
+    def _handle_deleted_subtopics(
+        old_subtopic_ids: set, new_subtopic_ids: set
+    ) -> List[ChangeOperation]:
+        """
+        Process subtopics that have been deleted.
+
+        Args:
+            old_subtopic_ids: Set of subtopic IDs from the old course
+            new_subtopic_ids: Set of subtopic IDs from the new course
+
+        Returns:
+            List of DELETE change operations
+        """
+        changes = []
+
+        # Find subtopics that exist in old but not in new
+        for subtopic_id in old_subtopic_ids - new_subtopic_ids:
+            log.info("Subtopic deleted: %s", subtopic_id)
+            changes.append(
+                ChangeOperation(
+                    operation=OperationType.DELETE,
+                    entity_type=EntityType.SUBTOPIC,
+                    entity_id=subtopic_id,
+                    data=None,
+                )
+            )
+
+        return changes
+
+    def _handle_created_or_updated_subtopics(
+        self, old_topic, new_topic
+    ) -> List[ChangeOperation]:
+        """
+        Process subtopics that have been created or updated.
+
+        Args:
+            old_topic: The original topic containing subtopics
+            new_topic: The new topic containing subtopics
+
+        Returns:
+            List of CREATE and UPDATE change operations
+        """
+        changes = []
+
+        for new_subtopic in new_topic.sub_topics:
+            old_subtopic = next(
+                (
+                    subtopic
+                    for subtopic in old_topic.sub_topics
+                    if subtopic.id == new_subtopic.id
+                ),
+                None,
+            )
+
+            if old_subtopic is None:
+                # Handle newly created subtopics
+                changes.append(self._handle_created_subtopic(new_subtopic))
+            else:
+                # Handle potentially updated subtopics
+                change = self._handle_updated_subtopic(old_subtopic, new_subtopic)
+                if change:
+                    changes.append(change)
+
+        return changes
+
+    def _handle_created_subtopic(self, new_subtopic) -> ChangeOperation:
+        """
+        Process a newly created subtopic.
+
+        Args:
+            new_subtopic: The new subtopic that was created
+
+        Returns:
+            CREATE change operation
+        """
+        log.info("New subtopic detected: %s", new_subtopic.id)
+        return ChangeOperation(
+            operation=OperationType.CREATE,
+            entity_type=EntityType.SUBTOPIC,
+            entity_id=new_subtopic.id,
+            data=SubTopicChangeData(
+                name=new_subtopic.name, topic_id=new_subtopic.topic_id
+            ),
+        )
+
+    def _handle_updated_subtopic(
+        self, old_subtopic, new_subtopic
+    ) -> Optional[ChangeOperation]:
+        """
+        Check if a subtopic has been updated and create the appropriate change operation.
+
+        Args:
+            old_subtopic: The original subtopic
+            new_subtopic: The potentially modified subtopic
+
+        Returns:
+            UPDATE change operation if modified, None otherwise
+        """
+        name_changed = old_subtopic.name != new_subtopic.name
+
+        if name_changed:
+            log.info("Subtopic name changed: %s", new_subtopic.id)
+            return ChangeOperation(
+                operation=OperationType.UPDATE,
+                entity_type=EntityType.SUBTOPIC,
+                entity_id=new_subtopic.id,
+                data=SubTopicChangeData(
+                    name=new_subtopic.name, topic_id=new_subtopic.topic_id
+                ),
+            )
+
+        return None
 
 
 class TopicDiffHandler(BaseDiffHandler):
@@ -273,6 +369,29 @@ class TopicDiffHandler(BaseDiffHandler):
         new_topic_ids = new_course.structure.topics
 
         # Handle deleted topics
+        changes.extend(self._handle_deleted_topics(old_topic_ids, new_topic_ids))
+
+        # Handle created or updated topics
+        changes.extend(self._handle_created_or_updated_topics(old_course, new_course))
+
+        return changes
+
+    def _handle_deleted_topics(
+        self, old_topic_ids: set, new_topic_ids: set
+    ) -> List[ChangeOperation]:
+        """
+        Process topics that have been deleted.
+
+        Args:
+            old_topic_ids: Set of topic IDs from the old course
+            new_topic_ids: Set of topic IDs from the new course
+
+        Returns:
+            List of DELETE change operations
+        """
+        changes = []
+
+        # Find topics that exist in old but not in new
         for topic_id in old_topic_ids - new_topic_ids:
             log.info("Topic deleted: %s", topic_id)
             changes.append(
@@ -284,39 +403,80 @@ class TopicDiffHandler(BaseDiffHandler):
                 )
             )
 
-        # Handle created or updated topics
+        return changes
+
+    def _handle_created_or_updated_topics(
+        self, old_course: EdxCourseOutline, new_course: EdxCourseOutline
+    ) -> List[ChangeOperation]:
+        """
+        Process topics that have been created or updated.
+
+        Args:
+            old_course: The original course
+            new_course: The new course
+
+        Returns:
+            List of CREATE and UPDATE change operations
+        """
+        changes = []
+
         for new_topic in new_course.topics:
             old_topic = next(
                 (topic for topic in old_course.topics if topic.id == new_topic.id), None
             )
 
             if old_topic is None:
-                # New topic
-                log.info("New topic detected: %s", new_topic.id)
-                changes.append(
-                    ChangeOperation(
-                        operation=OperationType.CREATE,
-                        entity_type=EntityType.TOPIC,
-                        entity_id=new_topic.id,
-                        data=new_topic,
-                    )
-                )
+                # Handle newly created topics
+                changes.append(self._handle_created_topic(new_topic))
             else:
-                # Check for topic changes
-                name_changed = old_topic.name != new_topic.name
-
-                if name_changed:
-                    log.info("Topic name changed: %s", new_topic.id)
-                    changes.append(
-                        ChangeOperation(
-                            operation=OperationType.UPDATE,
-                            entity_type=EntityType.TOPIC,
-                            entity_id=new_topic.id,
-                            data=new_topic,
-                        )
-                    )
+                # Handle potentially updated topics
+                change = self._handle_updated_topic(old_topic, new_topic)
+                if change:
+                    changes.append(change)
 
         return changes
+
+    def _handle_created_topic(self, new_topic) -> ChangeOperation:
+        """
+        Process a newly created topic.
+
+        Args:
+            new_topic: The new topic that was created
+
+        Returns:
+            CREATE change operation
+        """
+        log.info("New topic detected: %s", new_topic.id)
+        return ChangeOperation(
+            operation=OperationType.CREATE,
+            entity_type=EntityType.TOPIC,
+            entity_id=new_topic.id,
+            data=new_topic,
+        )
+
+    def _handle_updated_topic(self, old_topic, new_topic) -> Optional[ChangeOperation]:
+        """
+        Check if a topic has been updated and create the appropriate change operation.
+
+        Args:
+            old_topic: The original topic
+            new_topic: The potentially modified topic
+
+        Returns:
+            UPDATE change operation if modified, None otherwise
+        """
+        name_changed = old_topic.name != new_topic.name
+
+        if name_changed:
+            log.info("Topic name changed: %s", new_topic.id)
+            return ChangeOperation(
+                operation=OperationType.UPDATE,
+                entity_type=EntityType.TOPIC,
+                entity_id=new_topic.id,
+                data=new_topic,
+            )
+
+        return None
 
 
 def validate_handlers(func):

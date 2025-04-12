@@ -1,5 +1,5 @@
 """
-ai_core.course_sync.data_types
+course_sync.data_types
 ~~~~~~~~~~~~~~~~
 
 Holds data types for the course sync module
@@ -120,4 +120,4 @@ class ChangeOperation:
     operation: OperationType
     entity_type: EntityType
     entity_id: str
-    data: Union[CourseChangeData, SubTopicChangeData]
+    data: Union[CourseChangeData, SubTopicChangeData | None]

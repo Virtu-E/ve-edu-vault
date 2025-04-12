@@ -1,5 +1,5 @@
 """
-ai_core.course_sync.data_transformer
+course_sync.data_transformer
 ~~~~~~~~~~~~~~~
 
 Contains code that transforms raw Edx course data
