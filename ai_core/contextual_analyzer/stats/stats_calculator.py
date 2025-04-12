@@ -2,22 +2,15 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from ai_core.contextual_analyzer.stats.attempts_calculator import (
-    AttemptStatsCalculator,
-    IAttemptStatsCalculator,
-)
+    AttemptStatsCalculator, IAttemptStatsCalculator)
 from ai_core.contextual_analyzer.stats.completion_analyzer import (
-    CompletionAnalyzer,
-    ICompletionAnalyzer,
-)
-from ai_core.contextual_analyzer.stats.question_filter import (
-    IQuestionFilter,
-    QuestionFilter,
-)
+    CompletionAnalyzer, ICompletionAnalyzer)
+from ai_core.contextual_analyzer.stats.question_filter import (IQuestionFilter,
+                                                               QuestionFilter)
 from ai_core.contextual_analyzer.stats.tags_collector import (
-    FailedTagsCollector,
-    IFailedTagsCollector,
-)
-from ai_core.contextual_analyzer.stats.time_analyzer import ITimeAnalyzer, TimeAnalyzer
+    FailedTagsCollector, IFailedTagsCollector)
+from ai_core.contextual_analyzer.stats.time_analyzer import (ITimeAnalyzer,
+                                                             TimeAnalyzer)
 from data_types.ai_core import DifficultyStats, QuestionAIContext
 
 

@@ -1,12 +1,9 @@
 import logging
 from typing import Any, Dict, Tuple
 
-
 from course_ware.models import AcademicClass, Course, ExaminationLevel
-from course_ware.utils import (
-    academic_class_from_course_id,
-    get_examination_level_from_course_id,
-)
+from course_ware.utils import (academic_class_from_course_id,
+                               get_examination_level_from_course_id)
 from data_types.course_ware_schema import CourseSyncResponse
 from webhooks.handlers.abstract_type import WebhookHandler
 

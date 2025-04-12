@@ -20,11 +20,8 @@ from grade_book.grader import Gradebook
 from grade_book.strategy import StandardLearningModeStrategy
 
 from .models import EdxUser, SubTopic, UserQuestionAttempts
-from .serializers import (
-    GetSingleQuestionSerializer,
-    QueryParamsSerializer,
-    UserQuestionAttemptSerializer,
-)
+from .serializers import (GetSingleQuestionSerializer, QueryParamsSerializer,
+                          UserQuestionAttemptSerializer)
 from .services.question_attempt_service import QuestionAttemptService
 from .utils import find_sequential_path, get_iframe_id_from_outline
 

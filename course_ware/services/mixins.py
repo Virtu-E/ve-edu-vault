@@ -1,7 +1,8 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
 
-from course_ware.models import DefaultQuestionSet, EdxUser, SubTopic, UserQuestionSet
+from course_ware.models import (DefaultQuestionSet, EdxUser, SubTopic,
+                                UserQuestionSet)
 
 
 class RetrieveUserAndResourcesMixin:

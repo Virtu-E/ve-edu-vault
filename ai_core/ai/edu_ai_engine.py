@@ -6,9 +6,8 @@ from decouple import config
 from langchain.chat_models import ChatOpenAI
 from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 
-from ai_core.ai.prompt_generators.lang_chain_prompt_generator import (
-    LangChainPromptGeneratorInterface,
-)
+from ai_core.ai.prompt_generators.lang_chain_prompt_generator import \
+    LangChainPromptGeneratorInterface
 
 
 class AIEngineInterface(ABC):

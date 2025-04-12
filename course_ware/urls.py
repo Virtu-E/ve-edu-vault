@@ -1,14 +1,9 @@
 from django.urls import path
 
-from .views import (
-    CourseOutlinePathView,
-    GetQuestionAttemptView,
-    GetQuestionsView,
-    GetSingleQuestionAttemptView,
-    PostQuestionAttemptView,
-    QuizCompletionView,
-    iframe_id_given_topic_id,
-)
+from .views import (CourseOutlinePathView, GetQuestionAttemptView,
+                    GetQuestionsView, GetSingleQuestionAttemptView,
+                    PostQuestionAttemptView, QuizCompletionView,
+                    iframe_id_given_topic_id)
 
 app_name = "course_ware"
 

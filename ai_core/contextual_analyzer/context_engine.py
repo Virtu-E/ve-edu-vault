@@ -2,10 +2,10 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any
 
-from ai_core.contextual_analyzer.context_builder import QuestionContextBuilderInterface
-from ai_core.contextual_analyzer.stats.stats_calculator import (
-    DifficultyStatsCalculatorInterface,
-)
+from ai_core.contextual_analyzer.context_builder import \
+    QuestionContextBuilderInterface
+from ai_core.contextual_analyzer.stats.stats_calculator import \
+    DifficultyStatsCalculatorInterface
 from data_types.ai_core import LearningHistory, LearningMode, ModeData
 from data_types.course_ware_schema import QuestionMetadata
 from repository.ai_core.learning_history import LearningHistoryRepository
