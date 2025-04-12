@@ -7,7 +7,7 @@ Holds data types for the course sync module
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Union
 
 
 @dataclass
@@ -90,10 +90,32 @@ class EntityType(Enum):
 
 
 @dataclass
+class DefaultChangeData:
+    """
+    Default change data that is expected in all change operation"""
+
+    name: str
+
+
+@dataclass
+class SubTopicChangeData(DefaultChangeData):
+    """Subtopic data that is expected in a change operation"""
+
+    topic_id: int
+
+
+@dataclass
+class CourseChangeData(DefaultChangeData):
+    """Course data that is expected in a change operation"""
+
+    course_outline: EdxCourseOutline
+
+
+@dataclass
 class ChangeOperation:
     """Operation Data type"""
 
     operation: OperationType
     entity_type: EntityType
     entity_id: str
-    data: Any
+    data: Union[CourseChangeData, SubTopicChangeData]
