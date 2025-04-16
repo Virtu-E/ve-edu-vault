@@ -5,7 +5,7 @@ ai_core.performance.data_types
 Data type definitions for the performance engine
 """
 
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, TypeAlias
 
