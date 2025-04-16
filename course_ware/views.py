@@ -1,6 +1,5 @@
 import logging
 
-from bson import ObjectId
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -9,19 +8,21 @@ from rest_framework.generics import RetrieveAPIView, UpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ai_core.learning_mode_rules import LearningModeType
-from ai_core.validator.validator_engine import ValidationEngine
+from ai_core.learning_mode_rules import LearningModeType, LearningRuleFactory
+from ai_core.performance.performance_engine import PerformanceStatsEngine
 from course_ware.models import Course, UserQuestionSet
 from course_ware.serializers import PostQuestionAttemptSerializer
 from course_ware.services.question_service import QuestionService
 from data_types.questions import QuestionAttemptData
-from edu_vault.settings.common import NO_SQL_DATABASE_NAME
-from grade_book.grader import Gradebook
-from grade_book.strategy import StandardLearningModeStrategy
+from grade_book.progress_manager import LearningProgressManager
 
 from .models import EdxUser, SubTopic, UserQuestionAttempts
-from .serializers import (GetSingleQuestionSerializer, QueryParamsSerializer,
-                          UserQuestionAttemptSerializer)
+from .serializers import (
+    GetSingleQuestionSerializer,
+    QueryParamsSerializer,
+    UserQuestionAttemptSerializer,
+)
+from .services.assessment_service import AssessmentPreparationService
 from .services.question_attempt_service import QuestionAttemptService
 from .utils import find_sequential_path, get_iframe_id_from_outline
 
@@ -226,7 +227,7 @@ class CourseOutlinePathView(APIView):
                 )
             return Response({"path": path, "status": "success"})
 
-        except Exception as e:
+        except KeyError as e:
             return Response(
                 {"error": str(e), "status": "error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -285,7 +286,7 @@ class PostQuestionAttemptView(CustomUpdateAPIView):
 
     serializer_class = PostQuestionAttemptSerializer
 
-    def post(self, request):
+    def post(self, **kwargs):
 
         serializer = self.get_serializer(**kwargs)
 
@@ -316,66 +317,7 @@ class QuizCompletionView(CustomUpdateAPIView):
 
     serializer_class = QueryParamsSerializer
 
-    def _ensure_user_question_attempts_exist(
-        self,
-        user_question_ids: set[str],
-        user_attempts_instance: UserQuestionAttempts,
-        collection_name: str,
-    ):
-        """
-        Ensures that all questions in the provided user_question_ids have corresponding attempt data.
-        If attempt data is missing, it is created with default values.
-
-        Args:
-            user_question_ids (set[str]): Set of question IDs for the user.
-            user_attempts_instance (UserQuestionAttempts): Instance containing user question attempts.
-            collection_name (str): Name of the No SQL Database collection to fetch question data from.
-        """
-
-        existing_attempts = user_attempts_instance.get_latest_question_metadata
-
-        missing_question_ids = user_question_ids - existing_attempts.keys()
-
-        if not missing_question_ids:
-            return
-
-        question_data_list = self.no_sql_database_client.fetch_from_db(
-            collection_name,
-            NO_SQL_DATABASE_NAME,
-            {
-                "_id": {
-                    "$in": [
-                        ObjectId(question_id) for question_id in missing_question_ids
-                    ]
-                }
-            },
-        )
-
-        fetched_question_ids = {
-            str(question_data["_id"]) for question_data in question_data_list
-        }
-
-        missing_questions = missing_question_ids - fetched_question_ids
-        if missing_questions:
-            raise ValueError(
-                f"Questions with IDs {', '.join(missing_questions)} not found in the database."
-            )
-
-        for question_data in question_data_list:
-            question_id = str(question_data["_id"])
-            question_instance = Question(**{**question_data, "_id": question_id})
-
-            existing_attempts[question_id] = {
-                "is_correct": False,
-                "difficulty": question_instance.difficulty,
-                "topic": question_instance.topic,
-                "attempt_number": 0,
-                "question_id": question_id,
-            }
-
-        user_attempts_instance.save()
-
-    def post(self, request):
+    def post(self, **kwargs):
 
         serializer = self.get_serializer(**kwargs)
 
@@ -389,61 +331,32 @@ class QuizCompletionView(CustomUpdateAPIView):
             UserQuestionSet, user=resources.user, sub_topic=resources.sub_topic
         )
 
-        learning_mode = LearningModeType.from_string(
-            user_question_attempt.current_learning_mode
+        # prepare data for grading
+        AssessmentPreparationService(
+            collection_name=resources.collection_name,
+            user_question_attempts=user_question_attempt,
+            user_question_set=user_question_set,
+        ).prepare_data_for_grading()
+
+        learning_mode = LearningModeType(user_question_attempt.current_learning_mode)
+        learning_rule = LearningRuleFactory.get_rule(learning_mode)
+
+        performance_stats = PerformanceStatsEngine.create_performance_stats(
+            user_question_attempts=user_question_attempt,
+            required_correct_questions=learning_rule.required_correct_questions,
         )
 
-        # we have to create a filler for all unattempted questions that the user has been assigned in the question set
-        self._ensure_user_question_attempts_exist(
-            question_set_ids, user_question_attempt, collection_name
-        )
-
-        # perform validation before we run grading process
-
-        validator = ValidationEngine()
-
-        validation_result = validator.run_all_validators(
-            question_set=user_question_set,
-            user_question_attempt_instance=user_question_attempt,
-        )
-        if validation_result:
-            raise Exception(validation_result)
-
-        performance_engine = create_performance_engine(
-            user_id=user.id, topic_id=topic.id, learning_mode=learning_mode
-        )
-        performance_stats = performance_engine.get_topic_performance_stats()
-
-        grader = Gradebook(
-            topic=topic,
-            user=user,
+        grader = LearningProgressManager(
             user_attempt=user_question_attempt,
             user_question_set=user_question_set,
-            learning_mode_strategy=StandardLearningModeStrategy(
-                performance_stats=performance_stats,
-                current_mode=user_question_attempt.current_learning_mode,
-            ),
-            performance_stats=performance_stats,
+            sub_topic=resources.sub_topic,
+            user=resources.user,
+            performance_stats=performance_stats(),
         )
-        grade_data = grader.evaluate_performance()
-        user_question_set.grading_mode = True
-        user_question_set.save()
 
-        # will run through celery
-        # task_id = trigger_orchestration(
-        #     user_id=user.id,
-        #     question_metadata=user_question_attempt.get_latest_question_metadata,
-        #     question_list_ids=list(user_question_set.get_question_set_ids),
-        #     course_id=course.id,
-        #     learning_mode=learning_mode,
-        #     performance_stats=performance_stats,
-        #     category_id=topic.category.id,
-        #     topic_id=topic.id,
-        #     block_id=str(topic.block_id),
-        # )
-        # print(task_id)
+        grading_result = grader.evaluate_and_process()
 
         return Response(
-            grade_data.model_dump(),
+            grading_result.model_dump(),
             status=status.HTTP_201_CREATED,
         )

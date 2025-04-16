@@ -4,19 +4,15 @@ from typing import Any, Union
 
 from django.db import models
 
+from ai_core.learning_mode_rules import LearningModeType
 from exceptions import VersionParsingError
 
 log = logging.getLogger(__name__)
 
 DEFAULT_VERSION = "v1.0.0"
 VERSION_PATTERN = re.compile(r"v(\d+)\.(\d+)\.(\d+)")
-LEARNING_MODES = [
-    ("Normal", "normal"),
-    ("Reinforcement", "reinforcement"),
-    ("Recovery", "recovery"),
-    ("Reset", "reset"),
-    ("Mastered", "mastered"),
-]
+LEARNING_MODES = [(mode.name.capitalize(), mode.value) for mode in LearningModeType]
+
 CLASS_CHOICES = [
     ("Form 1", "Form 1"),
     ("Form 2", "Form 2"),
@@ -221,7 +217,6 @@ class DefaultQuestionSet(BaseQuestionSet):
         return f"Sub Topic: {self.sub_topic.name} Default Question Set"
 
 
-# TODO : store the question sets in Mongo
 class UserQuestionAttempts(models.Model):
     """
     Stores user attempts for questions within a specific sub topic.
@@ -251,6 +246,7 @@ class UserQuestionAttempts(models.Model):
         choices=LEARNING_MODES, default="normal", max_length=255
     )
 
+    # TODO : extract this to Mongo DB
     question_metadata_description = models.JSONField(
         help_text="Stores status information and guidance for questions",
         default={
@@ -346,12 +342,7 @@ class UserQuestionAttempts(models.Model):
                 major = int(match.group(1))
                 return f"v{major + 1}.0.0"
 
-            log.error("Unable to parse version string %s", latest_version)
-            raise VersionParsingError(
-                "Unable to parse version string %s", latest_version
-            )
-
-        except Exception as e:
+        except KeyError as e:
             log.error(f"Version parsing error: {str(e)}")
             raise VersionParsingError(f"Version parsing error: {str(e)}")
 
