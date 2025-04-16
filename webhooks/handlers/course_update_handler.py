@@ -2,6 +2,7 @@ import logging
 from typing import Any, Dict, Tuple
 
 from course_sync.course_sync import ChangeResult, CourseSyncService
+from course_sync.data_transformer import EdxDataTransformer
 from course_sync.data_types import EdxCourseOutline
 from course_ware.models import AcademicClass, Course, ExaminationLevel
 from course_ware.utils import (
@@ -19,9 +20,9 @@ class CourseUpdatedHandler(WebhookHandler):
     Handles OpenEdx Course Update events with improved error handling and response tracking.
     """
 
-    def __init__(self, client, sync_service: CourseSyncService):
-        self._client = client
+    def __init__(self, sync_service: CourseSyncService, new_course_outline_dict: Dict):
         self._sync_service = sync_service
+        self._new_course_outline_dict = new_course_outline_dict
 
     def handle(self, payload: Dict[str, Any]) -> CourseSyncResponse:
         """
@@ -36,15 +37,20 @@ class CourseUpdatedHandler(WebhookHandler):
 
         course_id = payload["course"]["course_key"]
 
-        course_outline = self._client.get_course_outline(course_id)
-
-        course, created = self._get_or_create_course(course_id, course_outline)
+        course, created = self._get_or_create_course(
+            course_id, self._new_course_outline_dict
+        )
 
         academic_class = self._process_academic_class(course_id)
+        transformed_course_outline = EdxDataTransformer.transform_to_course_outline(
+            course_id=course_id,
+            structure=self._new_course_outline_dict,
+            title=course.name,
+        )
         sync_result = self._sync_course_structure(
             course=course,
             academic_class=academic_class,
-            new_course_outline=course_outline,
+            new_course_outline=transformed_course_outline,
             examination_level=get_examination_level_from_course_id(course_id),
         )
 
