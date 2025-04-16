@@ -49,5 +49,3 @@ class QuestionMetadataValidator(BaseValidator):
 
         except ValidationError as e:
             return f"Schema validation error: {str(e)}"
-        except Exception as e:
-            return f"Validation error: {str(e)}"

@@ -35,17 +35,10 @@ class PrerequisiteQuestionCountValidator(BaseValidator):
             Union[bool, str]: True if validation passes, error message string if fails
         """
         try:
-            rule_mapping = {
-                "normal": LearningModeType.NORMAL,
-                "reinforcement": LearningModeType.REINFORCEMENT,
-                "recovery": LearningModeType.RECOVERY,
-                "reset": LearningModeType.RESET,
-                "mastered": LearningModeType.MASTERED,
-            }
 
             current_learning_mode = self.attempt_instance.current_learning_mode
-            rule = LearningRuleFactory.create_rule(
-                rule_mapping.get(current_learning_mode)
+            rule = LearningRuleFactory.get_rule(
+                LearningModeType(current_learning_mode),
             )
             version_content = self.attempt_instance.get_latest_question_metadata
             required_questions = rule.questions_per_difficulty
@@ -72,5 +65,3 @@ class PrerequisiteQuestionCountValidator(BaseValidator):
 
         except ValidationError as e:
             return f"Schema validation error: {str(e)}"
-        except Exception as e:
-            return f"Validation error: {str(e)}"

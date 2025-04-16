@@ -12,7 +12,12 @@ from typing import Dict, List, TypeAlias
 import pandas as pd
 
 from ai_core.performance.data_types import DifficultyEnum, PerformanceStatsData
-from ai_core.performance.metrics.metric_types import BaseMetric
+from ai_core.performance.metrics.metric_types import (
+    BaseMetric,
+    DifficultyCompletionMetric,
+    DifficultyRankingMetric,
+    DifficultyScoreMetric,
+)
 from course_ware.data_types import QuestionMetadata
 
 log = logging.getLogger(__name__)
@@ -20,12 +25,12 @@ log = logging.getLogger(__name__)
 SubTopicQuestionData: TypeAlias = Dict[str, QuestionMetadata]
 
 
-class MetricsCalculator:
+class MetricsAggregator:
     """Base implementation of the metrics aggregator."""
 
     def __init__(self, *args, **kwargs) -> None:
         """
-        Initialize the calculator.
+        Initialize the metrics aggregator.
 
         Args:
             required_correct_questions: Number of correct questions required
@@ -33,7 +38,7 @@ class MetricsCalculator:
         """
         self._args = args
         self._kwargs = kwargs
-        self._metrics = []
+        self._metrics: List[BaseMetric] = []
 
     def register_metrics(self, metrics: List[BaseMetric]) -> None:
         """
@@ -85,53 +90,49 @@ class MetricsCalculator:
         Returns:
             PerformanceStats object containing the calculated statistics.
         """
+
         if not question_data:
             log.error("No questions data to calculate metrics for.")
             raise ValueError("No questions data to calculate metrics for")
 
-        try:
-            # Convert question data to DataFrame for analysis
-            df = pd.DataFrame([data.model_dump() for data in question_data.values()])
+        # Convert question data to DataFrame for analysis
+        df = pd.DataFrame([data.model_dump() for data in question_data.values()])
 
-            for difficulty in df["difficulty"].unique():
-                try:
-                    DifficultyEnum(difficulty)
-                except ValueError:
-                    valid_options = [e.value for e in DifficultyEnum]
-                    raise ValueError(
-                        "Invalid difficulty: %s. Must be one of %s",
-                        difficulty,
-                        valid_options,
-                    )
+        for difficulty in df["difficulty"].unique():
+            try:
+                DifficultyEnum(difficulty)
+            except ValueError as e:
+                valid_options = [e.value for e in DifficultyEnum]
+                raise ValueError(
+                    "Invalid difficulty: %s. Must be one of %s",
+                    difficulty,
+                    valid_options,
+                ) from e
 
-            # Group the dataframe by difficulty level
-            difficulty_groups = df.groupby("difficulty")
+        # Group the dataframe by difficulty level
+        difficulty_groups = df.groupby("difficulty")
 
-            # The difficulty_groups object contains:
-            #
-            # 1. Keys: difficulty levels as strings ("easy", "medium", "hard")
-            #
-            # 2. Values: DataFrames for each difficulty group with structure:
-            #    question_id | attempt_number | is_correct | sub_topic       | difficulty
-            #    -----------|----------------|------------|-------------|------------
-            #    q123abc    | 1              | True       | addition | easy
-            #    q456def    | 2              | True       | division | easy
-            #    q789ghi    | 1              | False      | multiplication    | easy
-            #
-            # When iterating with "for difficulty, group in difficulty_groups:",
-            # 'difficulty' will be the string key and 'group' will be the DataFrame
+        # The difficulty_groups object contains:
+        #
+        # 1. Keys: difficulty levels as strings ("easy", "medium", "hard")
+        #
+        # 2. Values: DataFrames for each difficulty group with structure:
+        #    question_id | attempt_number | is_correct | sub_topic       | difficulty
+        #    -----------|----------------|------------|-------------|------------
+        #    q123abc    | 1              | True       | addition | easy
+        #    q456def    | 2              | True       | division | easy
+        #    q789ghi    | 1              | False      | multiplication    | easy
+        #
+        # When iterating with "for difficulty, group in difficulty_groups:",
+        # 'difficulty' will be the string key and 'group' will be the DataFrame
 
-            metric_dict = dict()
+        metric_dict = dict()
 
-            for metric in self._metrics:
-                data = metric(difficulty_groups, self._args, self._kwargs)
-                metric_dict[metric.name] = data
+        for metric in self._metrics:
+            data = metric(difficulty_groups, self._args, self._kwargs)
+            metric_dict[metric.name] = data
 
-            return PerformanceStatsData(**metric_dict)
-
-        except Exception as e:
-            log.error("Error calculating performance stats: %s", str(e))
-            raise e
+        return PerformanceStatsData(**metric_dict)
 
     def __repr__(self) -> str:
         """Return a dev-friendly string representation."""
@@ -140,3 +141,17 @@ class MetricsCalculator:
     def __str__(self) -> str:
         """Return a user-friendly string representation."""
         return f"Metrics Calculator ( {self._args} {self._kwargs})"
+
+    @classmethod
+    def create_aggregator_with_defaults(
+        cls, required_correct_questions
+    ) -> "MetricsAggregator":
+        instance = cls(required_correct_questions=required_correct_questions)
+        instance.register_metrics(
+            [
+                DifficultyRankingMetric(),
+                DifficultyCompletionMetric(),
+                DifficultyScoreMetric(),
+            ]
+        )
+        return instance

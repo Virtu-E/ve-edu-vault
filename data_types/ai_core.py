@@ -1,73 +1,11 @@
 from typing import Dict, List
 
-from pydantic import BaseModel, Field, constr
+from pydantic import BaseModel, Field
 from pydantic.v1 import validator
 from typing_extensions import Literal
 
 DifficultyLiteral = Literal["easy", "medium", "hard"]
 LearningMode = Literal["normal", "reinforcement", "recovery", "reset", "mastered"]
-
-
-class PerformanceStats(BaseModel):
-    """
-    Stores comprehensive performance statistics.
-
-    Attributes:
-        ranked_difficulties: A list of difficulty rankings ordered by the average number of attempts per difficulty level.
-        difficulty_status: A dictionary mapping each difficulty level to its completion status.
-        difficulty_scores: A dictionary containing the number of correct answers for each difficulty level.
-    """
-
-    ranked_difficulties: List[tuple[Literal["easy", "medium", "hard"], float]] = Field(
-        ...,
-        description=(
-            "A list of tuples where each tuple contains a difficulty level (easy, medium, hard) and the corresponding average number of attempts for that difficulty, ordered by the average attempts in ascending order."
-        ),
-    )
-
-    difficulty_status: Dict[
-        Literal["easy", "medium", "hard"], Literal["incomplete", "completed"]
-    ] = Field(
-        ...,
-        description=(
-            "A dictionary mapping each difficulty level to its completion status. 'incomplete' means the user has not yet completed questions for that difficulty, while 'completed' means they have completed all required questions for that difficulty."
-        ),
-    )
-
-    difficulty_scores: Dict[DifficultyLiteral, int] = Field(
-        ...,
-        description=(
-            "A dictionary mapping each difficulty level (easy, medium, hard) to the number of correctly answered questions for that difficulty. For example, {'easy': 2, 'medium': 0, 'hard': 1} indicates 2 correct easy questions, 0 correct medium questions, and 1 correct hard question."
-        ),
-    )
-
-    @property
-    def failed_difficulties(self) -> List[Literal["easy", "medium", "hard"]]:
-        """
-        Returns a list of difficulty levels that are marked as incomplete.
-
-        Returns:
-            List[str]: A list of difficulty levels (easy, medium, hard) that are incomplete.
-        """
-        return [
-            difficulty
-            for difficulty, status in self.difficulty_status.items()
-            if status == "incomplete"
-        ]
-
-    @property
-    def passed_difficulties(self) -> List[Literal["easy", "medium", "hard"]]:
-        """
-        Returns a list of difficulty levels that are marked as incomplete.
-
-        Returns:
-            List[str]: A list of difficulty levels (easy, medium, hard) that are incomplete.
-        """
-        return [
-            difficulty
-            for difficulty, status in self.difficulty_status.items()
-            if status == "completed"
-        ]
 
 
 class RecommendationEngineConfig(BaseModel):
