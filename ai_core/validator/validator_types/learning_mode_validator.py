@@ -81,5 +81,3 @@ class LearningModeValidator(BaseValidator):
             return f"Invalid attempt instance structure: {str(e)}"
         except KeyError as e:
             return f"Missing required metadata key: {str(e)}"
-        except Exception as e:
-            return f"Validation error: {str(e)}"
