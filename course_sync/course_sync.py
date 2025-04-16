@@ -24,7 +24,7 @@ class CourseSyncService:
     """
     Service that orchestrates the course synchronization process.
     Coordinates the detection of changes using DiffEngine and
-    the app of those changes using ChangeProcessor.
+    the application of those changes using ChangeProcessor.
     """
 
     def __init__(self, diff_engine: DiffEngine):

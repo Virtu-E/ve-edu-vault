@@ -2,7 +2,7 @@
 lti_provider.views
 ~~~~~~~~~~~
 
-Main view for lti functionality
+Main view for lti feature
 """
 
 import base64
@@ -13,8 +13,11 @@ from decouple import config
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
-from pylti1p3.contrib.django import (DjangoDbToolConf, DjangoMessageLaunch,
-                                     DjangoOIDCLogin)
+from pylti1p3.contrib.django import (
+    DjangoDbToolConf,
+    DjangoMessageLaunch,
+    DjangoOIDCLogin,
+)
 
 from course_ware.models import SubTopicIframeID
 from edu_vault.settings import common
