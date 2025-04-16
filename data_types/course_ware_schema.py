@@ -55,3 +55,5 @@ class CourseSyncResponse(BaseModel):
     message: str
     course_id: str
     changes_made: bool
+    num_success: int = 0
+    num_failed: int = 0

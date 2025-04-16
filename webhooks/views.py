@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Optional, Tuple
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -10,7 +11,7 @@ from webhooks.registry import webhook_registry
 log = logging.getLogger(__name__)
 
 
-def _validate_payload(data):
+def _validate_payload(data) -> Tuple[bool, Optional[str]]:
     """
     Validate the webhook payload structure
 
@@ -75,6 +76,6 @@ def webhook_view(request, *args, **kwargs):
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON payload"}, status=400)
-    except Exception as e:
+    except KeyError as e:
         log.error(f"Error processing webhook: {str(e)}", exc_info=True)
-        return JsonResponse({"error": "Internal server error"}, status=500)
+        return JsonResponse({"error": "Invalid JSON payload"}, status=400)

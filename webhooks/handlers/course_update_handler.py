@@ -1,9 +1,13 @@
 import logging
 from typing import Any, Dict, Tuple
 
+from course_sync.course_sync import ChangeResult, CourseSyncService
+from course_sync.data_types import EdxCourseOutline
 from course_ware.models import AcademicClass, Course, ExaminationLevel
-from course_ware.utils import (academic_class_from_course_id,
-                               get_examination_level_from_course_id)
+from course_ware.utils import (
+    academic_class_from_course_id,
+    get_examination_level_from_course_id,
+)
 from data_types.course_ware_schema import CourseSyncResponse
 from webhooks.handlers.abstract_type import WebhookHandler
 
@@ -15,8 +19,9 @@ class CourseUpdatedHandler(WebhookHandler):
     Handles OpenEdx Course Update events with improved error handling and response tracking.
     """
 
-    def __init__(self, client):
+    def __init__(self, client, sync_service: CourseSyncService):
         self._client = client
+        self._sync_service = sync_service
 
     def handle(self, payload: Dict[str, Any]) -> CourseSyncResponse:
         """
@@ -33,22 +38,27 @@ class CourseUpdatedHandler(WebhookHandler):
 
         course_outline = self._client.get_course_outline(course_id)
 
-        course_instance, created = self._get_or_create_course(course_id, course_outline)
+        course, created = self._get_or_create_course(course_id, course_outline)
 
-        academic_class_instance = self._process_academic_class(course_id)
+        academic_class = self._process_academic_class(course_id)
         sync_result = self._sync_course_structure(
-            course_instance,
-            academic_class_instance,
-            course_outline,
-            get_examination_level_from_course_id(course_id),
+            course=course,
+            academic_class=academic_class,
+            new_course_outline=course_outline,
+            examination_level=get_examination_level_from_course_id(course_id),
         )
 
+        changes_made = sync_result.num_success > 0
+
         status_message = "course created" if created else "course updated"
+
         return CourseSyncResponse(
             status="success",
             message=f"Course successfully {status_message}",
             course_id=course_id,
-            changes_made=sync_result.get("changes_made"),
+            changes_made=changes_made,
+            num_success=sync_result.num_success,
+            num_failed=sync_result.num_failed,
         )
 
     @staticmethod
@@ -65,14 +75,16 @@ class CourseUpdatedHandler(WebhookHandler):
             course_name = course_outline["course_structure"]["display_name"]
             course_instance, created = Course.objects.get_or_create(
                 course_key=course_id,
-                defaults={"name": course_name, "course_outline": dict()},
+                defaults={"name": course_name, "course_outline": dict},
             )
 
             return course_instance, created
 
-        except Exception as e:
-            log.error(f"Error creating/updating course {course_id}: {str(e)}")
-            raise ValueError(f"Failed to create/update course: {str(e)}")
+        except KeyError as e:
+            log.error(
+                f"Error creating/updating course {course_id}: {str(e)}", exc_info=True
+            )
+            raise KeyError(f"Failed to create/update course: {str(e)}") from e
 
     @staticmethod
     def _process_academic_class(course_id: str) -> AcademicClass:
@@ -86,52 +98,36 @@ class CourseUpdatedHandler(WebhookHandler):
         if not academic_class:
             raise ValueError(f"No academic class detected for course ID: {course_id}")
 
-        try:
-            academic_class_instance, created = AcademicClass.objects.get_or_create(
-                name=academic_class
-            )
-            if created:
-                log.info(f"Created new academic class: {academic_class}")
-            return academic_class_instance
+        academic_class_instance, created = AcademicClass.objects.get_or_create(
+            name=academic_class
+        )
+        if created:
+            log.info(f"Created new academic class: {academic_class}")
+        return academic_class_instance
 
-        except Exception as e:
-            log.error(f"Error processing academic class {academic_class}: {str(e)}")
-            raise ValueError(f"Failed to process academic class: {str(e)}")
-
-    @staticmethod
     def _sync_course_structure(
-        course_instance: Course,
-        academic_class_instance: AcademicClass,
-        course_outline: Dict[str, Any],
+        self,
+        course: Course,
+        academic_class: AcademicClass,
+        new_course_outline: EdxCourseOutline,
         examination_level: ExaminationLevel,
-    ) -> Dict[str, bool]:
+    ) -> ChangeResult:
         """
-        Synchronizes course structure with proper error handling.
+        Synchronizes course structure between the provided course and new course outline.
+
+        Args:
+            course: The course object to be synchronized
+            academic_class: The academic class associated with the course
+            new_course_outline: The new course outline to sync with
+            examination_level: The examination level for the course
 
         Returns:
-            Dict[str, bool]: Dictionary containing:
-                - 'success': Whether sync completed without errors
-                - 'changes_made': Whether changes were detected and applied
+            ChangeResult: Object containing the results of the synchronization operation
         """
-        try:
-            pass
-            # sync_result = CourseSyncFactory.create(
-            #     course=course_instance,
-            #     academic_class=academic_class_instance,
-            #     examination_level=examination_level,
-            #     extractor=StructureExtractor,
-            #     new_structure=course_outline,
-            # ).sync()
 
-            # if sync_result:
-            #     log.info(
-            #         f"Successfully synced course structure for {course_instance.course_key}"
-            #     )
-            # else:
-            #     log.info(f"No changes detected for course {course_instance.course_key}")
-            #
-            # return {"success": True, "changes_made": sync_result}
-
-        except Exception as e:
-            log.error(f"Failed to sync course structure: {str(e)}")
-            return {"success": False, "changes_made": False}
+        return self._sync_service.sync_course(
+            new_course_outline=new_course_outline,
+            course=course,
+            examination_level=examination_level,
+            academic_class=academic_class,
+        )

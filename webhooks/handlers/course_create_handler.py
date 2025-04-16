@@ -17,7 +17,7 @@ class CourseCreatedHandler(WebhookHandler):
         display_name = payload["course"]["display_name"]
 
         Course.objects.get_or_create(
-            course_id=course_id, display_name=display_name, course_outline=dict()
+            course_id=course_id, display_name=display_name, course_outline=dict
         )
         academic_class = academic_class_from_course_id(course_id)
         if academic_class:

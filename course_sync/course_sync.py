@@ -130,3 +130,7 @@ class CourseSyncService:
         )
 
         return change_processor.process_changes(changes)
+
+    @classmethod
+    def create_service(cls):
+        return CourseSyncService(diff_engine=DiffEngine())
