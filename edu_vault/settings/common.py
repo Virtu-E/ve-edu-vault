@@ -50,7 +50,9 @@ INSTALLED_APPS = [
     "oauth_clients",
     "django_elasticsearch_dsl",
     "course_sync",
+    # "silk",
 ]
+
 
 # TODO : csrf protection vs authentication
 REST_FRAMEWORK = {
@@ -70,6 +72,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
 ]
+
 
 ROOT_URLCONF = "edu_vault.urls"
 
@@ -186,7 +189,7 @@ LEARNING_HISTORY_COLLECTION_NAME = "learning_history"
 
 
 # CELERY SETTINGS
-CELERY_BROKER_URL = "redis://default:1oynQcxAlVNul3J3RCND3w53y4AGNHPj@redis-19292.c36439.af-south-1-mz.ec2.cloud.rlrcp.com:19292"
+CELERY_BROKER_URL = "rediss://default:AVNS_yIn8MR4Pkm7b5groMJN@virtu-educate-18cd5531-virtu-educate-1.j.aivencloud.com:14435?ssl_cert_reqs=CERT_NONE"
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 
 CELERY_ACCEPT_CONTENT = ["json"]
@@ -200,17 +203,20 @@ CELERY_TASK_TRACK_STARTED = True
 # Store task results for 7 days
 CELERY_RESULT_EXPIRES = 60 * 60 * 24 * 7
 
+CELERY_BROKER_POOL_LIMIT = 10  # Or more if needed
+CELERY_BROKER_CONNECTION_TIMEOUT = 5
+
+
 # 'use_ssl': True,
 # 'verify_certs': True,
 
 ELASTICSEARCH_DSL = {
     "default": {
-        "hosts": [
-            "https://d81dc60cb8b440b689c376163dfb471a.us-central1.gcp.cloud.es.io:443"
-        ],
-        "api_key": "YXZmaTVwUUJJTnJBNWlRcEY3bHA6dmozMFlXV3RTMzY3WjdaaGdqa0xpUQ==",
+        "hosts": ["https://164.92.156.155:9200"],
+        "http_auth": ("elastic", "it4JT8-GUXHLo2gC8AFe"),
         "timeout": 30,
         "retry_on_timeout": True,
+        "verify_certs": False,  # In production, you should use proper certificates
     },
 }
 # ELASTICSEARCH_DSL_AUTOSYNC = False

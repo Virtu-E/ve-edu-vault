@@ -2,6 +2,7 @@ import asyncio
 import logging
 from typing import Dict, List
 
+from asgiref.sync import sync_to_async
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 
@@ -56,7 +57,7 @@ class SubTopicCreationSideEffect(
                 "Starting creation side effects for subtopic: %s", self._subtopic.name
             )
 
-            with transaction.atomic():
+            async with transaction.atomic():
                 collection_name = self._subtopic.topic.course.course_key
 
                 # Execute both network calls concurrently
@@ -73,11 +74,15 @@ class SubTopicCreationSideEffect(
 
                 # Process the results
                 logger.debug("Creating default question set")
-                self.sync_question_set(question_list_ids, self._subtopic)
+                await sync_to_async(self.sync_question_set)(
+                    question_list_ids, self._subtopic
+                )
 
                 if course_blocks:
                     logger.debug("Associating iframe with subtopic")
-                    self.associate_iframe_with_subtopic(course_blocks, self._subtopic)
+                    await sync_to_async(self.associate_iframe_with_subtopic)(
+                        course_blocks, self._subtopic
+                    )
                 else:
                     logger.warning(
                         "No course blocks found for block ID: %s",

@@ -11,6 +11,7 @@ from collections import namedtuple
 from typing import List, Optional
 
 from course_sync.change_processor import ChangeProcessor
+from course_sync.data_transformer import EdxDataTransformer
 from course_sync.data_types import ChangeOperation, EdxCourseOutline
 from course_sync.diff_engine import DiffEngine
 from course_ware.models import AcademicClass, Course, ExaminationLevel
@@ -57,7 +58,11 @@ class CourseSyncService:
             academic_class.name,
         )
 
-        old_course_outline = course.course_outline
+        old_course_outline = EdxDataTransformer.transform_to_course_outline(
+            structure=course.course_outline,
+            course_id=course.course_key,
+            title=course.name,
+        )
 
         changes = self._detect_changes(old_course_outline, new_course_outline)
 

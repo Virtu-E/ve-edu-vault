@@ -103,7 +103,7 @@ class DefaultChangeData:
 class SubTopicChangeData(DefaultChangeData):
     """Subtopic data that is expected in a change operation"""
 
-    topic_id: int
+    topic_id: str
 
 
 @dataclass
@@ -120,4 +120,4 @@ class ChangeOperation:
     operation: OperationType
     entity_type: EntityType
     entity_id: str
-    data: Union[CourseChangeData, SubTopicChangeData | None]
+    data: Union[CourseChangeData, SubTopicChangeData | Topic | None]

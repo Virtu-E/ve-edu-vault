@@ -1,5 +1,6 @@
 import logging
 import re
+from enum import Enum
 from typing import Any, Union
 
 from django.db import models
@@ -13,16 +14,22 @@ DEFAULT_VERSION = "v1.0.0"
 VERSION_PATTERN = re.compile(r"v(\d+)\.(\d+)\.(\d+)")
 LEARNING_MODES = [(mode.name.capitalize(), mode.value) for mode in LearningModeType]
 
+
+class ExaminationLevelChoices(Enum):
+    """Examination levels supported by VirtuEducate"""
+
+    MSCE = "MSCE"
+    JCE = "JCE"
+    IGSCE = "IGSCE"
+
+
+LEVEL_CHOICES = [(mode.name, mode.value) for mode in ExaminationLevelChoices]
+
 CLASS_CHOICES = [
     ("Form 1", "Form 1"),
     ("Form 2", "Form 2"),
     ("Form 3", "Form 3"),
     ("Form 4", "Form 4"),
-]
-LEVEL_CHOICES = [
-    ("MSCE", "MSCE"),
-    ("JCE", "JCE"),
-    ("IGSCE", "IGSCE"),
 ]
 
 

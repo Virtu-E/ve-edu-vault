@@ -5,7 +5,10 @@ oauth_clients.services
 Includes OauthClient Service
 """
 
+import ssl
+
 import aiohttp
+from asgiref.sync import sync_to_async
 from django.core.cache import cache
 
 from .models import OAuthClientConfig
@@ -13,27 +16,49 @@ from .models import OAuthClientConfig
 
 class OAuthClient:
     def __init__(self, service_type=None, config_name=None):
-        self._config = self.get_config(config_name, service_type)
-        self._base_url = self._config.base_url
-        self._client_id = self._config.client_id
-        self._client_secret = self._config.client_secret
-        self._service_type = self._config.service_type
+        self.service_type = service_type
+        self.config_name = config_name
+        self._config = None
+        self._base_url = None
+        self._client_id = None
+        self._client_secret = None
+        self._service_type = None
         self._session = None
 
     async def __aenter__(self):
-        self._session = aiohttp.ClientSession()
+        await self._setup_data()
+
+        # TODO : SSL -> enable for production
+        # Create an SSL context that does not verify certificates
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+
+        # Create a ClientSession with the custom SSL context
+        self._session = aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(ssl_context=ssl_context)
+        )
+
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
         if self._session:
             await self._session.close()
 
+    async def _setup_data(self):
+        config = await self.get_config(self.config_name, self.service_type)
+        self._base_url = config.base_url
+        self._client_id = config.client_id
+        self._client_secret = config.client_secret
+        self._service_type = config.service_type
+        self._config = config
+
     @staticmethod
-    def get_config(config_name=None, service_type=None):
+    async def get_config(config_name=None, service_type=None):
         if config_name:
-            return OAuthClientConfig.objects.get(name=config_name)
+            return await sync_to_async(OAuthClientConfig.objects.get)(name=config_name)
         elif service_type:
-            return OAuthClientConfig.objects.get(
+            return await sync_to_async(OAuthClientConfig.objects.get)(
                 service_type=service_type, is_active=True
             )
         else:
@@ -92,5 +117,8 @@ class OAuthClient:
         async with self._session.request(
             method, endpoint, headers=headers, **kwargs
         ) as response:
-            # Not raising error immediately to allow caller to handle specific status codes
-            return response
+
+            if response.status == 200:
+                return await response.json()
+            else:
+                response.raise_for_status()  # Raise an error for non-200 status codes

@@ -55,8 +55,13 @@ class CourseUpdatedHandler(WebhookHandler):
         )
 
         changes_made = sync_result.num_success > 0
+        failed_results = sync_result.num_failed > 0
 
         status_message = "course created" if created else "course updated"
+
+        if not failed_results:
+            course.course_outline = self._new_course_outline_dict
+            course.save()
 
         return CourseSyncResponse(
             status="success",

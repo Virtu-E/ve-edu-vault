@@ -99,13 +99,13 @@ class TestUpdateStrategy:
         change = ChangeOperation(
             operation=OperationType.UPDATE,
             entity_type=EntityType.TOPIC,
-            entity_id=topic.id,
+            entity_id=topic.block_id,
             data=topic_data,
         )
 
         result = update_strategy.process(change)
 
-        updated_topic = Topic.objects.get(id=topic.id)
+        updated_topic = Topic.objects.get(block_id=topic.block_id)
 
         assert result is True
         assert updated_topic.name == "Updated Topic"
@@ -116,13 +116,13 @@ class TestUpdateStrategy:
         change = ChangeOperation(
             operation=OperationType.UPDATE,
             entity_type=EntityType.SUBTOPIC,
-            entity_id=subtopic.id,
+            entity_id=subtopic.block_id,
             data=subtopic_data,
         )
 
         result = update_strategy.process(change)
 
-        updated_subtopic = SubTopic.objects.get(id=subtopic.id)
+        updated_subtopic = SubTopic.objects.get(block_id=subtopic.block_id)
 
         assert result is True
         assert updated_subtopic.name == "Updated Subtopic"

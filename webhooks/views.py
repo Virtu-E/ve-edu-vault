@@ -39,6 +39,8 @@ def webhook_view(request, *args, **kwargs):
     try:
         # Parse JSON data from request body
         data = json.loads(request.body)
+        print("webhook has been fired ... yoo")
+        print(data, "event_data")
 
         # Validate payload structure
         is_valid, error_message = _validate_payload(data)

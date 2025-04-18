@@ -10,7 +10,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Dict, List, Union
 
-from django.db import transaction
+from django.db import OperationalError, transaction
 
 from course_sync.data_types import (
     ChangeOperation,
@@ -76,12 +76,14 @@ class CreateStrategy(ChangeStrategy):
     ) -> bool:
         """Implement topic creation logic"""
         log.info("Creating topic: %s", block_id)
-        Topic.objects.create(
+        Topic.objects.get_or_create(
             block_id=block_id,
-            name=topic_data.name,
-            examination_level=self._examination_level,
-            academic_class=self._academic_class,
-            course=self._course,
+            defaults={
+                "name": topic_data.name,
+                "examination_level": self._examination_level,
+                "academic_class": self._academic_class,
+                "course": self._course,
+            },
         )
         return True
 
@@ -98,10 +100,14 @@ class CreateStrategy(ChangeStrategy):
                 operation="creating a subtopic",
             )
 
-        SubTopic.objects.create(
+        topic = Topic.objects.get(block_id=subtopic_data.topic_id)
+
+        SubTopic.objects.get_or_create(
             block_id=block_id,
-            name=subtopic_data.name,
-            topic_id=subtopic_data.topic_id,
+            defaults={
+                "name": subtopic_data.name,
+                "topic": topic,
+            },
         )
         return True
 
@@ -152,7 +158,7 @@ class UpdateStrategy(ChangeStrategy):
         """Updates topic data"""
         log.info(f"Updating topic: {block_id}")
 
-        topic = Topic.objects.get(id=block_id)
+        topic = Topic.objects.get(block_id=block_id)
         topic.name = topic_data.name
         topic.save()
         return True
@@ -163,7 +169,7 @@ class UpdateStrategy(ChangeStrategy):
         """Updates subtopic data"""
         log.info(f"Updating subtopic: {block_id}")
 
-        subtopic = SubTopic.objects.get(id=block_id)
+        subtopic = SubTopic.objects.get(block_id=block_id)
         subtopic.name = subtopic_data.name
         subtopic.save()
 
@@ -277,5 +283,10 @@ class ChangeProcessor:
                     exc_info=True,
                 )
                 failed_changes.append(change)
+
+            except OperationalError:
+                log.warning(
+                    "Database is probably locked. Need to fix this by hashing event types from webhooks"
+                )
 
         return failed_changes

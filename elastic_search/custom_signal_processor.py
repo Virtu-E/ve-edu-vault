@@ -8,6 +8,8 @@ from django.db import models
 from django_elasticsearch_dsl.registries import registry
 from django_elasticsearch_dsl.signals import CelerySignalProcessor
 
+from course_ware.models import SubTopic, Topic
+
 log = logging.getLogger(__name__)
 
 
@@ -16,6 +18,10 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
 
     def handle_save(self, sender, instance, **kwargs):
         """Handle save with a Celery task and error handling."""
+
+        if not isinstance(instance, (SubTopic, Topic)):
+            return  # Skip if not one of our target models
+
         try:
             pk = instance.pk
             app_label = instance._meta.app_label
@@ -36,6 +42,9 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
 
     def handle_pre_delete(self, sender, instance, **kwargs):
         """Handle pre-delete with error handling."""
+        if not isinstance(instance, (SubTopic, Topic)):
+            return  # Skip if not one of our target models
+
         try:
             self.prepare_registry_delete_related_task(instance)
         except Exception as e:
@@ -51,6 +60,8 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
 
     def handle_delete(self, sender, instance, **kwargs):
         """Handle delete with error handling."""
+        if not isinstance(instance, (SubTopic, Topic)):
+            return  # Skip if not one of our target models
         try:
             self.prepare_registry_delete_task(instance)
         except Exception as e:
@@ -66,6 +77,7 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
 
     def prepare_registry_delete_related_task(self, instance):
         """Prepare registry delete related task with error handling."""
+
         action = "index"
         for doc in registry._get_related_doc(instance):
             try:

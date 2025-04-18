@@ -65,7 +65,9 @@ class CourseTaskManager(WebhookHandler):
 
         try:
             log.info(f"Dispatching course update task for course_id: {course_id}")
+
             task = process_course_update.delay(task_payload)
+
             log.debug(
                 f"Task dispatched successfully with task_id: {task.id} for course_id: {course_id}"
             )
