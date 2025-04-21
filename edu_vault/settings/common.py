@@ -190,6 +190,7 @@ LEARNING_HISTORY_COLLECTION_NAME = "learning_history"
 
 # CELERY SETTINGS
 CELERY_BROKER_URL = "rediss://default:AVNS_yIn8MR4Pkm7b5groMJN@virtu-educate-18cd5531-virtu-educate-1.j.aivencloud.com:14435?ssl_cert_reqs=CERT_NONE"
+REDIS_URL = "rediss://default:AVNS_yIn8MR4Pkm7b5groMJN@virtu-educate-18cd5531-virtu-educate-1.j.aivencloud.com:14435"
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 
 CELERY_ACCEPT_CONTENT = ["json"]

@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Optional, Tuple
 
+from django.core.cache import cache
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -35,23 +36,38 @@ def _validate_payload(data) -> Tuple[bool, Optional[str]]:
 @csrf_exempt
 @require_http_methods(["POST"])
 def webhook_view(request, *args, **kwargs):
-
     try:
-        # Parse JSON data from request body
         data = json.loads(request.body)
-        print("webhook has been fired ... yoo")
-        print(data, "event_data")
 
-        # Validate payload structure
         is_valid, error_message = _validate_payload(data)
         if not is_valid:
             return JsonResponse({"error": error_message}, status=400)
 
-        # Extract event metadata and type
         metadata = data["event_metadata"]
         event_type = metadata["event_type"]
+        event_id = metadata.get("event_id")
 
-        # Get the appropriate handler
+        course_key = data.get("data", {}).get("course_key", "")
+
+        cache_key = f"webhook:{event_type}:{event_id}:{course_key}"
+
+        print(metadata["timestamp"])
+
+        if cache.get(cache_key):
+            log.info(
+                f"Duplicate event detected: {event_type} - {event_id} - {course_key}"
+            )
+            return JsonResponse(
+                {
+                    "status": "already_processed",
+                    "event_type": event_type,
+                    "event_id": event_id,
+                },
+                status=200,
+            )
+
+        cache.set(cache_key, True, timeout=3600)
+
         handler = webhook_registry.get_handler(event_type)
 
         if handler:
@@ -60,7 +76,7 @@ def webhook_view(request, *args, **kwargs):
             response_data = {
                 "status": "success",
                 "event_type": event_type,
-                "event_id": metadata.get("id"),
+                "event_id": event_id,
             }
 
             return JsonResponse(response_data, status=200)
@@ -71,7 +87,7 @@ def webhook_view(request, *args, **kwargs):
                 {
                     "status": "received",
                     "event_type": event_type,
-                    "event_id": metadata.get("id"),
+                    "event_id": event_id,
                 },
                 status=200,
             )

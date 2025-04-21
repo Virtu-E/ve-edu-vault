@@ -22,23 +22,12 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
         if not isinstance(instance, (SubTopic, Topic)):
             return  # Skip if not one of our target models
 
-        try:
-            pk = instance.pk
-            app_label = instance._meta.app_label
-            model_name = instance.__class__.__name__
+        pk = instance.pk
+        app_label = instance._meta.app_label
+        model_name = instance.__class__.__name__
 
-            self.registry_update_task.delay(pk, app_label, model_name)
-            self.registry_update_related_task.delay(pk, app_label, model_name)
-        except Exception as e:
-            log.error(
-                "Error queuing save task for Elasticsearch",
-                extra={
-                    "model": sender.__name__,
-                    "instance_id": instance.id,
-                    "error": str(e),
-                },
-                exc_info=True,
-            )
+        self.registry_update_task.delay(pk, app_label, model_name)
+        self.registry_update_related_task.delay(pk, app_label, model_name)
 
     def handle_pre_delete(self, sender, instance, **kwargs):
         """Handle pre-delete with error handling."""
@@ -118,7 +107,7 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
         try:
             doc_instance = import_module(doc_label)
             parallel = True
-            doc_instance._bulk(bulk_data, parallel=parallel)
+            doc_instance._bulk(bulk_data, parallel=parallel)  # noqa
         except Exception as e:
             log.error(
                 "Error in registry delete task",
@@ -176,21 +165,9 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
                 exc_info=True,
             )
         except ObjectDoesNotExist:
-            log.error(
+            log.info(
                 f"{model_name} matching query does not exist",
                 extra={"pk": pk, "app_label": app_label, "model_name": model_name},
-                exc_info=True,
-            )
-        except Exception as e:
-            log.error(
-                "Error in registry update task",
-                extra={
-                    "pk": pk,
-                    "app_label": app_label,
-                    "model_name": model_name,
-                    "error": str(e),
-                },
-                exc_info=True,
             )
 
     @shared_task()
@@ -201,25 +178,13 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
             instance = model.objects.get(pk=pk)
             registry.update_related(instance)
         except LookupError:
-            log.error(
+            log.info(
                 f"Model {app_label}.{model_name} not found for related update",
                 extra={"pk": pk, "app_label": app_label, "model_name": model_name},
-                exc_info=True,
             )
         except ObjectDoesNotExist:
             log.error(
                 f"{model_name} matching query does not exist for related update",
                 extra={"pk": pk, "app_label": app_label, "model_name": model_name},
-                exc_info=True,
-            )
-        except Exception as e:
-            log.error(
-                "Error in registry update related task",
-                extra={
-                    "pk": pk,
-                    "app_label": app_label,
-                    "model_name": model_name,
-                    "error": str(e),
-                },
                 exc_info=True,
             )

@@ -1,15 +1,24 @@
 import asyncio
 import logging
+import ssl
 from typing import Any, Dict
 
 from asgiref.sync import async_to_sync
 from celery import shared_task
+from redis import ConnectionPool, Redis
+from redis.exceptions import LockError
 
 from course_sync.course_sync import CourseSyncService
+from edu_vault.settings import common
 from oauth_clients.edx_client import EdxClient
 from oauth_clients.services import OAuthClient
 from webhooks.handlers.course_update_handler import CourseUpdatedHandler
 
+REDIS_URL = getattr(common, "REDIS_URL", "redis://localhost:6379")
+
+
+pool = ConnectionPool.from_url(REDIS_URL, ssl_cert_reqs=ssl.CERT_NONE)
+redis_client = Redis(connection_pool=pool)
 log = logging.getLogger(__name__)
 
 
@@ -45,13 +54,35 @@ async def _process_course_update_async(payload: Dict[str, Any]) -> Dict[str, Any
     default_retry_delay=60,
     ignore_result=True,
 )
-def process_course_update(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Celery task to process course updates asynchronously"""
+def process_course_update(payload: Dict[str, Any]) -> None:
+    """Celery task to process course updates asynchronously with lock"""
     course_id = payload.get("course", {}).get("course_key", "unknown")
 
-    log.info(f"Starting Celery task process_course_update for course: {course_id}")
+    # Create a lock with a timeout (in seconds)
+    lock_name = f"lock:process_course_update:{course_id}"
+    lock_timeout = 3600  # 1 hour max lock time
 
-    log.debug(f"Task payload: {payload}")
-    result = async_to_sync(_process_course_update_async)(payload)
-    log.info(f"Celery task completed successfully for course: {course_id}")
-    return result
+    # Try to acquire the lock
+    lock = redis_client.lock(lock_name, timeout=lock_timeout)
+    try:
+        if lock.acquire(blocking=False):
+            try:
+                log.info(
+                    f"Starting Celery task process_course_update for course: {course_id}"
+                )
+                log.debug(f"Task payload: {payload}")
+                async_to_sync(_process_course_update_async)(payload)
+                log.info(f"Celery task completed successfully for course: {course_id}")
+            finally:
+                # Always release the lock when done
+                lock.release()
+        else:
+            # Task is already running, reschedule for later
+            log.info(f"Task for course {course_id} is already running. Rescheduling.")
+            process_course_update.apply_async(
+                args=[payload], countdown=60  # Try again after 1 minute
+            )
+    except LockError:
+        # Handle potential lock errors
+        log.error(f"Lock error occurred for course {course_id}")
+        process_course_update.retry(countdown=30)
