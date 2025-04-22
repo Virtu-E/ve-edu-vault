@@ -89,6 +89,7 @@ class MongoQuestionRepository(QuestionRepositoryMixin):
                     "Error processing question data: %s. Error: %s",
                     question.get("_id"),
                     str(e),
+                    exc_info=e,
                 )
         return result
 
@@ -203,8 +204,12 @@ class MongoQuestionRepository(QuestionRepositoryMixin):
         questions = await self.database_engine.run_aggregation(
             collection_name, self.database_name, pipeline
         )
+        # TODO : make this better
+        flattened_questions = []
+        for question_list in questions[0].values():
+            flattened_questions.extend(question_list)
 
-        result = self._process_mongo_question_data(questions)
+        result = self._process_mongo_question_data(flattened_questions)
         return result
 
     @classmethod

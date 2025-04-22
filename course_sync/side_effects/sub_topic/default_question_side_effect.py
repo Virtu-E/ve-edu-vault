@@ -1,6 +1,8 @@
 import logging
 from typing import Dict, List
 
+from asgiref.sync import sync_to_async
+
 from course_ware.models import DefaultQuestionSet, SubTopic
 
 logger = logging.getLogger(__name__)
@@ -11,7 +13,7 @@ class DefaultQuestionSetAssignerMixin:
     Mixin class that ensures each new subtopic has an assigned default question set.
     """
 
-    def sync_question_set(
+    async def sync_question_set(
         self, questions: List[Dict[str, str]], subtopic: SubTopic
     ) -> None:
         """
@@ -27,7 +29,8 @@ class DefaultQuestionSetAssignerMixin:
             len(questions),
         )
         try:
-            DefaultQuestionSet.objects.update_or_create(
+            # Convert Django ORM operation to async using sync_to_async
+            await sync_to_async(DefaultQuestionSet.objects.update_or_create)(
                 sub_topic=subtopic, defaults={"question_list_ids": questions}
             )
         except SubTopic.DoesNotExist:

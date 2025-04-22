@@ -10,7 +10,9 @@ from course_ware.models import SubTopic
 logger = logging.getLogger(__name__)
 
 
-@shared_task(name="course_sync.tasks.subtopic_creation_side_effect")
+@shared_task(
+    name="course_sync.side_effects.tasks.process_subtopic_creation_side_effect"
+)
 def process_subtopic_creation_side_effect(subtopic_id: int) -> None:
     """
     Process side effects for a newly created subtopic.
@@ -25,7 +27,7 @@ def process_subtopic_creation_side_effect(subtopic_id: int) -> None:
         "Starting subtopic creation side effects for subtopic ID: %s", subtopic_id
     )
     try:
-        subtopic = SubTopic.objects.get(pk=subtopic_id)
+        subtopic = SubTopic.objects.get(id=subtopic_id)
     except ObjectDoesNotExist as e:
         logger.error("Subtopic with ID %s does not exist", subtopic_id, exc_info=True)
         raise e

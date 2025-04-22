@@ -3,7 +3,7 @@ import re
 from enum import Enum
 from typing import Any, Union
 
-from django.db import models
+from django.db import models, transaction
 
 from ai_core.learning_mode_rules import LearningModeType
 from exceptions import VersionParsingError
@@ -158,6 +158,18 @@ class SubTopic(models.Model):
 
     def __str__(self):
         return f"SubTopic: {self.name} - Class: {self.topic.academic_class}"
+
+    def save(self, *args, **kwargs):
+        # to avoid circular import error
+        from course_sync.side_effects.tasks import process_subtopic_creation_side_effect
+
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+
+        if is_new:
+            transaction.on_commit(
+                lambda: process_subtopic_creation_side_effect.delay(subtopic_id=self.pk)
+            )
 
 
 class SubTopicIframeID(models.Model):

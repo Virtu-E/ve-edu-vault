@@ -1,6 +1,8 @@
 import logging
 from typing import Any, Dict, Optional
 
+from asgiref.sync import sync_to_async
+
 from course_ware.models import SubTopic, SubTopicIframeID
 
 logger = logging.getLogger(__name__)
@@ -9,8 +11,7 @@ logger = logging.getLogger(__name__)
 class SubtopicIframeAssociatorMixin:
     """Mixin class that assigns appropriate LTI iframe identifiers to subtopics"""
 
-    # TODO : create a data type defn for the course blocks
-    def associate_iframe_with_subtopic(
+    async def associate_iframe_with_subtopic(
         self, course_blocks: Dict[str, Any], subtopic: SubTopic
     ) -> None:
         """
@@ -24,8 +25,8 @@ class SubtopicIframeAssociatorMixin:
             if course_blocks:
                 iframe_id = self._extract_lti_consumer_id(course_blocks)
                 if iframe_id:
-                    SubTopicIframeID.objects.update_or_create(
-                        subtopic=subtopic, defaults={"identifier": iframe_id}
+                    await sync_to_async(SubTopicIframeID.objects.update_or_create)(
+                        sub_topic=subtopic, defaults={"identifier": iframe_id}
                     )
                 else:
                     logger.warning("No iframe ID found for subtopic %s", subtopic.name)

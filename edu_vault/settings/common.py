@@ -10,9 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import ssl
 from pathlib import Path
 
 from decouple import config
+from redis import ConnectionPool, Redis
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -50,6 +52,7 @@ INSTALLED_APPS = [
     "oauth_clients",
     "django_elasticsearch_dsl",
     "course_sync",
+    "django_extensions",
     # "silk",
 ]
 
@@ -190,8 +193,12 @@ LEARNING_HISTORY_COLLECTION_NAME = "learning_history"
 
 # CELERY SETTINGS
 CELERY_BROKER_URL = "rediss://default:AVNS_yIn8MR4Pkm7b5groMJN@virtu-educate-18cd5531-virtu-educate-1.j.aivencloud.com:14435?ssl_cert_reqs=CERT_NONE"
-REDIS_URL = "rediss://default:AVNS_yIn8MR4Pkm7b5groMJN@virtu-educate-18cd5531-virtu-educate-1.j.aivencloud.com:14435"
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+
+# Redis configuration
+REDIS_URL = "rediss://default:AVNS_yIn8MR4Pkm7b5groMJN@virtu-educate-18cd5531-virtu-educate-1.j.aivencloud.com:14435"
+REDIS_CONNECTION_POOL = ConnectionPool.from_url(REDIS_URL, ssl_cert_reqs=ssl.CERT_NONE)
+REDIS_CLIENT = Redis(connection_pool=REDIS_CONNECTION_POOL)
 
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"

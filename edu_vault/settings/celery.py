@@ -15,7 +15,9 @@ app = Celery("edu_vault")
 # the configuration object to child processes.
 # - namespace='CELERY' means all celery-related configuration keys
 #   should have a `CELERY_` prefix.
-app.config_from_object("django.conf:settings", namespace="CELERY")  # Fixed line
+app.config_from_object("django.conf:settings", namespace="CELERY")
+app.autodiscover_tasks(packages=["course_sync.side_effects"])
+
 
 # Load task modules from all registered Django apps.
 app.autodiscover_tasks()

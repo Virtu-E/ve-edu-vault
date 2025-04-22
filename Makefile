@@ -3,6 +3,8 @@ PYTHON = python
 PYTEST = $(PYTHON) -m pytest
 MYPY = mypy
 PRECOMMIT = pre-commit
+CELERY = celery
+DJANGO_SHELL = $(PYTHON) manage.py shell_plus
 
 # Default target
 .PHONY: all
@@ -22,6 +24,16 @@ help:
 	@echo "  type-check          - Run mypy for type checking"
 	@echo "  pre-commit          - Run pre-commit hooks on all files"
 	@echo "  clean               - Clean up generated files"
+	@echo "  celery              - Runs a celery worker"
+	@echo "  shell               - Starts an Ipython shell"
+
+.PHONY: shell
+shell:
+	$(DJANGO_SHELL) --ipython
+
+.PHONY: celery
+celery:
+	$(CELERY) -A edu_vault worker -l info
 
 # Run tests with default options
 .PHONY: test

@@ -272,7 +272,7 @@ class _AsyncMongoDatabaseEngine(AsyncBaseNoSqLDatabaseEngine):
         collection_name: str,
         database_name: str,
         pipeline: List[Any],
-    ) -> list:
+    ) -> List[Dict[str, List[Any]]]:
         """
         Execute an aggregation pipeline on a MongoDB collection asynchronously.
 

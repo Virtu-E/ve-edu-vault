@@ -5,12 +5,11 @@ from oauth_clients.edx_client import EdxClient
 from oauth_clients.services import OAuthClient
 from repository.question_respository import MongoQuestionRepository
 
+logger = logging.getLogger(__name__)
+
 
 class QuestionId(TypedDict):
     id: str
-
-
-logger = logging.getLogger(__name__)
 
 
 class SubTopicService:
@@ -52,10 +51,7 @@ class SubTopicService:
 
         Returns:
             List of question IDs matching the filter criteria
-
-
         """
-
         logger.info(
             "Fetching questions for topic=%s, subtopic=%s, class=%s, level=%s",
             topic_name,
@@ -86,9 +82,7 @@ class SubTopicService:
 
         Returns:
             Dictionary containing course block data or None if not found
-
         """
-
         logger.info("Fetching course blocks for block_id=%s", block_id)
 
         async with OAuthClient(service_type="OPENEDX") as client:
