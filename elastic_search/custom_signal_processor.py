@@ -159,10 +159,9 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
             instance = model.objects.get(pk=pk)
             registry.update(instance)
         except LookupError:
-            log.error(
+            log.info(
                 f"Model {app_label}.{model_name} not found",
                 extra={"pk": pk, "app_label": app_label, "model_name": model_name},
-                exc_info=True,
             )
         except ObjectDoesNotExist:
             log.info(
@@ -183,8 +182,7 @@ class CustomCelerySignalProcessor(CelerySignalProcessor):
                 extra={"pk": pk, "app_label": app_label, "model_name": model_name},
             )
         except ObjectDoesNotExist:
-            log.error(
+            log.info(
                 f"{model_name} matching query does not exist for related update",
                 extra={"pk": pk, "app_label": app_label, "model_name": model_name},
-                exc_info=True,
             )

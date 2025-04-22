@@ -1,11 +1,9 @@
 import asyncio
 import logging
-import ssl
 from typing import Any, Dict
 
 from asgiref.sync import async_to_sync
 from celery import shared_task
-from redis import ConnectionPool, Redis
 from redis.exceptions import LockError
 
 from course_sync.course_sync import CourseSyncService
@@ -14,11 +12,8 @@ from oauth_clients.edx_client import EdxClient
 from oauth_clients.services import OAuthClient
 from webhooks.handlers.course_update_handler import CourseUpdatedHandler
 
-REDIS_URL = getattr(common, "REDIS_URL", "redis://localhost:6379")
+REDIS_CLIENT = common.REDIS_CLIENT
 
-
-pool = ConnectionPool.from_url(REDIS_URL, ssl_cert_reqs=ssl.CERT_NONE)
-redis_client = Redis(connection_pool=pool)
 log = logging.getLogger(__name__)
 
 
@@ -63,7 +58,7 @@ def process_course_update(payload: Dict[str, Any]) -> None:
     lock_timeout = 3600  # 1 hour max lock time
 
     # Try to acquire the lock
-    lock = redis_client.lock(lock_name, timeout=lock_timeout)
+    lock = REDIS_CLIENT.lock(lock_name, timeout=lock_timeout)
     try:
         if lock.acquire(blocking=False):
             try:
