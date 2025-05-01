@@ -5,6 +5,8 @@ oauth_clients.services
 Includes OauthClient Service
 """
 
+import asyncio
+import logging
 import ssl
 
 import aiohttp
@@ -12,6 +14,11 @@ from asgiref.sync import sync_to_async
 from django.core.cache import cache
 
 from .models import OAuthClientConfig
+
+logger = logging.getLogger(__name__)
+
+_oauth_client = None
+_client_lock = asyncio.Lock()
 
 
 class OAuthClient:
@@ -27,7 +34,15 @@ class OAuthClient:
 
     async def __aenter__(self):
         await self._setup_data()
+        self.setup_session()
 
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        if self._session:
+            await self._session.close()
+
+    def setup_session(self):
         # TODO : SSL -> enable for production
         # Create an SSL context that does not verify certificates
         ssl_context = ssl.create_default_context()
@@ -38,12 +53,6 @@ class OAuthClient:
         self._session = aiohttp.ClientSession(
             connector=aiohttp.TCPConnector(ssl_context=ssl_context)
         )
-
-        return self
-
-    async def __aexit__(self, exc_type, exc, tb):
-        if self._session:
-            await self._session.close()
 
     async def _setup_data(self):
         config = await self.get_config(self.config_name, self.service_type)
@@ -122,3 +131,21 @@ class OAuthClient:
                 return await response.json()
             else:
                 response.raise_for_status()  # Raise an error for non-200 status codes
+
+
+# TODO : this does not automatically close the connections --> need to improve it
+async def get_edx_oauth_client():
+    """
+    Get or create the singleton OAuth client instance
+    """
+    global _oauth_client
+
+    async with _client_lock:
+        if _oauth_client is None:
+            _oauth_client = OAuthClient(service_type="OPENEDX")
+            # Setup the client if needed
+            await _oauth_client._setup_data()
+            _oauth_client.setup_session()
+            logger.info("Created new OAuth client for OpenEdX")
+
+    return _oauth_client

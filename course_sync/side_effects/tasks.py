@@ -35,7 +35,10 @@ def process_subtopic_creation_side_effect(subtopic_id: int) -> None:
     side_effect = SubTopicCreationSideEffect(subtopic=subtopic)
     # Execute async operations through sync wrapper
     try:
-        asyncio.run(side_effect.process_creation_side_effects())
-
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(side_effect.process_creation_side_effects())
     except asyncio.CancelledError:
         logger.warning("Async operation was cancelled for subtopic ID: %s", subtopic_id)
+    finally:
+        loop.close()

@@ -23,11 +23,17 @@ class SubtopicIframeAssociatorMixin:
         """
         try:
             if course_blocks:
-                iframe_id = self._extract_lti_consumer_id(course_blocks)
+                iframe_id, display_name = self._extract_lti_consumer_id(course_blocks)
                 if iframe_id:
+                    # TODO : to be deprecated, in favor of learning objective
                     await sync_to_async(SubTopicIframeID.objects.update_or_create)(
                         sub_topic=subtopic, defaults={"identifier": iframe_id}
                     )
+                    # TODO : to be deprecated
+                    # await sync_to_async(LearningObjective.objects.update_or_create)(
+                    #     sub_topic=subtopic,
+                    #     defaults={"iframe_id": iframe_id, "name": display_name},
+                    # )
                 else:
                     logger.warning("No iframe ID found for subtopic %s", subtopic.name)
             else:
@@ -45,7 +51,9 @@ class SubtopicIframeAssociatorMixin:
             raise
 
     @staticmethod
-    def _extract_lti_consumer_id(course_blocks: Dict[str, Any]) -> Optional[str]:
+    def _extract_lti_consumer_id(
+        course_blocks: Dict[str, Any]
+    ) -> tuple[Optional[str], Optional[str]]:
         """
         Locates and extracts the first LTI consumer block ID from course structure.
 
@@ -56,11 +64,12 @@ class SubtopicIframeAssociatorMixin:
             First LTI consumer block ID if found, None otherwise
         """
         blocks = course_blocks.get("blocks", {})
+        print(blocks, "here are the blocks")
 
         for block_id, block_data in blocks.items():
             if block_data.get("type") == "lti_consumer":
                 logger.info("Found LTI consumer block: %s", block_id)
-                return block_id
+                return block_id, block_data.get("display_name")
 
         logger.warning("No LTI consumer block found in course blocks")
-        return None
+        return None, None

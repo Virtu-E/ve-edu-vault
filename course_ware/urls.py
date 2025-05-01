@@ -1,46 +1,68 @@
 from django.urls import path
 
-from .views import (CourseOutlinePathView, GetQuestionAttemptView,
-                    GetQuestionsView, GetSingleQuestionAttemptView,
-                    PostQuestionAttemptView, QuizCompletionView,
-                    iframe_id_given_topic_id)
+from .views import (
+    CourseOutlinePathView,
+    GetQuestionAttemptView,
+    GetQuestionsView,
+    GetSingleQuestionAttemptView,
+    PostQuestionAttemptView,
+    QuizCompletionView,
+    get_edx_content_view,
+    get_learning_objectives,
+    iframe_id_given_sub_topic_id,
+)
 
 app_name = "course_ware"
 
 urlpatterns = [
+    # Questions endpoints
     path(
-        "get_questions/<str:username>/<str:block_id>/",
+        "users/<str:username>/subtopics/<str:block_id>/questions/",
         GetQuestionsView.as_view(),
-        name="get_questions_view",
+        name="questions-list",
     ),
     path(
-        "complete_quiz/",
+        "quizzes/completion/",
         QuizCompletionView.as_view(),
-        name="complete_quiz",
+        name="quiz-completion",
     ),
+    # Question attempts endpoints
     path(
-        "post_question_attempt/",
+        "question-attempts/",
         PostQuestionAttemptView.as_view(),
-        name="post_question_attempt_view",
+        name="question-attempt-create",
     ),
     path(
-        "get_question_attempt/<str:username>/<str:block_id>/<str:question_id>/",
+        "users/<str:username>/subtopics/<str:block_id>/questions/<str:question_id>/attempts/",
         GetSingleQuestionAttemptView.as_view(),
-        name="get_single_question_attempt_view",
+        name="question-attempt-detail",
     ),
     path(
-        "get_question_attempt/<str:username>/<str:block_id>/",
+        "users/<str:username>/subtopics/<str:block_id>/attempts/",
         GetQuestionAttemptView.as_view(),
-        name="get_question_attempt_view",
+        name="question-attempts-list",
     ),
+    # Topic and iframe endpoints
     path(
-        "get_iframe_id/<str:topic_id>/",
-        iframe_id_given_topic_id,
-        name="get_iframe_id",
+        "topics/<str:topic_id>/iframe/",
+        iframe_id_given_sub_topic_id,
+        name="sub_topic-iframe",
     ),
+    # Course outline endpoints
     path(
-        "outline/<str:course_id>/sequential/<str:sequential_id>/path/",
+        "courses/<str:course_id>/sequentials/<str:sequential_id>/path/",
         CourseOutlinePathView.as_view(),
         name="course-sequential-path",
+    ),
+    # Learning objectives endpoints
+    path(
+        "subtopics/<str:block_id>/objectives/",
+        get_learning_objectives,
+        name="subtopic-objectives",
+    ),
+    path(
+        "subtopics/<str:block_id>/resources/",
+        get_edx_content_view,
+        name="get_edx_content",
     ),
 ]

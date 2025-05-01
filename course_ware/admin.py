@@ -4,9 +4,18 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django_json_widget.widgets import JSONEditorWidget
 
-from .models import (AcademicClass, Course, DefaultQuestionSet, EdxUser,
-                     ExaminationLevel, SubTopic, SubTopicIframeID, Topic,
-                     UserQuestionAttempts, UserQuestionSet)
+from .models import (
+    AcademicClass,
+    Course,
+    DefaultQuestionSet,
+    EdxUser,
+    ExaminationLevel,
+    SubTopic,
+    SubTopicIframeID,
+    Topic,
+    UserQuestionAttempts,
+    UserQuestionSet,
+)
 
 
 # Base admin class with JSON widget configuration
@@ -73,6 +82,7 @@ class SubTopicAdmin(admin.ModelAdmin):
         "topic",
         "topic_course",
         "subtopic_augments",
+        "view_objectives",  # Add this new field to list_display
     ]
     list_filter = ["topic", "topic__course"]
     search_fields = ["name", "topic__name", "topic__course__name"]
@@ -102,6 +112,27 @@ class SubTopicAdmin(admin.ModelAdmin):
             )
 
     subtopic_augments.short_description = "Subtopic Extension"
+
+    def view_objectives(self, obj):
+        """Display a button to view learning objectives for this subtopic"""
+        objectives_count = obj.learningobjective_set.count()
+        if objectives_count > 0:
+            # Assuming you have a change list view for LearningObjective
+            url = (
+                reverse("admin:course_ware_learningobjective_changelist")
+                + f"?sub_topic__id__exact={obj.id}"
+            )
+            return format_html(
+                '<a href="{}" class="button">View {} Objective{}</a>',
+                url,
+                objectives_count,
+                "s" if objectives_count > 1 else "",
+            )
+        else:
+
+            return format_html("No Objectives")
+
+    view_objectives.short_description = "Learning Objectives"
 
 
 @admin.register(UserQuestionSet)

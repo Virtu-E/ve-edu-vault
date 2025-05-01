@@ -172,6 +172,7 @@ class SubTopic(models.Model):
             )
 
 
+# TODO : model to be retired --> in favour of learningObjective
 class SubTopicIframeID(models.Model):
     """
     Model that holds the subtopic unique iframe identifier.

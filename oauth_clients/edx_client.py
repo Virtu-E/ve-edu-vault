@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional
 
 from decouple import config
 
-from oauth_clients.services import OAuthClient
+from oauth_clients.services import OAuthClient, get_edx_oauth_client
 
 log = logging.getLogger(__name__)
 
@@ -46,3 +46,8 @@ class EdxClient:
         url = f"{self.lms_url}/api/course_home/outline/{course_id}"
         response = await self.make_request("GET", url)
         return response
+
+
+async def get_edx_client() -> EdxClient:
+    oauth_client = await get_edx_oauth_client()
+    return EdxClient(oauth_client)
