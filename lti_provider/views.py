@@ -19,7 +19,7 @@ from pylti1p3.contrib.django import (
     DjangoOIDCLogin,
 )
 
-from course_ware.models import SubTopicIframeID
+from course_ware.models import LearningObjective
 from edu_vault.settings import common
 
 tool_conf_2 = DjangoDbToolConf()
@@ -50,11 +50,11 @@ def lti_launch(request):
         ]
         claim_context = launch_data["https://purl.imsglobal.org/spec/lti/claim/context"]
         course_id = claim_context.get("id", "")
-        iframe_id = get_object_or_404(
-            SubTopicIframeID, identifier=resource_link.get("id", "")
+        objective = get_object_or_404(
+            LearningObjective, block_id=resource_link.get("id", "")
         )
         return redirect(
-            f"{config('FRONT_END_URL')}/assessment/{course_id}/{iframe_id.topic.block_id}/"
+            f"{config('FRONT_END_URL')}/assessment/{course_id}/{objective.block_id}/"
         )
 
     except Exception as e:
