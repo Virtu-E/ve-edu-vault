@@ -5,6 +5,7 @@ MYPY = mypy
 PRECOMMIT = pre-commit
 CELERY = celery
 DJANGO_SHELL = $(PYTHON) manage.py shell_plus
+UVICORN = uvicorn
 
 # Default target
 .PHONY: all
@@ -26,6 +27,7 @@ help:
 	@echo "  clean               - Clean up generated files"
 	@echo "  celery              - Runs a celery worker"
 	@echo "  shell               - Starts an Ipython shell"
+	@echo "  serve-async         - Start async server with uvicorn"
 
 .PHONY: shell
 shell:
@@ -34,6 +36,11 @@ shell:
 .PHONY: celery
 celery:
 	$(CELERY) -A edu_vault worker -l info
+
+# Run async server with uvicorn
+.PHONY: serve-async
+serve-async:
+	$(UVICORN) edu_vault.asgi:application --reload
 
 # Run tests with default options
 .PHONY: test

@@ -220,8 +220,8 @@ CELERY_BROKER_CONNECTION_TIMEOUT = 5
 
 ELASTICSEARCH_DSL = {
     "default": {
-        "hosts": ["https://164.92.156.155:9200"],
-        "http_auth": ("elastic", "it4JT8-GUXHLo2gC8AFe"),
+        "hosts": ["https://139.59.12.248:9200"],
+        "http_auth": ("elastic", ""),
         "timeout": 30,
         "retry_on_timeout": True,
         "verify_certs": False,  # In production, you should use proper certificates
