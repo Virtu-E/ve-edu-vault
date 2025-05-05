@@ -27,7 +27,7 @@ from .nosql_database_engine import AsyncBaseNoSqLDatabaseEngine
 log = logging.getLogger(__name__)
 
 
-class _AsyncMongoDatabaseEngine(AsyncBaseNoSqLDatabaseEngine):
+class AsyncMongoDatabaseEngine(AsyncBaseNoSqLDatabaseEngine):
     """
     Asynchronous MongoDB database engine implementation
 
@@ -135,52 +135,60 @@ class _AsyncMongoDatabaseEngine(AsyncBaseNoSqLDatabaseEngine):
             skip: Number of documents to skip
             sort: Fields to sort by
 
-        Yields:
-            List[Dict]: Batches of documents matching the query
+        Returns:
+            AsyncGenerator[List[Dict], None]: A coroutine that returns a generator yielding batches of documents
 
         Raises:
             MongoDbOperationError: If the fetch operation fails
         """
-        query = query or {}
-        projection = projection or {}
-        total_fetched = 0
 
-        try:
-            collection = await self._get_collection(collection_name, database_name)
-            cursor = collection.find(query, projection)
-            if skip > 0:
-                cursor = cursor.skip(skip)
-            if sort:
-                cursor = cursor.sort(sort)
-            while True:
-                # Calculate how many documents to fetch in this batch
-                current_batch_size = batch_size
-                if limit > 0:
-                    remaining = limit - total_fetched
-                    if remaining <= 0:
-                        break
-                    current_batch_size = min(batch_size, remaining)
+        async def generator() -> AsyncGenerator[List[Dict], None]:
+            query_dict = query or {}
+            projection_dict = projection or {}
+            total_fetched = 0
 
-                # Fetch a batch
-                batch = await cursor.to_list(length=current_batch_size)
-                if not batch:
-                    break
+            try:
+                collection = await self._get_collection(collection_name, database_name)
+                cursor = collection.find(query_dict, projection_dict)
+                if skip > 0:
+                    cursor = cursor.skip(skip)
+                if sort:
+                    cursor = cursor.sort(sort)
 
-                yield batch
+                try:
+                    while True:
+                        # Calculate how many documents to fetch in this batch
+                        current_batch_size = batch_size
+                        if limit > 0:
+                            remaining = limit - total_fetched
+                            if remaining <= 0:
+                                break
+                            current_batch_size = min(batch_size, remaining)
 
-                total_fetched += len(batch)
-                if limit > 0 and total_fetched >= limit:
-                    break
+                        # Fetch a batch
+                        batch = await cursor.to_list(length=current_batch_size)
+                        if not batch:
+                            break
 
-        except Exception as e:
-            self._logger.error("Error fetching from %s: %s", collection_name, e)
-            raise MongoDbOperationError(
-                message=f"Failed to fetch data: {str(e)}",
-                operation="fetch",
-                collection=collection_name,
-                query=query,
-                details=str(e),
-            ) from e
+                        yield batch
+
+                        total_fetched += len(batch)
+                        if limit > 0 and total_fetched >= limit:
+                            break
+                finally:
+                    await cursor.close()
+
+            except Exception as e:
+                self._logger.error("Error fetching from %s: %s", collection_name, e)
+                raise MongoDbOperationError(
+                    message=f"Failed to fetch data: {str(e)}",
+                    operation="fetch",
+                    collection=collection_name,
+                    query=query_dict,
+                    details=str(e),
+                ) from e
+
+        return generator()  # Return the generator
 
     async def fetch_one_from_db(
         self,
@@ -188,7 +196,7 @@ class _AsyncMongoDatabaseEngine(AsyncBaseNoSqLDatabaseEngine):
         database_name: str,
         query: Dict | None = None,
         projection: Dict | None = None,
-    ) -> Optional[Dict]:
+    ) -> Optional[Dict | List]:
         """
         Fetch a single document from MongoDB collection asynchronously.
 
@@ -312,6 +320,7 @@ class _AsyncMongoDatabaseEngine(AsyncBaseNoSqLDatabaseEngine):
                 details=str(e),
             ) from e
 
+    # TODO : make sure this is called when the SIGTERM or django shutdown process
     async def disconnect(self) -> None:
         """
         Safely close MongoDB connection asynchronously.
@@ -344,4 +353,4 @@ class _AsyncMongoDatabaseEngine(AsyncBaseNoSqLDatabaseEngine):
             gc.collect()
 
 
-mongo_database = _AsyncMongoDatabaseEngine(getattr(settings, "MONGO_URL", None))
+mongo_database = AsyncMongoDatabaseEngine(getattr(settings, "MONGO_URL", None))

@@ -2,24 +2,32 @@ from datetime import datetime
 from typing import List
 
 from pydantic import BaseModel, Field
-from pydantic.v1 import validator
 
 
-class Choice(BaseModel):
+class Option(BaseModel):
     """
-    Represents a single answer choice for a question.
+    Represents a single answer option for a question.
 
     Attributes:
-        text (str): The text content of the choice.
-        is_correct (bool): Whether this choice is the correct answer. Hidden from API responses.
+        id (str): The identifier for the option (e.g., "A", "B", "C").
+        text (str): The text content of the option.
+        is_correct (bool): Whether this option is the correct answer. Hidden from API responses.
     """
 
+    id: str
     text: str
-    is_correct: bool = Field(
-        exclude=True,
-    )
-    # TODO : introduce choice ID to allow randomization from the frontend
-    # choice_id : int
+    is_correct: bool = Field(exclude=True)
+
+
+class Content(BaseModel):
+    """
+    Contains the options for a multiple-choice question.
+
+    Attributes:
+        options (List[Option]): Available answer options for the question.
+    """
+
+    options: List[Option]
 
 
 class Solution(BaseModel):
@@ -35,69 +43,52 @@ class Solution(BaseModel):
     steps: List[str]
 
 
-class Metadata(BaseModel):
-    """
-    Stores metadata information about the question.
-
-    Attributes:
-        created_by (str): Name of the creator. If AI-generated, specifies the AI name.
-        created_at (datetime): Timestamp when the question was created.
-        updated_at (datetime): Timestamp when the question was last updated.
-        time_estimate (int): Estimated time to solve the question in minutes.
-    """
-
-    created_by: str
-    created_at: datetime
-    updated_at: datetime
-    time_estimate: int
-
-
 class Question(BaseModel):
     """
     Represents a complete question with all its components.
 
     Attributes:
         id (str): Unique identifier for the question, aliased as "_id".
+        category_id (str): Identifier for categorizing the question.
         text (str): The actual question text.
         topic (str): Main subject area the question belongs to.
         sub_topic (str): Specific sub-area within the main topic.
+        learning_objective (str): The learning objective addressed by the question.
         academic_class (str): Academic class or grade level the question is intended for.
-        examination_level (str): Level of examination (e.g., basic, intermediate, advanced).
+        examination_level (str): Level of examination (e.g., JCE).
         difficulty (str): Difficulty rating of the question.
-        tags (list[str]): List of tags for categorization and searching.
-        choices (list[Choice]): Available answer choices for the question.
+        tags (List[str]): List of tags for categorization and searching.
+        question_type (str): Type of question (e.g., "multiple-choice").
+        content (Content): The content of the question including options.
         solution (Solution): Detailed solution information.
         hint (str): A hint to help answer the question.
-        metadata (Metadata): Additional information about the question's creation and properties.
+        possible_misconception (str): Common misconceptions related to the question.
+        created_at (datetime): Timestamp when the question was created.
+        updated_at (datetime): Timestamp when the question was last updated.
     """
 
-    id: str = Field(..., alias="_id")
+    id: str = Field(alias="_id")
+    category_id: str
     text: str
     topic: str
     sub_topic: str
+    learning_objective: str
     academic_class: str
     examination_level: str
     difficulty: str
-    tags: list[str]
-    choices: list[Choice]
-    solution: Solution
-    hint: str
-    metadata: Metadata
+    tags: List[str]
+    question_type: str
+    content: Content
+    solution: Solution = Field(exclude=True)
+    hint: str = Field(exclude=True)
+    possible_misconception: str = Field(exclude=True)
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         """Configuration for the Question model."""
 
-        allow_population_by_field_name = True
-
-    @validator("_id", pre=True, always=True)
-    def ensure_string(cls, value):
-        """
-        Ensures the ID is always stored as a string.
-
-        Args:
-            value: The ID value to validate.
-
-        Returns:
-            str: The ID converted to a string.
-        """
-        return str(value)
+        populate_by_name = (
+            True  # Replaces allow_population_by_field_name in newer versions
+        )
+        json_encoders = {datetime: lambda v: v.strftime("%Y-%m-%dT%H:%M:%SZ")}

@@ -15,8 +15,8 @@ class QuestionRepositoryMixin(ABC):
     """
 
     @abstractmethod
-    def get_questions_by_ids(
-        self, question_ids: List[str], collection_name: str, **kwargs: Any
+    async def get_questions_by_ids(
+        self, question_ids: List[str], collection_name: str
     ) -> List[Question]:
         """
         Retrieve multiple questions by their unique identifiers.
@@ -36,16 +36,15 @@ class QuestionRepositoryMixin(ABC):
         raise NotImplementedError("get_questions_by_ids is not implemented")
 
     @abstractmethod
-    def get_question_by_single_id(
-        self, question_id: str, collection_name: str, include_metadata: bool = False
-    ) -> Optional[Question]:
+    async def get_question_by_single_id(
+        self, question_id: str, collection_name: str
+    ) -> Question:
         """
         Retrieve a single question by its unique identifier.
 
         Args:
             question_id: Unique identifier of the question
             collection_name: Name of the question collection/category
-            include_metadata: Whether to include additional metadata
 
         Returns:
             The Question object or None if not found
@@ -54,6 +53,37 @@ class QuestionRepositoryMixin(ABC):
             RepositoryConnectionError: If the underlying storage cannot be accessed
         """
         raise NotImplementedError("get_question_by_single_id is not implemented")
+
+    @abstractmethod
+    async def get_question_by_custom_query(
+        self, collection_name: str, query: dict[Any, Any]
+    ) -> List[Question]:
+        """
+        Retrieve questions by a custom query.
+        Args:
+            collection_name: Name of the question collection/category
+            query: Dictionary of question query parameters
+        Returns:
+            List of Question objects matching the provided identifiers
+
+        """
+        raise NotImplementedError("get_question_by_custom_query is not implemented")
+
+    @abstractmethod
+    async def get_questions_by_aggregation(
+        self, collection_name: str, pipeline: Any
+    ) -> List[Question]:
+        """
+         Retrieve and process questions using a MongoDB aggregation pipeline.
+
+        Args:
+            collection_name: Name of the collection to query
+            pipeline: MongoDB aggregation pipeline
+
+        Returns:
+            List of processed Question objects
+        """
+        raise NotImplementedError("get_questions_by_aggregation is not implemented")
 
 
 class LearningHistoryRepositoryMixin(ABC):

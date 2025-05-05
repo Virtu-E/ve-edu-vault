@@ -6,7 +6,7 @@ from bson import ObjectId, errors
 from edu_vault.settings import common
 
 from .data_types import Question
-from .databases.no_sql_database.mongodb import _AsyncMongoDatabaseEngine, mongo_database
+from .databases.no_sql_database.mongodb import AsyncMongoDatabaseEngine, mongo_database
 from .repository_mixin import QuestionRepositoryMixin
 
 log = logging.getLogger(__name__)
@@ -21,9 +21,11 @@ class MongoQuestionRepository(QuestionRepositoryMixin):
         database_name: The name of the database to query.
     """
 
+    __slots__ = ("database_engine", "database_name")
+
     def __init__(
         self,
-        database_engine: _AsyncMongoDatabaseEngine,
+        database_engine: AsyncMongoDatabaseEngine,
         database_name: str,
     ) -> None:
         """
@@ -35,65 +37,11 @@ class MongoQuestionRepository(QuestionRepositoryMixin):
         """
         self.database_engine = database_engine
         self.database_name = database_name
+        log.info(
+            "Initialized MongoQuestionRepository with database '%s'", database_name
+        )
 
-    @staticmethod
-    def _validate_question_ids(question_ids: List[str]) -> List[ObjectId]:
-        """
-        Validate and convert string IDs to MongoDB ObjectId instances.
-
-        Args:
-            question_ids: List of string IDs to validate and convert.
-
-        Returns:
-            List of valid MongoDB ObjectId instances.
-        """
-        object_ids = []
-        for id_ in question_ids:
-            try:
-                if ObjectId.is_valid(id_):
-                    object_ids.append(ObjectId(id_))
-                else:
-                    log.warning("Invalid ObjectId format: %s", id_)
-            except errors.InvalidId:
-                log.warning("Failed to convert ID to ObjectId: %s", id_)
-
-        if not object_ids:
-            log.warning("No valid question IDs to query")
-            return []
-        return object_ids
-
-    def _process_mongo_question_data(
-        self, questions: Iterable[Dict[str, Any]]
-    ) -> List[Question]:
-        """
-        Process raw MongoDB documents into Question domain objects.
-
-        Args:
-            questions: Iterable of MongoDB document dictionaries.
-
-        Returns:
-            List of Question objects created from the MongoDB documents.
-        """
-        result = []
-        for question in questions:
-            try:
-                question_with_string_id = {**question, "_id": str(question["_id"])}
-
-                question_obj = Question(**question_with_string_id).model_dump(
-                    by_alias=True, exclude={"choices": {"is_correct"}}
-                )
-                result.append(question_obj)
-                # TODO : dont catch all exceptions like that, very bad
-            except Exception as e:
-                log.error(
-                    "Error processing question data: %s. Error: %s",
-                    question.get("_id"),
-                    str(e),
-                    exc_info=e,
-                )
-        return result
-
-    def get_questions_by_ids(
+    async def get_questions_by_ids(
         self, question_ids: List[str], collection_name: str
     ) -> List[Question]:
         """
@@ -110,6 +58,7 @@ class MongoQuestionRepository(QuestionRepositoryMixin):
         Raises:
             ValueError: If collection_name is empty.
         """
+        # TODO : write a decorator function for this validation
         if not collection_name:
             log.error("Empty collection name provided")
             raise ValueError("Collection name cannot be empty")
@@ -126,11 +75,16 @@ class MongoQuestionRepository(QuestionRepositoryMixin):
         query = {"_id": {"$in": object_ids}}
         log.debug("Querying collection '%s' with filter: %s", collection_name, query)
 
-        questions = self.database_engine.fetch_from_db(
-            collection_name, self.database_name, query
-        )
+        all_questions = []
 
-        result = self._process_mongo_question_data(questions)
+        # consuming the generator content for now
+        # since they're mostly a few question documents
+        async for batch in await self.database_engine.fetch_from_db(
+            collection_name, self.database_name, query
+        ):
+            all_questions.extend(batch)
+
+        result = self._process_mongo_question_data(all_questions)
         log.info(
             "Retrieved %d questions out of %d requested IDs",
             len(result),
@@ -139,14 +93,121 @@ class MongoQuestionRepository(QuestionRepositoryMixin):
 
         return result
 
-    def get_question_by_single_id(
+    async def get_question_by_single_id(
         self, question_id: str, collection_name: str
     ) -> Question:
-        response = self.database_engine.fetch_from_db(
+        response = await self.database_engine.fetch_one_from_db(
             collection_name, self.database_name, {"_id": ObjectId(question_id)}
         )
+        if not response:
+            raise ValueError("Mongo Question with ID '%s' not found" % question_id)
+
         result = response[0] if isinstance(response, list) else response
         return Question(**{**result, "_id": str(question_id)})
+
+    async def get_questions_by_aggregation(
+        self, collection_name: str, pipeline: Any
+    ) -> List[Question]:
+        """
+        Retrieve and process questions using a MongoDB aggregation pipeline.
+
+        Args:
+            collection_name: Name of the collection to query
+            pipeline: MongoDB aggregation pipeline
+
+        Returns:
+            List of processed Question objects
+        """
+        aggregation_results = await self.database_engine.run_aggregation(
+            collection_name, self.database_name, pipeline
+        )
+
+        if not aggregation_results:
+            return []
+
+        flattened_questions = []
+        for result in aggregation_results:
+            for key, question_list in result.items():
+                if isinstance(question_list, list):
+                    flattened_questions.extend(question_list)
+                else:
+                    log.warning(
+                        f"Unexpected data structure in aggregation result: {key}"
+                    )
+
+        return self._process_mongo_question_data(flattened_questions)
+
+    async def get_question_by_custom_query(
+        self, collection_name: str, query: dict[Any, Any]
+    ) -> List[Question]:
+        """
+        Retrieve questions by a custom query.
+        Args:
+            collection_name: Name of the question collection/category
+            query: Dictionary of question query parameters
+        Returns:
+            List of Question objects matching the provided identifiers
+
+        """
+        # TODO : add validators for empty query or collection name
+
+        all_questions = []
+
+        # consuming the generator content for now
+        # since they're mostly a few question documents
+        async for batch in await self.database_engine.fetch_from_db(
+            collection_name, self.database_name, query
+        ):
+            all_questions.extend(batch)
+
+        result = self._process_mongo_question_data(all_questions)
+        log.info(
+            "Retrieved %d questions out of %d requested IDs",
+            len(result),
+            len(all_questions),
+        )
+
+        return result
+
+    @staticmethod
+    def _validate_question_ids(question_ids: List[Dict[str, str]]) -> List[ObjectId]:
+        """
+        Validate and convert string IDs to MongoDB ObjectId instances.
+
+        Args:
+            question_ids: List of string IDs to validate and convert.
+
+        Returns:
+            List of valid MongoDB ObjectId instances.
+        """
+        log.debug("Validating %d question IDs", len(question_ids))
+        object_ids = []
+        invalid_count = 0
+
+        for question_data in question_ids:
+            try:
+                if ObjectId.is_valid(question_data["id"]):
+                    object_ids.append(ObjectId(question_data["id"]))
+                else:
+                    log.warning("Invalid ObjectId format: %s", question_data["id"])
+                    invalid_count += 1
+            except errors.InvalidId:
+                log.warning("Failed to convert ID to ObjectId: %s", question_data["id"])
+                invalid_count += 1
+
+        if invalid_count > 0:
+            log.warning(
+                "Found %d invalid question IDs out of %d",
+                invalid_count,
+                len(question_ids),
+            )
+
+        if not object_ids:
+            log.warning("No valid question IDs to query")
+            return []
+
+        log.debug("Successfully validated %d question IDs", len(object_ids))
+        return object_ids
 
     @staticmethod
     def _normalize_name(name: str) -> str:
@@ -163,61 +224,56 @@ class MongoQuestionRepository(QuestionRepositoryMixin):
         log.debug(f"Normalized name '{name}' to '{normalized}'")
         return normalized
 
-    async def get_questions_by_aggregation(
-        self,
-        collection_name: str,
-        examination_level: str,
-        academic_class: str,
-        subtopic_name: str,
-        topic_name: str,
+    @staticmethod
+    def _process_mongo_question_data(
+        questions: Iterable[Dict[str, Any]]
     ) -> List[Question]:
-        normalized_topic_name = self._normalize_name(subtopic_name)
-        normalized_subtopic_name = self._normalize_name(topic_name)
+        """
+        Process raw MongoDB documents into Question domain objects.
 
-        pipeline = [
-            {
-                "$match": {
-                    "academic_class": academic_class,
-                    "examination_level": examination_level,
-                    "subtopic": normalized_subtopic_name,
-                    "topic": normalized_topic_name,
-                }
-            },
-            {
-                "$facet": {
-                    "easy": [
-                        {"$match": {"difficulty": "easy"}},
-                        {"$sample": {"size": 3}},
-                    ],
-                    "medium": [
-                        {"$match": {"difficulty": "medium"}},
-                        {"$sample": {"size": 3}},
-                    ],
-                    "hard": [
-                        {"$match": {"difficulty": "hard"}},
-                        {"$sample": {"size": 3}},
-                    ],
-                }
-            },
-        ]
+        Args:
+            questions: Iterable of MongoDB document dictionaries.
 
-        questions = await self.database_engine.run_aggregation(
-            collection_name, self.database_name, pipeline
-        )
-        # TODO : make this better
-        flattened_questions = []
-        for question_list in questions[0].values():
-            flattened_questions.extend(question_list)
+        Returns:
+            List of Question objects created from the MongoDB documents.
+        """
+        result: List[Question] = []
+        error_count = 0
 
-        result = self._process_mongo_question_data(flattened_questions)
+        for question in questions:
+            try:
+                question_id = str(question.get("_id", "unknown"))
+                log.debug("Processing question data for ID: %s", question_id)
+
+                question_with_string_id = {**question, "_id": question_id}
+                question_obj = Question(**question_with_string_id)
+                result.append(question_obj)
+
+            except Exception as e:
+                error_count += 1
+                log.error(
+                    "Error processing question data: %s. Error: %s",
+                    question.get("_id", "unknown"),
+                    str(e),
+                    exc_info=e,
+                )
+
+        if error_count > 0:
+            log.warning("Failed to process %d questions", error_count)
+
+        log.debug("Successfully processed %d question objects", len(result))
         return result
 
     @classmethod
     def get_repo(cls):
         database_name = getattr(common, "NO_SQL_DATABASE_NAME", None)
         if database_name is None:
+            log.error("NO_SQL_DATABASE_NAME not configured in settings")
             # TODO : raise custom error exception here for better details
-            raise RuntimeError()
+            raise RuntimeError("NO_SQL_DATABASE_NAME not configured in settings")
+
+        log.info("Creating MongoQuestionRepository instance")
+
         return MongoQuestionRepository(
             database_engine=mongo_database,
             database_name=database_name,
