@@ -39,10 +39,8 @@ class EdxUser(models.Model):
     id = models.PositiveIntegerField(
         primary_key=True, unique=True, help_text="edX user ID"
     )
-    username = models.CharField(
-        null=True, blank=True, max_length=255, unique=True, help_text="edX username"
-    )
-    email = models.EmailField(null=True, blank=True, help_text="edX email")
+    username = models.CharField(max_length=255, unique=True, help_text="edX username")
+    email = models.EmailField(blank=True, help_text="edX email")
     active = models.BooleanField(default=True)
 
     class Meta:
@@ -112,7 +110,7 @@ class Topic(models.Model):
 
     name = models.CharField(max_length=255)
     examination_level = models.ForeignKey(ExaminationLevel, on_delete=models.CASCADE)
-    block_id = models.TextField(unique=True, db_index=True, null=False, blank=False)
+    block_id = models.TextField(unique=True, db_index=True)
     academic_class = models.ForeignKey(AcademicClass, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -143,11 +141,9 @@ class SubTopic(models.Model):
     name = models.CharField(max_length=255)
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name="topics")
     # this field is used to populate the description of the flash cards
-    flash_card_description = models.TextField(
-        blank=True, default="FlashCard Description"
-    )
     block_id = models.TextField(
-        unique=True, db_index=True, null=False, blank=False
+        unique=True,
+        db_index=True,
     )  # edx block ID associated with the topic
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -159,35 +155,58 @@ class SubTopic(models.Model):
     def __str__(self):
         return f"SubTopic: {self.name} - Class: {self.topic.academic_class}"
 
+
+class LearningObjective(models.Model):
+    """
+    Represents a specific learning goal tied to a subtopic.
+    For example, "Students should be able to complete the square to solve quadratics."
+    """
+
+    name = models.CharField(max_length=255)
+    block_id = models.TextField(unique=True, db_index=True)
+    sub_topic = models.ForeignKey(
+        SubTopic, on_delete=models.CASCADE, related_name="objective"
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class QuestionCategory(models.Model):
+    """
+    Holds the different unique question categories based on  learning objectives.
+    """
+
+    learning_objective = models.OneToOneField(
+        LearningObjective, on_delete=models.CASCADE
+    )
+    category_id = models.CharField(max_length=255, db_index=True)
+
+    class Meta:
+        verbose_name = "Question Category"
+        verbose_name_plural = "Question Categories"
+
     def save(self, *args, **kwargs):
         # to avoid circular import error
-        from course_sync.side_effects.tasks import process_subtopic_creation_side_effect
+        from course_sync.tasks import add_default_question_set
 
-        is_new = self.pk is None
         super().save(*args, **kwargs)
-
-        if is_new:
-            transaction.on_commit(
-                lambda: process_subtopic_creation_side_effect.delay(subtopic_id=self.pk)
+        transaction.on_commit(
+            lambda: add_default_question_set.delay(
+                objective_id=self.learning_objective.id
             )
+        )
 
-
-# TODO : model to be retired --> in favour of learningObjective
-class SubTopicIframeID(models.Model):
-    """
-    Model that holds the subtopic unique iframe identifier.
-    """
-
-    identifier = models.CharField(max_length=255, unique=True, db_index=True)
-    sub_topic = models.OneToOneField(
-        SubTopic, on_delete=models.CASCADE, related_name="iframe_id"
-    )
+    def __str__(self):
+        return f"{self.learning_objective.name}"
 
 
 class BaseQuestionSet(models.Model):
     """Base abstract model for question sets."""
 
-    sub_topic = models.OneToOneField(SubTopic, on_delete=models.CASCADE)
+    learning_objective = models.OneToOneField(
+        LearningObjective, on_delete=models.CASCADE
+    )
     """
     Array of question reference objects
     Example:
@@ -223,7 +242,7 @@ class UserQuestionSet(BaseQuestionSet):
         verbose_name_plural = "User Question Sets"
 
     def __str__(self):
-        return f"{self.user.username} - {self.sub_topic.name}"
+        return f"{self.user.username} - {self.learning_objective.name}"
 
 
 class DefaultQuestionSet(BaseQuestionSet):
@@ -234,7 +253,7 @@ class DefaultQuestionSet(BaseQuestionSet):
         verbose_name_plural = "Default Question Sets"
 
     def __str__(self):
-        return f"Sub Topic: {self.sub_topic.name} Default Question Set"
+        return f"Sub Topic: {self.learning_objective.name} Default Question Set"
 
 
 class UserQuestionAttempts(models.Model):
@@ -253,8 +272,8 @@ class UserQuestionAttempts(models.Model):
     user = models.ForeignKey(
         EdxUser, on_delete=models.CASCADE, related_name="question_attempts"
     )
-    sub_topic = models.OneToOneField(
-        SubTopic, on_delete=models.CASCADE, related_name="sub_topic_attempts"
+    learning_objective = models.OneToOneField(
+        LearningObjective, on_delete=models.CASCADE, related_name="attempts"
     )
     # the data is stored in this format :  dict[str, dict[str, QuestionMetadata | Any]]. Check in data types module
     # for more info ( course_ware_schema.py )
@@ -393,4 +412,4 @@ class UserQuestionAttempts(models.Model):
         return questions_list
 
     def __str__(self):
-        return f"{self.user.username} - {self.sub_topic.name} Attempts"
+        return f"{self.user.username} - {self.learning_objective.name} Attempts"

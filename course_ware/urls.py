@@ -17,7 +17,7 @@ app_name = "course_ware"
 urlpatterns = [
     # Questions endpoints
     path(
-        "users/<str:username>/subtopics/<str:block_id>/questions/",
+        "users/<str:username>/objective/<str:block_id>/questions/",
         GetQuestionsView.as_view(),
         name="questions-list",
     ),

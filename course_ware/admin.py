@@ -1,5 +1,7 @@
 from django.contrib import admin
+from django.db import transaction
 from django.db.models import JSONField
+from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.html import format_html
 from django_json_widget.widgets import JSONEditorWidget
@@ -10,8 +12,9 @@ from .models import (
     DefaultQuestionSet,
     EdxUser,
     ExaminationLevel,
+    LearningObjective,
+    QuestionCategory,
     SubTopic,
-    SubTopicIframeID,
     Topic,
     UserQuestionAttempts,
     UserQuestionSet,
@@ -115,7 +118,7 @@ class SubTopicAdmin(admin.ModelAdmin):
 
     def view_objectives(self, obj):
         """Display a button to view learning objectives for this subtopic"""
-        objectives_count = obj.learningobjective_set.count()
+        objectives_count = obj.objective.count()
         if objectives_count > 0:
             # Assuming you have a change list view for LearningObjective
             url = (
@@ -137,28 +140,28 @@ class SubTopicAdmin(admin.ModelAdmin):
 
 @admin.register(UserQuestionSet)
 class UserQuestionSetAdmin(JsonWidgetModelAdmin):
-    list_display = ["user", "sub_topic"]
-    search_fields = ["user__username", "sub_topic__name"]
-    raw_id_fields = ["user", "sub_topic"]
+    list_display = ["user", "learning_objective"]
+    search_fields = ["user__username", "learning_objective__name"]
+    raw_id_fields = ["user", "learning_objective"]
 
 
 @admin.register(DefaultQuestionSet)
 class DefaultQuestionSetAdmin(JsonWidgetModelAdmin):
-    list_display = ["sub_topic"]
-    search_fields = ["sub_topic__name"]
-    raw_id_fields = ["sub_topic"]
+    list_display = ["learning_objective"]
+    search_fields = ["learning_objective__name"]
+    raw_id_fields = ["learning_objective"]
 
 
 @admin.register(UserQuestionAttempts)
 class UserQuestionAttemptsAdmin(JsonWidgetModelAdmin):
     list_display = [
         "user",
-        "sub_topic",
+        "learning_objective",
         "get_correct_questions_count",
         "get_incorrect_questions_count",
     ]
-    search_fields = ["user__username", "sub_topic__name"]
-    raw_id_fields = ["user", "sub_topic"]
+    search_fields = ["user__username", "learning_objective__name"]
+    raw_id_fields = ["user", "learning_objective"]
 
 
 @admin.register(EdxUser)
@@ -174,10 +177,84 @@ class AcademicClassAdmin(admin.ModelAdmin):
     search_fields = ["name"]
 
 
-@admin.register(SubTopicIframeID)
-class SubTopicIframeIDAdmin(admin.ModelAdmin):
-    list_display = ["identifier", "sub_topic"]
-    search_fields = ["identifier"]
-
-
 admin.site.register(ExaminationLevel)
+
+
+@admin.register(QuestionCategory)
+class QuestionCategoryAdmin(admin.ModelAdmin):
+    list_display = (
+        "category_id",
+        "learning_objective",
+        "get_subtopic",
+    )
+    list_filter = ("learning_objective__sub_topic",)
+    search_fields = ("category_id", "learning_objective__name")
+    raw_id_fields = ("learning_objective",)
+
+    # Nesting fields for better organization in the add/edit form
+    fieldsets = (
+        ("Category Information", {"fields": ("category_id",)}),
+        ("Relationships", {"fields": ("learning_objective",)}),
+    )
+
+    # For performance with many records
+    list_select_related = (
+        "learning_objective",
+        "learning_objective__sub_topic",
+    )
+
+    def get_subtopic(self, obj):
+        """Get the subtopic name for display in the admin list"""
+        return obj.learning_objective.sub_topic.name
+
+    get_subtopic.short_description = "SubTopic"
+    get_subtopic.admin_order_field = "learning_objective__sub_topic__name"
+
+    def save_model(self, request, obj, form, change):
+        """
+        Override save_model to ensure transaction handling is consistent
+        with the model's save method
+        """
+        with transaction.atomic():
+            super().save_model(request, obj, form, change)
+
+
+@admin.register(LearningObjective)
+class LearningObjectiveAdmin(admin.ModelAdmin):
+    list_display = ("name", "block_id", "get_subtopic")
+    search_fields = ("name", "block_id", "sub_topic__name")
+    raw_id_fields = ("sub_topic",)
+
+    # Nesting fields for better organization in the add/edit form
+    fieldsets = (
+        ("Learning Objective", {"fields": ("name", "block_id")}),
+        ("Relationships", {"fields": ("sub_topic",)}),
+    )
+
+    # For performance with many records
+    list_select_related = ("sub_topic",)
+
+    def get_subtopic(self, obj):
+        """Get the subtopic name for display in the admin list"""
+        return obj.sub_topic.name
+
+    get_subtopic.short_description = "SubTopic"
+    get_subtopic.admin_order_field = "sub_topic__name"
+
+    def get_queryset(self, request):
+        """Optimize queries by prefetching related objects"""
+        qs = super().get_queryset(request)
+        return qs.select_related("sub_topic")
+
+    # Custom action to view related question categories
+    actions = ["view_related_question_categories"]
+
+    def view_related_question_categories(self, request, queryset):
+        """Custom admin action to view question categories related to selected objectives"""
+        selected = queryset.values_list("id", flat=True)
+        url = f"/admin/course_ware/questioncategory/?learning_objective__id__in={','.join(map(str, selected))}"
+        return redirect(url)
+
+    view_related_question_categories.short_description = (
+        "View related question categories"
+    )
