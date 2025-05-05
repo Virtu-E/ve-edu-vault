@@ -1,21 +1,20 @@
 import logging
 from collections import namedtuple
-from typing import List
+from typing import Dict, List
 
 from rest_framework.exceptions import ValidationError
 
 from exceptions import ParsingError, QuestionNotFoundError
-from repository.data_types import Question
 from repository.question_respository import MongoQuestionRepository
 
-from ..models import SubTopic, UserQuestionSet
+from ..models import SubTopic
 from .mixins import RetrieveUserAndResourcesMixin
 
 log = logging.getLogger(__name__)
 
 
 Resources = namedtuple(
-    "Resources", ("user", "sub_topic", "question_set_ids", "collection_name")
+    "Resources", ("user", "learning_objective", "question_set_ids", "collection_name")
 )
 
 
@@ -24,43 +23,69 @@ class QuestionService(RetrieveUserAndResourcesMixin):
     Service class for handling question-related operations.
 
     This service provides functionality to validate questions, retrieve resources,
-    and manage question collections based on user and topic context.
+    and manage question collections based on user and learning objective context.
+    It serves as an intermediary between the API endpoints and the data repositories,
+    ensuring proper validation and error handling.
 
     Attributes:
-        _serializer: The serializer containing validated data for the request.
+        _data (Dict[str, str]): The validated data dictionary for the request.
+        _user (EdxUser): The user associated with the request.
+        _learning_objective (LearningObjective): The learning objective associated with the request.
+        _collection_name (str): The database collection name derived from the course key.
+        _question_set_ids (List[str]): List of question IDs associated with the user and learning objective.
     """
 
-    def __init__(self, serializer) -> None:
+    def __init__(self, data: Dict[str, str]) -> None:
         """
-        Initialize the QuestionService with a serializer.
+        Initialize the QuestionService with validated request data.
+
+        Retrieves and initializes all necessary resources including the user,
+        learning objective, collection name, and question set IDs required for
+        subsequent operations.
 
         Args:
-            serializer: A serializer instance containing validated request data.
+            data (Dict[str, str]): Validated data dictionary containing at minimum
+                                  'username' and 'block_id' keys.
+
+        Raises:
+            ValidationError: If the user or learning objective cannot be retrieved
+                            from the provided data.
         """
-        self._serializer = serializer
-        self._user = self.get_user_from_validated_data(self._serializer)
-        self._sub_topic = self.get_sub_topic_from_validated_data(self._serializer)
-        self._collection_name = self._get_collection_name_from_topic(self._sub_topic)
-        self._question_set_ids = None
-        if not self._user or not self._sub_topic:
+        self._data = data
+        self._user = self.get_edx_user_from_username(data["username"])
+        self._learning_objective = self.get_learning_objective_from_block_id(
+            data["block_id"]
+        )
+        self._collection_name = self._get_collection_name_from_topic(
+            self._learning_objective.sub_topic
+        )
+        if not self._user or not self._learning_objective:
             # TODO : create a more meaningful error
-            raise ValidationError("User and sub-topic must be provided.")
-        self._question_set_ids = self.get_user_question_set(self._user, self._sub_topic)
+            raise ValidationError("User and learning objective must be provided.")
+        self._question_set_ids = self.get_user_question_set(
+            self._user, self._learning_objective
+        )
 
     def _validate_question_exists(self, question_id: str) -> bool:
         """
-        Validate that a question ID exists in the given question set for a user.
+        Validate that a question ID exists in the question set for the current user.
+
+        Checks if the provided question ID is present in the user's question set
+        associated with the current learning objective.
 
         Args:
-            question_id: The ID of the question to validate.
+            question_id (str): The ID of the question to validate.
 
         Returns:
-            True if the question exists in the set.
+            bool: True if the question exists in the user's question set.
 
         Raises:
-            QuestionNotFoundError: If the question ID is not found in the question set.
+            QuestionNotFoundError: If the question ID is not found in the user's question set.
+                                  Includes details about the missing question ID and user.
         """
-        if question_id not in self._question_set_ids:
+        if question_id not in {
+            question.values() for question in self._question_set_ids
+        }:
             log.error(
                 "Question ID '%s' not found in question set for user '%s'",
                 question_id,
@@ -74,17 +99,20 @@ class QuestionService(RetrieveUserAndResourcesMixin):
         """
         Extract the database collection name from a SubTopic instance.
 
-        The collection name is derived from the course key associated with the topic.
+        Determines the appropriate database collection name based on the course key
+        associated with the provided sub_topic. This collection name is used for
+        subsequent database operations.
 
         Args:
-            sub_topic: A SubTopic instance to extract the collection name from.
+            sub_topic (SubTopic): A SubTopic instance containing the course information.
 
         Returns:
-            The database collection name as a string.
+            str: The database collection name derived from the course key.
 
         Raises:
             ValidationError: If the provided sub_topic is not a valid SubTopic instance.
-            ParsingError: If the collection name cannot be determined from the sub_topic.
+            ParsingError: If the course key cannot be determined from the sub_topic or
+                         if no collection is associated with the course key.
         """
         if not isinstance(sub_topic, SubTopic):
             log.error("Invalid topic instance: not a SubTopic object")
@@ -105,54 +133,74 @@ class QuestionService(RetrieveUserAndResourcesMixin):
         """
         Retrieve all resources needed for question operations.
 
+        Gathers and returns the essential resources needed for question-related operations,
+        including user information, learning objective details, question set IDs, and
+        database collection name. Validates any question ID provided in the request data.
+
         Returns:
-            A Resources namedtuple containing the user, sub_topic, question_set_ids,
-            and collection_name.
+            Resources: A namedtuple containing:
+                - user: The EdxUser instance
+                - learning_objective: The LearningObjective instance
+                - question_set_ids: List of question IDs associated with the user and learning objective
+                - collection_name: The database collection name for question retrieval
+
+        Raises:
+            QuestionNotFoundError: If a question_id is provided in the data but not found
+                                  in the user's question set.
         """
-        if "question_id" in self._serializer.validated_data:
-            self._validate_question_exists(
-                self._serializer.validated_data["question_id"]
-            )
+        if value := self._data.get("question_id"):
+            self._validate_question_exists(value)
 
         return Resources(
-            self._user, self._sub_topic, self._question_set_ids, self._collection_name
+            self._user,
+            self._learning_objective,
+            self._question_set_ids,
+            self._collection_name,
         )
 
-    def get_questions_from_ids(self) -> List[Question]:
+    async def get_questions_from_ids(self) -> List[Dict]:
         """
-        Retrieve Question objects based on the question IDs in the question set.
+        Retrieve Question objects based on the question IDs in the user's question set
+        and convert them to dictionaries for serialization.
 
-        This method uses the MongoQuestionRepository to fetch questions from the database
-        using the collection name and question set IDs previously retrieved.
+        Fetches the complete Question objects from the database using the collection name
+        and question set IDs, then converts them to dictionaries that can be easily
+        serialized to JSON or other formats.
 
         Returns:
-            List[Question]: A list of Question objects corresponding to the question IDs.
+            List[Dict]: A list of serialized Question objects corresponding to the
+                       question IDs in the user's question set.
         """
         question_repo = MongoQuestionRepository.get_repo()
-        questions = question_repo.get_questions_by_ids(
+        questions = await question_repo.get_questions_by_ids(
             collection_name=self._collection_name, question_ids=self._question_set_ids
         )
-        return questions
+
+        # Convert Pydantic models to dictionaries
+        dumped_questions = [question.model_dump() for question in questions]
+        return dumped_questions
 
     def is_grading_mode(self) -> bool:
         """
         Check if the user's question set is in grading mode.
 
-        This method determines whether the UserQuestionSet for the current user and sub_topic
-        has grading mode enabled.
+        Determines whether the current question set for the user and learning objective
+        has grading mode enabled. Grading mode affects how question responses are
+        evaluated and scored.
 
         Returns:
             bool: True if grading mode is enabled, False otherwise.
 
         Note:
-            If the UserQuestionSet does not exist, this method currently doesn't handle
-            the error properly and returns None implicitly. This is marked with a TODO
-            for future improvement.
+            This method is currently a placeholder that always returns False.
+            The commented code shows the intended implementation for future completion.
         """
-        try:
-            return UserQuestionSet.objects.get(
-                user_id=self._user, sub_topic=self._sub_topic
-            ).grading_mode
-        except UserQuestionSet.DoesNotExist:
-            # TODO : process the error correctly here
-            pass
+        # TODO: to be implemented
+        return False
+        # try:
+        #     return UserQuestionSet.objects.get(
+        #         user_id=self._user, sub_topic=self._sub_topic
+        #     ).grading_mode
+        # except UserQuestionSet.DoesNotExist:
+        #     # TODO : process the error correctly here
+        #     pass

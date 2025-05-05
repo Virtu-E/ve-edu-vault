@@ -1,5 +1,6 @@
 import logging
 
+from asgiref.sync import async_to_sync
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -66,7 +67,7 @@ class CustomUpdateAPIView(UpdateAPIView):
 
 class GetQuestionsView(CustomRetrieveAPIView):
     """
-    API view to retrieve questions for a specific user and topic.
+    API view to retrieve questions for a specific user and learning_objective.
 
     This view fetches questions based on the provided username and block_id,
     with optional filtering by grading mode.
@@ -78,19 +79,22 @@ class GetQuestionsView(CustomRetrieveAPIView):
         """
         Override the retrieve method to implement our custom logic.
         """
-        serializer = self.get_serializer(**kwargs)
-        username = serializer.data.get("username")
-        block_id = serializer.data.get("block_id")
 
-        qn_service = QuestionService(serializer=serializer)
+        serializer = self.get_serializer(data=kwargs)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        qn_service = QuestionService(data=validated_data)
         resources = qn_service.get_resources()
         question_data = []
 
         if not resources.question_set_ids:
-            log.info("No valid question IDs found for user %s", username)
+            log.info(
+                "No valid question IDs found for user %s", validated_data["username"]
+            )
             return Response(
                 {
-                    "message": f"No valid question IDs found for user {username}",
+                    "message": f"No valid question IDs found for user {validated_data['username']}",
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
@@ -99,12 +103,12 @@ class GetQuestionsView(CustomRetrieveAPIView):
 
         # Only fetch questions if not in grading mode
         if not grading_mode:
-            question_data = qn_service.get_questions_from_ids()
+            question_data = async_to_sync(qn_service.get_questions_from_ids)()
 
         return Response(
             {
-                "username": username,
-                "block_id": block_id,
+                "username": validated_data["username"],
+                "block_id": validated_data["block_id"],
                 "questions": question_data,
                 "grading_mode": grading_mode,
             },

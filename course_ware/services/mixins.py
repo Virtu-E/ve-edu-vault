@@ -1,8 +1,13 @@
-from django.shortcuts import get_object_or_404
-from rest_framework.exceptions import ValidationError
+from typing import Dict, List
 
-from course_ware.models import (DefaultQuestionSet, EdxUser, SubTopic,
-                                UserQuestionSet)
+from django.shortcuts import get_object_or_404
+
+from course_ware.models import (
+    DefaultQuestionSet,
+    EdxUser,
+    LearningObjective,
+    UserQuestionSet,
+)
 
 
 class RetrieveUserAndResourcesMixin:
@@ -12,65 +17,57 @@ class RetrieveUserAndResourcesMixin:
     """
 
     @staticmethod
-    def get_user_from_validated_data(serializer) -> EdxUser:
+    def get_edx_user_from_username(username) -> EdxUser:
         """
-        Retrieve a User object based on 'username' from validated serializer data.
+        Retrieve a User object based on 'username'.
 
         Args:
-            serializer: The serializer containing validated data.
+            username: The username of the user.
 
         Returns:
             User: The retrieved User object.
 
-        Raises:
-            ValidationError: If 'username' is not in the validated data.
         """
-        if "username" not in serializer.validated_data:
-            raise ValidationError({"username": "Username is required."})
-        return get_object_or_404(
-            EdxUser, username=serializer.validated_data["username"]
-        )
+
+        return get_object_or_404(EdxUser, username=username)
 
     # TODO : i have to provide more data like category, course etc
     @staticmethod
-    def get_sub_topic_from_validated_data(serializer) -> SubTopic:
+    def get_learning_objective_from_block_id(block_id) -> LearningObjective:
         """
-        Retrieve a SubTopic object based on 'block_id' from validated serializer data.
+        Retrieve a LearningObjective object based on 'block_id'.
 
         Args:
-            serializer: The serializer containing validated data.
+            block_id: The block ID of the learning objective.
 
         Returns:
-            Topic: The retrieved Topic object.
+            LearningObjective: The retrieved LearningObjective object.
 
-        Raises:
-            ValidationError: If 'block_id' is not in the validated data.
         """
-        if "block_id" not in serializer.validated_data:
-            raise ValidationError({"block_id": "Block ID is required."})
-        return get_object_or_404(
-            SubTopic, block_id=serializer.validated_data["block_id"]
-        )
+
+        return get_object_or_404(LearningObjective, block_id=block_id)
 
     @staticmethod
-    def get_user_question_set(user, sub_topic):
+    def get_user_question_set(
+        user: EdxUser, objective: LearningObjective
+    ) -> List[Dict[str, str]]:
         """
-        Retrieve the UserQuestionSet object for the given user and topic.
+        Retrieve the UserQuestionSet object for the given user and learning objective.
 
         Args:
-            user (User): The User object.
-            sub_topic (SubTopic): The Topic object.
+            user (EdxUser): The User object.
+            objective (LearningObjective): The LearningObjective object.
 
         Returns:
             UserQuestionSet: The retrieved UserQuestionSet object.
         """
         # the first requirement is for the default question set to exist
         default_question_set = get_object_or_404(
-            DefaultQuestionSet, sub_topic=sub_topic
+            DefaultQuestionSet, learning_objective=objective
         )
         user_question_set, created = UserQuestionSet.objects.get_or_create(
             user=user,
-            topic=sub_topic,
+            learning_objective=objective,
             defaults={"question_list_ids": default_question_set.question_list_ids},
         )
-        return user_question_set
+        return user_question_set.question_list_ids
