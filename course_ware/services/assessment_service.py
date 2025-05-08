@@ -1,14 +1,14 @@
 from ai_core.validator.validator_engine import ValidationEngine
-from course_ware.models import UserQuestionAttempts, UserQuestionSet
-from repository.data_types import Question
-from repository.question_respository import MongoQuestionRepository
+from course_ware.models import UserQuestionSet
+from repository.question_repository.mongo_qn_repository import MongoQuestionRepository
+from repository.question_repository.qn_repository_data_types import Question
 
 
 class AssessmentPreparationService:
     def __init__(
         self,
         collection_name: str,
-        user_question_attempts: UserQuestionAttempts,
+        user_question_attempts,
         user_question_set: UserQuestionSet,
         mongo_repo=MongoQuestionRepository,
         validation_engine=ValidationEngine(),

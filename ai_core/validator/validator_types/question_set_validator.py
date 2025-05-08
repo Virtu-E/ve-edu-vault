@@ -1,7 +1,7 @@
 from typing import Union
 
 from ai_core.validator.base_validator import BaseValidator
-from course_ware.models import UserQuestionAttempts, UserQuestionSet
+from course_ware.models import UserQuestionSet
 
 
 class QuestionSetMetadataValidator(BaseValidator):
@@ -42,10 +42,10 @@ class QuestionSetMetadataValidator(BaseValidator):
         # Validate attempt_instance
         if not attempt_instance:
             raise ValueError("attempt_instance not provided in kwargs")
-        if not isinstance(attempt_instance, UserQuestionAttempts):
-            raise ValueError(
-                f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}"
-            )
+        # if not isinstance(attempt_instance, UserQuestionAttempts):
+        #     raise ValueError(
+        #         f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}"
+        #     )
 
         self.question_set = question_set
         self.attempt_instance = attempt_instance

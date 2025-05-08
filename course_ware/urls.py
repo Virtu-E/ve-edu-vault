@@ -28,7 +28,7 @@ urlpatterns = [
     ),
     # Question attempts endpoints
     path(
-        "question-attempts/",
+        "question-attempt/",
         PostQuestionAttemptView.as_view(),
         name="question-attempt-create",
     ),
@@ -38,7 +38,7 @@ urlpatterns = [
         name="question-attempt-detail",
     ),
     path(
-        "users/<str:username>/subtopics/<str:block_id>/attempts/",
+        "users/<str:username>/objectives/<str:block_id>/attempts/",
         GetQuestionAttemptView.as_view(),
         name="question-attempts-list",
     ),

@@ -16,7 +16,7 @@ from .models import (
     QuestionCategory,
     SubTopic,
     Topic,
-    UserQuestionAttempts,
+    UserAssessmentAttempt,
     UserQuestionSet,
 )
 
@@ -152,13 +152,11 @@ class DefaultQuestionSetAdmin(JsonWidgetModelAdmin):
     raw_id_fields = ["learning_objective"]
 
 
-@admin.register(UserQuestionAttempts)
-class UserQuestionAttemptsAdmin(JsonWidgetModelAdmin):
+@admin.register(UserAssessmentAttempt)
+class UserAssessmentAttemptAdmin(JsonWidgetModelAdmin):
     list_display = [
         "user",
         "learning_objective",
-        "get_correct_questions_count",
-        "get_incorrect_questions_count",
     ]
     search_fields = ["user__username", "learning_objective__name"]
     raw_id_fields = ["user", "learning_objective"]

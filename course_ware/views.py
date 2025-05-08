@@ -1,6 +1,7 @@
+import asyncio
 import logging
 
-from asgiref.sync import async_to_sync
+from asgiref.sync import async_to_sync, sync_to_async
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -9,25 +10,24 @@ from rest_framework.generics import RetrieveAPIView, UpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ai_core.learning_mode_rules import LearningModeType, LearningRuleFactory
-from ai_core.performance.performance_engine import PerformanceStatsEngine
-from course_ware.models import Course, UserQuestionSet
-from course_ware.serializers import PostQuestionAttemptSerializer
+from course_ware.models import Course
+from course_ware.serializers import (
+    PostQuestionAttemptSerializer,
+    UserQuestionAttemptSerializer,
+)
 from course_ware.services.question_service import QuestionService
-from data_types.questions import QuestionAttemptData
-from grade_book.progress_manager import LearningProgressManager
+from grade_book_v2.question_grading.grading_response_service import (
+    GradingResponseService,
+)
+from grade_book_v2.question_grading.qn_grading_service import SingleQuestionGrader
+from grade_book_v2.question_grading.qn_grading_types import AttemptedAnswer
 from oauth_clients.edx_client import EdxClient
 from oauth_clients.services import OAuthClient
 
-from .models import EdxUser, SubTopic, UserQuestionAttempts
-from .serializers import (
-    GetSingleQuestionSerializer,
-    QueryParamsSerializer,
-    UserQuestionAttemptSerializer,
-)
-from .services.assessment_service import AssessmentPreparationService
+from .models import SubTopic
+from .serializers import GetSingleQuestionSerializer, QueryParamsSerializer
 from .services.edx_content_service import EdxContentManager
-from .services.question_attempt_service import QuestionAttemptService
+from .services.util import get_assessment_id
 from .utils import find_sequential_path, get_iframe_id_from_outline
 
 log = logging.getLogger(__name__)
@@ -132,73 +132,84 @@ class GetSingleQuestionAttemptView(CustomRetrieveAPIView):
         """
         # automatically validates the serializer
         serializer = self.get_serializer(**kwargs)
-        question_id = serializer.data.get("question_id")
+        serializer.data.get("question_id")
 
         qn_service = QuestionService(serializer=serializer)
-        resources = qn_service.get_resources()
+        qn_service.get_resources()
 
-        user_question_attempt = get_object_or_404(
-            UserQuestionAttempts, user=resources.user, sub_topic=resources.sub_topic
-        )
+        # user_question_attempt = get_object_or_404(
+        #     UserQuestionAttempts, user=resources.user, sub_topic=resources.sub_topic
+        # )
 
         # Get metadata for this specific question
-        response = user_question_attempt.get_latest_question_metadata.get(question_id)
+        # response = user_question_attempt.get_latest_question_metadata.get(question_id)
+        #
+        # # Build response with summary counts
+        # total_correct = user_question_attempt.get_correct_questions_count
+        # total_incorrect = user_question_attempt.get_incorrect_questions_count
 
-        # Build response with summary counts
-        total_correct = user_question_attempt.get_correct_questions_count
-        total_incorrect = user_question_attempt.get_incorrect_questions_count
+        # if not response:
+        #     # Question doesn't have an entry yet
+        #     return Response(
+        #         {
+        #             "total_correct_count": total_correct,
+        #             "total_incorrect_count": total_incorrect,
+        #         },
+        #         status=status.HTTP_200_OK,
+        #     )
+        #
+        # # Return full question attempt data
+        # return Response(
+        #     QuestionAttemptData(
+        #         **response,
+        #         total_correct_count=total_correct,
+        #         total_incorrect_count=total_incorrect,
+        #     ).model_dump(),
+        #     status=status.HTTP_200_OK,
+        # )
 
-        if not response:
-            # Question doesn't have an entry yet
-            return Response(
-                {
-                    "total_correct_count": total_correct,
-                    "total_incorrect_count": total_incorrect,
-                },
-                status=status.HTTP_200_OK,
-            )
-
-        # Return full question attempt data
-        return Response(
-            QuestionAttemptData(
-                **response,
-                total_correct_count=total_correct,
-                total_incorrect_count=total_incorrect,
-            ).model_dump(),
-            status=status.HTTP_200_OK,
-        )
+        return {}
 
 
 class GetQuestionAttemptView(CustomRetrieveAPIView):
     """
-    API view to retrieve all question attempts for a user and topic.
+    API view to retrieve all question attempts for a user and learning_objective.
 
     This view returns a summary of all attempts made by a user for questions
-    in a specific topic.
+    in a specific learning objective.
     """
 
     serializer_class = UserQuestionAttemptSerializer
 
     def retrieve(self, request, *args, **kwargs):
-        serializer = self.get_serializer(**kwargs)
-        username = serializer.data.get("username")
-        block_id = serializer.data.get("block_id")
-        user = get_object_or_404(EdxUser, username=username)
-        sub_topic = get_object_or_404(SubTopic, block_id=block_id)
 
-        attempt, created = UserQuestionAttempts.objects.get_or_create(
-            user=user,
-            sub_topic=sub_topic,
+        return async_to_sync(self._async_retrieve)(request, *args, **kwargs)
+
+    async def _async_retrieve(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=kwargs)
+
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        qn_service = await sync_to_async(QuestionService)(data=validated_data)
+        resources = qn_service.get_resources()
+
+        grading_response_service = GradingResponseService.get_service(
+            collection_name=resources.collection_name
         )
-        if created:
-            log.info(
-                "Created new UserQuestionAttempts for user %s, topic %s",
-                username,
-                block_id,
-            )
 
-        response_serializer = UserQuestionAttemptSerializer(attempt)
-        return Response(response_serializer.data)
+        assessment_id = await get_assessment_id(
+            user=resources.user, learning_objective=resources.learning_objective
+        )
+        question_attempts = await grading_response_service.get_grading_responses(
+            user_id=resources.user.id,
+            collection_name=resources.collection_name,
+            assessment_id=assessment_id,
+        )
+
+        return Response(
+            data={model.question_id: model.model_dump() for model in question_attempts},
+            status=status.HTTP_200_OK,
+        )
 
 
 class CourseOutlinePathView(APIView):
@@ -288,32 +299,111 @@ def iframe_id_given_sub_topic_id(request, sub_topic_id: str) -> Response:
     return Response({"iframe_id": iframe_id}, status=status.HTTP_200_OK)
 
 
+# TODO : catch and handle this error : QuestionNotFoundError
 class PostQuestionAttemptView(CustomUpdateAPIView):
-    """Handle posting and processing of question attempts."""
+    """
+    View that handles a question attempt submission.
+
+    This view processes student answers to questions, grades them using the appropriate grader,
+    saves the attempt results, and returns the grading response.
+    """
 
     serializer_class = PostQuestionAttemptSerializer
 
-    def post(self, **kwargs):
+    def post(self, request, **kwargs):
+        """
+        Handle POST requests by delegating to the async implementation.
 
-        serializer = self.get_serializer(**kwargs)
+        Args:
+            request: The HTTP request object
+            **kwargs: Additional keyword arguments passed to the view
 
-        qn_service = QuestionService(serializer=serializer)
+        Returns:
+            Response: The HTTP response containing grading results
+        """
+        return async_to_sync(self._async_post)(request, **kwargs)
+
+    async def _async_post(self, request, **kwargs):
+        """
+        Asynchronous implementation of the POST request handler.
+
+        This method:
+        1. Validates the request data
+        2. Retrieves necessary resources
+        3. Gets the appropriate grader
+        4. Fetches the question and any existing attempt concurrently
+        5. Grades the attempted answer
+        6. Saves the attempt and grading response concurrently
+        7. Returns the grading result
+
+        Args:
+            request: The HTTP request object
+            **kwargs: Additional keyword arguments containing request data
+
+        Returns:
+            Response: HTTP response with grading results and 201 Created status
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        qn_service = await sync_to_async(QuestionService)(data=validated_data)
+
+        question_id = validated_data["question_id"]
+
         resources = qn_service.get_resources()
+        grader = SingleQuestionGrader.get_grader(resources.collection_name)
+        assessment_id = await get_assessment_id(
+            user=resources.user, learning_objective=resources.learning_objective
+        )
 
-        user_question_attempt = get_object_or_404(
-            UserQuestionAttempts, user=resources.user, sub_topic=resources.sub_topic
+        question, question_attempt = await asyncio.gather(
+            qn_service.get_question_by_id(question_id),
+            grader.get_question_attempt(
+                user_id=resources.user.id,
+                question_id=question_id,
+                assessment_id=assessment_id,
+            ),
         )
-        question_metadata = user_question_attempt.get_latest_question_metadata
-        qn_attempt_service = QuestionAttemptService(
-            collection_name=resources.collection_name,
-            metadata=question_metadata,
-            question_id=self.kwargs["question_id"],
-            choice_id=self.kwargs["choice_id"],
-            difficulty=self.kwargs["difficulty"],
-            sub_topic_name=resources.sub_topic.name,
+
+        attempted_answer = AttemptedAnswer(
+            question_type=validated_data["question_type"],
+            question_metadata=validated_data["question_metadata"],
         )
-        result = qn_attempt_service.process_question(user_question_attempt)
-        return result
+
+        grading_result = grader.grade(
+            user_id=resources.user.id,
+            attempted_answer=attempted_answer,
+            question=question,
+            question_attempt=question_attempt,
+        )
+
+        grading_response_service = GradingResponseService.get_service(
+            collection_name=resources.collection_name
+        )
+        if grading_result.success:
+            await asyncio.gather(
+                grader.save_attempt(
+                    user_id=resources.user.id,
+                    question=question,
+                    is_correct=grading_result.is_correct,
+                    score=grading_result.score,
+                    assessment_id=assessment_id,
+                    question_attempt=question_attempt,
+                ),
+                grading_response_service.save_grading_response(
+                    user_id=resources.user.id,
+                    question_id=question_id,
+                    assessment_id=assessment_id,
+                    grading_response=grading_result,
+                    question_type=question.question_type,
+                ),
+            )
+
+        return Response(
+            grading_result.to_dict(),
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class QuizCompletionView(CustomUpdateAPIView):
@@ -329,42 +419,42 @@ class QuizCompletionView(CustomUpdateAPIView):
         serializer = self.get_serializer(**kwargs)
 
         qn_service = QuestionService(serializer=serializer)
-        resources = qn_service.get_resources()
+        qn_service.get_resources()
 
-        user_question_attempt = get_object_or_404(
-            UserQuestionAttempts, user=resources.user, sub_topic=resources.sub_topic
-        )
-        user_question_set = get_object_or_404(
-            UserQuestionSet, user=resources.user, sub_topic=resources.sub_topic
-        )
+        # user_question_attempt = get_object_or_404(
+        #     UserQuestionAttempts, user=resources.user, sub_topic=resources.sub_topic
+        # )
+        # user_question_set = get_object_or_404(
+        #     UserQuestionSet, user=resources.user, sub_topic=resources.sub_topic
+        # )
+        #
+        # # prepare data for grading
+        # AssessmentPreparationService(
+        #     collection_name=resources.collection_name,
+        #     user_question_attempts=user_question_attempt,
+        #     user_question_set=user_question_set,
+        # ).prepare_data_for_grading()
+        #
+        # learning_mode = LearningModeType(user_question_attempt.current_learning_mode)
+        # learning_rule = LearningRuleFactory.get_rule(learning_mode)
+        #
+        # performance_stats = PerformanceStatsEngine.create_performance_stats(
+        #     user_question_attempts=user_question_attempt,
+        #     required_correct_questions=learning_rule.required_correct_questions,
+        # )
+        #
+        # grader = LearningProgressManager(
+        #     user_attempt=user_question_attempt,
+        #     user_question_set=user_question_set,
+        #     sub_topic=resources.sub_topic,
+        #     user=resources.user,
+        #     performance_stats=performance_stats(),
+        # )
 
-        # prepare data for grading
-        AssessmentPreparationService(
-            collection_name=resources.collection_name,
-            user_question_attempts=user_question_attempt,
-            user_question_set=user_question_set,
-        ).prepare_data_for_grading()
-
-        learning_mode = LearningModeType(user_question_attempt.current_learning_mode)
-        learning_rule = LearningRuleFactory.get_rule(learning_mode)
-
-        performance_stats = PerformanceStatsEngine.create_performance_stats(
-            user_question_attempts=user_question_attempt,
-            required_correct_questions=learning_rule.required_correct_questions,
-        )
-
-        grader = LearningProgressManager(
-            user_attempt=user_question_attempt,
-            user_question_set=user_question_set,
-            sub_topic=resources.sub_topic,
-            user=resources.user,
-            performance_stats=performance_stats(),
-        )
-
-        grading_result = grader.evaluate_and_process()
+        # grading_result = grader.evaluate_and_process()
 
         return Response(
-            grading_result.model_dump(),
+            {},
             status=status.HTTP_201_CREATED,
         )
 

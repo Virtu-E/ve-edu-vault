@@ -5,7 +5,8 @@ from typing import Dict, List
 from rest_framework.exceptions import ValidationError
 
 from exceptions import ParsingError, QuestionNotFoundError
-from repository.question_respository import MongoQuestionRepository
+from repository.question_repository.mongo_qn_repository import MongoQuestionRepository
+from repository.question_repository.qn_repository_data_types import Question
 
 from ..models import SubTopic
 from .mixins import RetrieveUserAndResourcesMixin
@@ -65,6 +66,7 @@ class QuestionService(RetrieveUserAndResourcesMixin):
         self._question_set_ids = self.get_user_question_set(
             self._user, self._learning_objective
         )
+        self._question_repo = MongoQuestionRepository.get_repo()
 
     def _validate_question_exists(self, question_id: str) -> bool:
         """
@@ -83,9 +85,7 @@ class QuestionService(RetrieveUserAndResourcesMixin):
             QuestionNotFoundError: If the question ID is not found in the user's question set.
                                   Includes details about the missing question ID and user.
         """
-        if question_id not in {
-            question.values() for question in self._question_set_ids
-        }:
+        if question_id not in {question["id"] for question in self._question_set_ids}:
             log.error(
                 "Question ID '%s' not found in question set for user '%s'",
                 question_id,
@@ -171,14 +171,24 @@ class QuestionService(RetrieveUserAndResourcesMixin):
             List[Dict]: A list of serialized Question objects corresponding to the
                        question IDs in the user's question set.
         """
-        question_repo = MongoQuestionRepository.get_repo()
-        questions = await question_repo.get_questions_by_ids(
+
+        questions = await self._question_repo.get_questions_by_ids(
             collection_name=self._collection_name, question_ids=self._question_set_ids
         )
 
         # Convert Pydantic models to dictionaries
         dumped_questions = [question.model_dump() for question in questions]
         return dumped_questions
+
+    async def get_question_by_id(self, question_id: str) -> Question:
+        """
+        Retrieve a Question object based on the question ID from mongo db
+        """
+
+        question = await self._question_repo.get_question_by_single_id(
+            collection_name=self._collection_name, question_id=question_id
+        )
+        return question
 
     def is_grading_mode(self) -> bool:
         """
