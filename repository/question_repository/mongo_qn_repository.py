@@ -4,15 +4,17 @@ from typing import Any, Dict, Iterable, List
 from bson import ObjectId, errors
 
 from edu_vault.settings import common
-
-from .data_types import Question
-from .databases.no_sql_database.mongodb import AsyncMongoDatabaseEngine, mongo_database
-from .repository_mixin import QuestionRepositoryMixin
+from repository.databases.no_sql_database.mongodb import (
+    AsyncMongoDatabaseEngine,
+    mongo_database,
+)
+from repository.question_repository.base_qn_repository import AbstractQuestionRepository
+from repository.question_repository.qn_repository_data_types import Question
 
 log = logging.getLogger(__name__)
 
 
-class MongoQuestionRepository(QuestionRepositoryMixin):
+class MongoQuestionRepository(AbstractQuestionRepository):
     """
     Repository class for retrieving Question objects from MongoDB.
 
@@ -42,7 +44,7 @@ class MongoQuestionRepository(QuestionRepositoryMixin):
         )
 
     async def get_questions_by_ids(
-        self, question_ids: List[str], collection_name: str
+        self, question_ids: List[Dict[str, str]], collection_name: str
     ) -> List[Question]:
         """
         Retrieve multiple questions by their IDs from the specified collection.
@@ -266,11 +268,13 @@ class MongoQuestionRepository(QuestionRepositoryMixin):
 
     @classmethod
     def get_repo(cls):
-        database_name = getattr(common, "NO_SQL_DATABASE_NAME", None)
+        database_name = getattr(common, "NO_SQL_QUESTIONS_DATABASE_NAME", None)
         if database_name is None:
-            log.error("NO_SQL_DATABASE_NAME not configured in settings")
+            log.error("NO_SQL_QUESTIONS_DATABASE_NAME not configured in settings")
             # TODO : raise custom error exception here for better details
-            raise RuntimeError("NO_SQL_DATABASE_NAME not configured in settings")
+            raise RuntimeError(
+                "NO_SQL_QUESTIONS_DATABASE_NAME not configured in settings"
+            )
 
         log.info("Creating MongoQuestionRepository instance")
 
