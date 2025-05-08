@@ -18,7 +18,12 @@ from course_ware.models import (
     UserQuestionSet,
 )
 from data_types.course_ware_schema import QuestionMetadata
-from repository.data_types import Choice, Metadata, Question, Solution
+from repository.question_repository.qn_repository_data_types import (
+    Choice,
+    Metadata,
+    Question,
+    Solution,
+)
 
 
 class UserFactory(DjangoModelFactory):

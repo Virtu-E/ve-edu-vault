@@ -1,5 +1,5 @@
 from ai_core.performance.data_types import PerformanceStatsData
-from course_ware.models import EdxUser, SubTopic, UserQuestionAttempts, UserQuestionSet
+from course_ware.models import EdxUser, SubTopic, UserQuestionSet
 from data_types.ai_core import EvaluationResult
 from grade_book.learning_context import LearningModeContext
 
@@ -13,7 +13,7 @@ class LearningProgressManager:
 
     def __init__(
         self,
-        user_attempt: UserQuestionAttempts,
+        user_attempt,
         user_question_set: UserQuestionSet,
         sub_topic: SubTopic,
         user: EdxUser,

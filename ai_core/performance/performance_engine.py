@@ -11,7 +11,6 @@ import logging
 from abc import ABC
 
 from ai_core.performance.metrics.metrics_aggregator import MetricsAggregator
-from course_ware.models import UserQuestionAttempts
 from data_types.course_ware_schema import QuestionMetadata
 
 from .data_types import PerformanceStatsData
@@ -52,7 +51,7 @@ class PerformanceStatsEngine(PerformanceStatsBase):
 
     def __init__(
         self,
-        user_question_attempts: UserQuestionAttempts,
+        user_question_attempts,
         metrics_aggregator: MetricsAggregator,
     ):
         """
@@ -95,7 +94,7 @@ class PerformanceStatsEngine(PerformanceStatsBase):
     @classmethod
     def create_performance_stats(
         cls,
-        user_question_attempts: UserQuestionAttempts,
+        user_question_attempts,
         required_correct_questions: int,
     ) -> "PerformanceStatsEngine":
         """

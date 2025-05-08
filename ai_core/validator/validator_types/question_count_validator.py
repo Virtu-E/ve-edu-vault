@@ -4,7 +4,6 @@ from pydantic import ValidationError
 
 from ai_core.learning_mode_rules import LearningModeType, LearningRuleFactory
 from ai_core.validator.base_validator import BaseValidator
-from course_ware.models import UserQuestionAttempts
 
 
 class PrerequisiteQuestionCountValidator(BaseValidator):
@@ -21,10 +20,10 @@ class PrerequisiteQuestionCountValidator(BaseValidator):
         if not attempt_instance:
             raise ValueError("user_question_attempt_instance not provided in kwargs")
 
-        if not isinstance(attempt_instance, UserQuestionAttempts):
-            raise ValueError(
-                f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}"
-            )
+        # if not isinstance(attempt_instance, UserQuestionAttempts):
+        #     raise ValueError(
+        #         f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}"
+        #     )
 
         self.attempt_instance = attempt_instance
 

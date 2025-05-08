@@ -3,7 +3,6 @@ from typing import Union
 from pydantic import ValidationError
 
 from ai_core.validator.base_validator import BaseValidator
-from course_ware.models import UserQuestionAttempts
 from data_types.course_ware_schema import QuestionMetadata
 
 
@@ -21,10 +20,10 @@ class QuestionMetadataValidator(BaseValidator):
         if not attempt_instance:
             raise ValueError("user_question_attempt_instance not provided in kwargs")
 
-        if not isinstance(attempt_instance, UserQuestionAttempts):
-            raise ValueError(
-                f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}"
-            )
+        # if not isinstance(attempt_instance, UserQuestionAttempts):
+        #     raise ValueError(
+        #         f"Expected UserQuestionAttempts instance, got {type(attempt_instance)}"
+        #     )
 
         self.attempt_instance = attempt_instance
 

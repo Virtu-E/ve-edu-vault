@@ -4,9 +4,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from course_ware.models import Topic
-from repository.flash_card import FlashCardRepoFactory
-
-from .serializers import FlashCardQuestionSerializer
 
 
 class FlashcardView(APIView):
@@ -15,17 +12,18 @@ class FlashcardView(APIView):
             topic = get_object_or_404(Topic, block_id=block_id)
             course_key = topic.category.course.course_key
 
-            question_repo = FlashCardRepoFactory.create_repository(course_key)
-            query = {
-                "academic_class": topic.category.academic_class.name,
-                "examination_level": topic.category.examination_level.name,
-                "topic": topic.name,
-            }
-            flash_cards = question_repo.get_card_collection(query=query)
+            # question_repo = FlashCardRepoFactory.create_repository(course_key)
+            # query = {
+            #     "academic_class": topic.category.academic_class.name,
+            #     "examination_level": topic.category.examination_level.name,
+            #     "topic": topic.name,
+            # }
+            # flash_cards = question_repo.get_card_collection(query=query)
 
-            serializer = FlashCardQuestionSerializer(flash_cards, many=True)
+            # serializer = FlashCardQuestionSerializer(flash_cards, many=True)
+            return course_key
 
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            # return Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response(

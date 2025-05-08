@@ -27,6 +27,7 @@ from .nosql_database_engine import AsyncBaseNoSqLDatabaseEngine
 log = logging.getLogger(__name__)
 
 
+# TODO : dont catch all exceptions. Only catch specific ones
 class AsyncMongoDatabaseEngine(AsyncBaseNoSqLDatabaseEngine):
     """
     Asynchronous MongoDB database engine implementation
@@ -235,7 +236,7 @@ class AsyncMongoDatabaseEngine(AsyncBaseNoSqLDatabaseEngine):
         collection_name: str,
         database_name: str,
         timestamp: bool = True,
-    ) -> None:
+    ) -> bool:
         """
         Write data to MongoDB collection asynchronously.
 
@@ -244,6 +245,9 @@ class AsyncMongoDatabaseEngine(AsyncBaseNoSqLDatabaseEngine):
             collection_name: Name of the collection
             database_name: Name of the database
             timestamp: Whether to add timestamp to documents
+
+        Returns:
+            bool: True if operation was acknowledged, False otherwise
 
         Raises:
             MongoDbOperationError: If the write operation fails
@@ -257,12 +261,15 @@ class AsyncMongoDatabaseEngine(AsyncBaseNoSqLDatabaseEngine):
                         {**doc, "created_at": datetime.now(timezone.utc)}
                         for doc in data
                     ]
-                await collection.insert_many(data)
-                return
+                result = await collection.insert_many(data)
+                self._logger.debug("Successfully wrote data to %s", collection_name)
+                return result.acknowledged
 
             if timestamp:
                 data["created_at"] = datetime.now(timezone.utc)
-            await collection.insert_one(data)
+            result = await collection.insert_one(data)
+            self._logger.debug("Successfully wrote data to %s", collection_name)
+            return result.acknowledged
 
         except Exception as e:
             self._logger.error("Error writing to %s: %s", collection_name, e)
@@ -272,8 +279,53 @@ class AsyncMongoDatabaseEngine(AsyncBaseNoSqLDatabaseEngine):
                 collection=collection_name,
                 details=str(e),
             ) from e
-        finally:
-            self._logger.debug("Successfully wrote data to %s", collection_name)
+
+    async def update_one_to_db(
+        self,
+        collection_name: str,
+        database_name: str,
+        query: Dict,
+        update: Dict,
+        upsert: bool = False,
+    ) -> bool:
+        """
+        Update a single document in a MongoDB collection asynchronously.
+
+        Args:
+            collection_name: Name of the collection
+            database_name: Name of the database
+            query: MongoDB query filter to identify the document
+            update: Update operations to apply to the document
+            upsert: If True, create a new document when no document matches the query
+
+        Returns:
+            bool: True if operation was acknowledged, False otherwise
+
+        Raises:
+            MongoDbOperationError: If the update operation fails
+        """
+        try:
+            collection = await self._get_collection(collection_name, database_name)
+            result = await collection.update_one(query, update, upsert=upsert)
+
+            self._logger.debug(
+                "Successfully updated document in %s. Matched: %d, Modified: %d",
+                collection_name,
+                result.matched_count,
+                result.modified_count,
+            )
+
+            return result.acknowledged
+
+        except Exception as e:
+            self._logger.error("Error updating document in %s: %s", collection_name, e)
+            raise MongoDbOperationError(
+                message=f"Failed to update document: {str(e)}",
+                operation="update_one",
+                collection=collection_name,
+                query=query,
+                details=str(e),
+            ) from e
 
     async def run_aggregation(
         self,

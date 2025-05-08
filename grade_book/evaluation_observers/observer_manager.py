@@ -4,7 +4,7 @@ from typing import List
 from django.db import transaction
 
 from ai_core.performance.data_types import PerformanceStatsData
-from course_ware.models import EdxUser, SubTopic, UserQuestionAttempts, UserQuestionSet
+from course_ware.models import EdxUser, SubTopic, UserQuestionSet
 from data_types.ai_core import EvaluationResult
 from grade_book.evaluation_observers.base_observer import EvaluationObserver
 from grade_book.evaluation_observers.database_observers import (
@@ -47,7 +47,7 @@ class EvaluationSideEffectManager:
 
     def __init__(
         self,
-        user_attempt: UserQuestionAttempts,
+        user_attempt,
         user_question_set: UserQuestionSet,
         sub_topic: SubTopic,
         user: EdxUser,
@@ -60,7 +60,7 @@ class EvaluationSideEffectManager:
 
     def _setup_observers(
         self,
-        user_attempt: UserQuestionAttempts,
+        user_attempt,
         user_question_set: UserQuestionSet,
         sub_topic: SubTopic,
         user: EdxUser,

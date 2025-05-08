@@ -4,10 +4,9 @@ from decouple import config
 from rest_framework import status
 from rest_framework.response import Response
 
-from course_ware.models import UserQuestionAttempts
 from data_types.questions import QuestionAttemptData
-from repository.data_types import Question
-from repository.question_respository import MongoQuestionRepository
+from repository.question_repository.mongo_qn_repository import MongoQuestionRepository
+from repository.question_repository.qn_repository_data_types import Question
 
 MAX_ATTEMPTS = config("MAX_QUESTION_ATTEMPTS", default=3, cast=int)
 
@@ -30,7 +29,7 @@ class QuestionAttemptService:
         self._difficulty = difficulty
         self._question_repo = MongoQuestionRepository.get_repo()
 
-    def process_question(self, user_question_attempt: UserQuestionAttempts) -> Response:
+    def process_question(self, user_question_attempt) -> Response:
         """
         Process a question attempt and return the appropriate response.
 

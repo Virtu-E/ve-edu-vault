@@ -1,7 +1,7 @@
 from asgiref.sync import sync_to_async
 
 from ai_core.performance.data_types import PerformanceStatsData
-from course_ware.models import EdxUser, SubTopic, UserQuestionAttempts, UserQuestionSet
+from course_ware.models import EdxUser, SubTopic, UserQuestionSet
 from course_ware_ext.models import TopicMastery
 from data_types.ai_core import EvaluationResult
 from grade_book.evaluation_observers.base_observer import EvaluationObserver
@@ -10,7 +10,7 @@ from grade_book.evaluation_observers.base_observer import EvaluationObserver
 class UserAttemptObserver(EvaluationObserver):
     """Updates user attempt based on evaluation result"""
 
-    def __init__(self, user_attempt: UserQuestionAttempts):
+    def __init__(self, user_attempt):
         self._user_attempt = user_attempt
 
     async def process_async(self, evaluation_result: EvaluationResult) -> None:
