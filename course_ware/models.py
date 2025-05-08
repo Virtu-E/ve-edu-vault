@@ -1,18 +1,23 @@
 import logging
 import re
+import uuid
 from enum import Enum
-from typing import Any, Union
+from typing import Tuple
 
 from django.db import models, transaction
 
 from ai_core.learning_mode_rules import LearningModeType
-from exceptions import VersionParsingError
 
 log = logging.getLogger(__name__)
 
 DEFAULT_VERSION = "v1.0.0"
 VERSION_PATTERN = re.compile(r"v(\d+)\.(\d+)\.(\d+)")
 LEARNING_MODES = [(mode.name.capitalize(), mode.value) for mode in LearningModeType]
+
+
+class AttemptStatusEnum(Enum):
+    ACTIVE = "active"
+    GRADED = "graded"
 
 
 class ExaminationLevelChoices(Enum):
@@ -23,7 +28,7 @@ class ExaminationLevelChoices(Enum):
     IGSCE = "IGSCE"
 
 
-LEVEL_CHOICES = [(mode.name, mode.value) for mode in ExaminationLevelChoices]
+LEVEL_CHOICES = [(mode.value, mode.name) for mode in ExaminationLevelChoices]
 
 CLASS_CHOICES = [
     ("Form 1", "Form 1"),
@@ -31,6 +36,9 @@ CLASS_CHOICES = [
     ("Form 3", "Form 3"),
     ("Form 4", "Form 4"),
 ]
+
+# This will give [("active", "ACTIVE"), ("graded", "GRADED")]
+ATTEMPT_STATUS_CHOICES = [(mode.value, mode.name) for mode in AttemptStatusEnum]
 
 
 class EdxUser(models.Model):
@@ -256,160 +264,64 @@ class DefaultQuestionSet(BaseQuestionSet):
         return f"Sub Topic: {self.learning_objective.name} Default Question Set"
 
 
-class UserQuestionAttempts(models.Model):
+class UserAssessmentAttempt(models.Model):
     """
-    Stores user attempts for questions within a specific sub topic.
-
-    Instead of creating a separate table for each question attempt,
-    we use a JSON field to store the attempt data. This design choice
-    accommodates the dynamic nature of the questions,
-    which can change or be updated at any time based on user progress or other factors.
-    Using a JSON field is more efficient than managing hundreds of tables,
-    as it simplifies operations such as deleting,
-    modifying, or updating questions without requiring extensive structural changes to the database.
+    Stores user attempts for questions in a learning_objective.
     """
 
     user = models.ForeignKey(
-        EdxUser, on_delete=models.CASCADE, related_name="question_attempts"
+        EdxUser, on_delete=models.CASCADE, related_name="assessment_attempts"
     )
-    learning_objective = models.OneToOneField(
+    # unique UUID per assessment
+    assessment_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
+    learning_objective = models.ForeignKey(
         LearningObjective, on_delete=models.CASCADE, related_name="attempts"
     )
-    # the data is stored in this format :  dict[str, dict[str, QuestionMetadata | Any]]. Check in data types module
-    # for more info ( course_ware_schema.py )
-    question_metadata = models.JSONField(
-        help_text="Metadata for questions attempted by the user.",
-        default={"v1.0.0": dict},
+    status = models.CharField(
+        max_length=20,
+        choices=ATTEMPT_STATUS_CHOICES,
+        default=AttemptStatusEnum.ACTIVE.value,
     )
-    current_learning_mode = models.CharField(
-        choices=LEARNING_MODES, default="normal", max_length=255
-    )
-
-    # TODO : extract this to Mongo DB
-    question_metadata_description = models.JSONField(
-        help_text="Stores status information and guidance for questions",
-        default={
-            "v1.0.0": {
-                "status": "Not Started",
-                "guidance": "Complete the practice set to assess your knowledge level",
-                "learning_mode": "normal",
-                "mode_guidance": "Answer and complete 2 out of 3 questions for each difficulty level (easy, medium, and hard) to finish the section.",
-            }
-        },
-    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "User Question Attempt"
-        verbose_name_plural = "User Questions Attempts"
-
-    @staticmethod
-    def _parse_version(version: str) -> tuple:
-        """
-        Parse version string into tuple of integers.
-
-        Args:
-            version: Version string (e.g., 'v1.0.0')
-
-        Returns:
-            Tuple of integers representing version components
-        """
-        try:
-            parts = version.lstrip("v").split(".")
-            return tuple(map(int, parts))
-        except (ValueError, AttributeError):
-            log.error("Unable to parse version string %s", version)
-            raise (VersionParsingError(version))
-
-    @property
-    def get_current_version(self) -> str:
-        """
-        Retrieve the current version based on question metadata.
-
-        Returns:
-            str: The current version key with the highest value based on parsing.
-        """
-        return max(self.question_metadata.keys(), key=self._parse_version)
-
-    @property
-    def get_latest_question_metadata(self) -> dict[str, dict | Any]:
-        """
-        Get the current (latest) question version from metadata.
-
-        Returns:
-            Dictionary containing the question metadata (
-               -> Top-level key: Question ID,ƒ
-               -> Second-level key: QuestionMetadata )
-        """
-        return self.question_metadata[self.get_current_version]
-
-    @property
-    def get_correct_questions_count(self) -> int:
-        question_metadata = self.get_latest_question_metadata
-        correct_count = len([q for q in question_metadata.values() if q["is_correct"]])
-        return correct_count
-
-    @property
-    def get_incorrect_questions_count(self) -> int:
-        question_metadata = self.get_latest_question_metadata
-        incorrect_count = len(
-            [q for q in question_metadata.values() if not q["is_correct"]]
-        )
-        return incorrect_count
-
-    @property
-    def get_next_version(self) -> str:
-        """
-        Generates the next version number based on existing versions.
-
-        Returns:
-            Next version string in the format "vX.Y.Z"
-        """
-
-        versions = self.question_metadata
-
-        if not versions:
-            return DEFAULT_VERSION
-
-        try:
-            version_keys = sorted(
-                versions.keys(),
-                key=lambda x: [int(i) for i in x.lstrip("v").split(".")],
+        verbose_name = "User Assessment Attempt"
+        verbose_name_plural = "User Assessment Attempts"
+        constraints = [
+            # Ensure only one active attempt per user-objective pair
+            models.UniqueConstraint(
+                fields=["user", "learning_objective"],
+                condition=models.Q(status=AttemptStatusEnum.ACTIVE.value),
+                name="unique_active_attempt",
             )
-            latest_version = version_keys[-1]
+        ]
 
-            if match := VERSION_PATTERN.match(latest_version):
-                major = int(match.group(1))
-                return f"v{major + 1}.0.0"
+    @classmethod
+    def get_or_create_attempt(
+        cls, user, learning_objective, **kwargs
+    ) -> Tuple["UserAssessmentAttempt", bool]:
+        """Get existing active attempt or create a new one if none exists"""
 
-        except KeyError as e:
-            log.error(f"Version parsing error: {str(e)}")
-            raise VersionParsingError(f"Version parsing error: {str(e)}")
-
-    @property
-    def get_questions_by_status(self) -> list[dict[str, Union[str, int]]]:
-        """
-        Returns a list of questions with their status (correct, incorrect, or unattempted)
-        and question text from the latest question metadata.
-
-        Returns:
-            List of dictionaries, each containing:
-            - id: Question ID (number)
-            - status: Status of the question (correct/incorrect/unattempted)
-            - text: Question text
-        """
-        question_metadata = self.get_latest_question_metadata
-        questions_list = []
-
-        for question_id, metadata in question_metadata.items():
-            questions_list.append(
-                {
-                    "id": str(question_id),
-                    "status": "correct" if metadata.get("is_correct") else "incorrect",
-                    "question_pos": 10,
-                }
+        with transaction.atomic():
+            attempt, created = cls.objects.get_or_create(
+                user=user,
+                learning_objective=learning_objective,
+                status="active",
+                defaults=kwargs,
             )
+            return attempt, created
 
-        return questions_list
+    def mark_as_graded(self) -> None:
+        """Mark this attempt as graded/completed"""
+        self.status = AttemptStatusEnum.GRADED.value
+        self.save(update_fields=["status", "updated_at"])
 
-    def __str__(self):
-        return f"{self.user.username} - {self.learning_objective.name} Attempts"
+    @classmethod
+    def has_active_attempt(cls, user, learning_objective) -> bool:
+        """Check if the user has an active attempt for this learning objective"""
+        return cls.objects.filter(
+            user=user,
+            learning_objective=learning_objective,
+            status=AttemptStatusEnum.ACTIVE.value,
+        ).exists()
