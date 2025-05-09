@@ -2,7 +2,7 @@ import logging
 import re
 import uuid
 from enum import Enum
-from typing import Tuple
+from typing import Optional, Tuple
 
 from django.db import models, transaction
 
@@ -18,6 +18,7 @@ LEARNING_MODES = [(mode.name.capitalize(), mode.value) for mode in LearningModeT
 class AttemptStatusEnum(Enum):
     ACTIVE = "active"
     GRADED = "graded"
+    PENDING_RESULT = "pending_result"
 
 
 class ExaminationLevelChoices(Enum):
@@ -298,6 +299,34 @@ class UserAssessmentAttempt(models.Model):
         ]
 
     @classmethod
+    def get_active_attempt(
+        cls, user, learning_objective
+    ) -> Optional["UserAssessmentAttempt"]:
+        """
+        Get the active attempt for user and learning objective if it exists.
+
+        Args:
+            user: The user to check
+            learning_objective: The learning objective
+
+        Returns:
+            The active attempt or None if no active attempt exists
+        """
+        try:
+            return cls.objects.get(
+                user=user,
+                learning_objective=learning_objective,
+                status=AttemptStatusEnum.ACTIVE.value,
+            )
+        except cls.DoesNotExist:
+            return None
+
+    @classmethod
+    def has_active_attempt(cls, user, learning_objective) -> bool:
+        """Check if the user has an active attempt for this learning objective"""
+        return cls.get_active_attempt(user, learning_objective) is not None
+
+    @classmethod
     def get_or_create_attempt(
         cls, user, learning_objective, **kwargs
     ) -> Tuple["UserAssessmentAttempt", bool]:
@@ -307,7 +336,7 @@ class UserAssessmentAttempt(models.Model):
             attempt, created = cls.objects.get_or_create(
                 user=user,
                 learning_objective=learning_objective,
-                status="active",
+                status=AttemptStatusEnum.ACTIVE.value,
                 defaults=kwargs,
             )
             return attempt, created
@@ -316,12 +345,3 @@ class UserAssessmentAttempt(models.Model):
         """Mark this attempt as graded/completed"""
         self.status = AttemptStatusEnum.GRADED.value
         self.save(update_fields=["status", "updated_at"])
-
-    @classmethod
-    def has_active_attempt(cls, user, learning_objective) -> bool:
-        """Check if the user has an active attempt for this learning objective"""
-        return cls.objects.filter(
-            user=user,
-            learning_objective=learning_objective,
-            status=AttemptStatusEnum.ACTIVE.value,
-        ).exists()

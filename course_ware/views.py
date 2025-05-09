@@ -2,20 +2,18 @@ import asyncio
 import logging
 
 from asgiref.sync import async_to_sync, sync_to_async
-from django.http import Http404, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.decorators import api_view
 from rest_framework.generics import RetrieveAPIView, UpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from course_ware.models import Course
+from course_ware.models import Course, UserAssessmentAttempt, UserQuestionSet
 from course_ware.serializers import (
     PostQuestionAttemptSerializer,
     UserQuestionAttemptSerializer,
 )
-from course_ware.services.question_service import QuestionService
 from grade_book_v2.question_grading.grading_response_service import (
     GradingResponseService,
 )
@@ -24,11 +22,11 @@ from grade_book_v2.question_grading.qn_grading_types import AttemptedAnswer
 from oauth_clients.edx_client import EdxClient
 from oauth_clients.services import OAuthClient
 
-from .models import SubTopic
-from .serializers import GetSingleQuestionSerializer, QueryParamsSerializer
+from .mixins import QuestionServiceMixin
+from .serializers import QueryParamsSerializer
 from .services.edx_content_service import EdxContentManager
 from .services.util import get_assessment_id
-from .utils import find_sequential_path, get_iframe_id_from_outline
+from .utils import find_sequential_path
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +63,7 @@ class CustomUpdateAPIView(UpdateAPIView):
         return None
 
 
-class GetQuestionsView(CustomRetrieveAPIView):
+class GetQuestionsView(QuestionServiceMixin, CustomRetrieveAPIView):
     """
     API view to retrieve questions for a specific user and learning_objective.
 
@@ -79,36 +77,36 @@ class GetQuestionsView(CustomRetrieveAPIView):
         """
         Override the retrieve method to implement our custom logic.
         """
-
         serializer = self.get_serializer(data=kwargs)
-        serializer.is_valid(raise_exception=True)
-        validated_data = serializer.validated_data
-
-        qn_service = QuestionService(data=validated_data)
-        resources = qn_service.get_resources()
+        question_service_bundle = self.get_validated_service_resources(
+            kwargs, serializer
+        )
         question_data = []
 
-        if not resources.question_set_ids:
+        if not question_service_bundle.resources.question_set_ids:
             log.info(
-                "No valid question IDs found for user %s", validated_data["username"]
+                "No valid question IDs found for user %s",
+                question_service_bundle.validated_data["username"],
             )
             return Response(
                 {
-                    "message": f"No valid question IDs found for user {validated_data['username']}",
+                    "message": f"No valid question IDs found for user {question_service_bundle.validated_data['username']}",
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        grading_mode = qn_service.is_grading_mode()
+        grading_mode = question_service_bundle.service.is_grading_mode()
 
         # Only fetch questions if not in grading mode
         if not grading_mode:
-            question_data = async_to_sync(qn_service.get_questions_from_ids)()
+            question_data = async_to_sync(
+                question_service_bundle.service.get_questions_from_ids
+            )()
 
         return Response(
             {
-                "username": validated_data["username"],
-                "block_id": validated_data["block_id"],
+                "username": question_service_bundle.validated_data["username"],
+                "block_id": question_service_bundle.validated_data["block_id"],
                 "questions": question_data,
                 "grading_mode": grading_mode,
             },
@@ -116,62 +114,7 @@ class GetQuestionsView(CustomRetrieveAPIView):
         )
 
 
-class GetSingleQuestionAttemptView(CustomRetrieveAPIView):
-    """
-    API view to retrieve a single question attempt for a specific user.
-
-    This view returns metadata about a user's attempt on a specific question,
-    including correctness counts.
-    """
-
-    serializer_class = GetSingleQuestionSerializer
-
-    def retrieve(self, request, *args, **kwargs):
-        """
-        Override the retrieve method to implement our custom logic.
-        """
-        # automatically validates the serializer
-        serializer = self.get_serializer(**kwargs)
-        serializer.data.get("question_id")
-
-        qn_service = QuestionService(serializer=serializer)
-        qn_service.get_resources()
-
-        # user_question_attempt = get_object_or_404(
-        #     UserQuestionAttempts, user=resources.user, sub_topic=resources.sub_topic
-        # )
-
-        # Get metadata for this specific question
-        # response = user_question_attempt.get_latest_question_metadata.get(question_id)
-        #
-        # # Build response with summary counts
-        # total_correct = user_question_attempt.get_correct_questions_count
-        # total_incorrect = user_question_attempt.get_incorrect_questions_count
-
-        # if not response:
-        #     # Question doesn't have an entry yet
-        #     return Response(
-        #         {
-        #             "total_correct_count": total_correct,
-        #             "total_incorrect_count": total_incorrect,
-        #         },
-        #         status=status.HTTP_200_OK,
-        #     )
-        #
-        # # Return full question attempt data
-        # return Response(
-        #     QuestionAttemptData(
-        #         **response,
-        #         total_correct_count=total_correct,
-        #         total_incorrect_count=total_incorrect,
-        #     ).model_dump(),
-        #     status=status.HTTP_200_OK,
-        # )
-
-        return {}
-
-
-class GetQuestionAttemptView(CustomRetrieveAPIView):
+class GetQuestionAttemptView(QuestionServiceMixin, CustomRetrieveAPIView):
     """
     API view to retrieve all question attempts for a user and learning_objective.
 
@@ -182,27 +125,25 @@ class GetQuestionAttemptView(CustomRetrieveAPIView):
     serializer_class = UserQuestionAttemptSerializer
 
     def retrieve(self, request, *args, **kwargs):
-
         return async_to_sync(self._async_retrieve)(request, *args, **kwargs)
 
     async def _async_retrieve(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=kwargs)
-
-        serializer.is_valid(raise_exception=True)
-        validated_data = serializer.validated_data
-        qn_service = await sync_to_async(QuestionService)(data=validated_data)
-        resources = qn_service.get_resources()
+        question_service_bundle = await self.get_validated_service_resources_async(
+            kwargs, serializer
+        )
 
         grading_response_service = GradingResponseService.get_service(
-            collection_name=resources.collection_name
+            collection_name=question_service_bundle.resources.collection_name
         )
 
         assessment_id = await get_assessment_id(
-            user=resources.user, learning_objective=resources.learning_objective
+            user=question_service_bundle.resources.user,
+            learning_objective=question_service_bundle.resources.learning_objective,
         )
         question_attempts = await grading_response_service.get_grading_responses(
-            user_id=resources.user.id,
-            collection_name=resources.collection_name,
+            user_id=question_service_bundle.resources.user.id,
+            collection_name=question_service_bundle.resources.collection_name,
             assessment_id=assessment_id,
         )
 
@@ -252,55 +193,8 @@ class CourseOutlinePathView(APIView):
             )
 
 
-@api_view(["GET"])
-def iframe_id_given_sub_topic_id(request, sub_topic_id: str) -> Response:
-    # TODO : the doc string is written in Edx language, adapt it to
-    # fit the current context
-    """
-    Get the first vertical (unit) ID for a given sequential (topic) ID.
-
-    This function traverses the course outline structure to find the first vertical (unit)
-    that is a child of the specified sequential (topic). This is used to determine which
-    unit should be displayed in an iframe when accessing a topic.
-
-    Args:
-        request: The HTTP request object.
-        sub_topic_id: The block_id (identifier) of the sequential/topic.
-
-    Returns:
-        Response: A response containing the iframe_id for the first vertical.
-
-    Raises:
-        Http404: If no vertical is found or if the sub_topic doesn't exist.
-
-    Example URL:
-        /api/iframe-id/block-v1:edX+DemoX+Demo_Course+type@sequential+block@12345/
-    """
-
-    # Retrieve the SubTopic object or return 404 if not found
-    sub_topic = get_object_or_404(SubTopic, block_id=sub_topic_id)
-
-    # Get the course outline from the associated course
-    course = sub_topic.topic.course
-    course_outline = course.course_outline
-
-    if not course_outline:
-        return Response(
-            {"error": "Course outline is not available"},
-            status=status.HTTP_404_NOT_FOUND,
-        )
-
-    # Find the iframe ID in the course outline
-    iframe_id = get_iframe_id_from_outline(sub_topic_id, course_outline)
-
-    if not iframe_id:
-        raise Http404("No vertical found for this sequential")
-
-    return Response({"iframe_id": iframe_id}, status=status.HTTP_200_OK)
-
-
 # TODO : catch and handle this error : QuestionNotFoundError
-class PostQuestionAttemptView(CustomUpdateAPIView):
+class PostQuestionAttemptView(QuestionServiceMixin, CustomUpdateAPIView):
     """
     View that handles a question attempt submission.
 
@@ -344,47 +238,50 @@ class PostQuestionAttemptView(CustomUpdateAPIView):
             Response: HTTP response with grading results and 201 Created status
         """
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        validated_data = serializer.validated_data
+        question_service_bundle = await self.get_validated_service_resources_async(
+            request.data, serializer
+        )
 
-        qn_service = await sync_to_async(QuestionService)(data=validated_data)
+        question_id = question_service_bundle.validated_data["question_id"]
 
-        question_id = validated_data["question_id"]
-
-        resources = qn_service.get_resources()
-        grader = SingleQuestionGrader.get_grader(resources.collection_name)
+        grader = SingleQuestionGrader.get_grader(
+            question_service_bundle.resources.collection_name
+        )
         assessment_id = await get_assessment_id(
-            user=resources.user, learning_objective=resources.learning_objective
+            user=question_service_bundle.resources.user,
+            learning_objective=question_service_bundle.resources.learning_objective,
         )
 
         question, question_attempt = await asyncio.gather(
-            qn_service.get_question_by_id(question_id),
+            question_service_bundle.service.get_question_by_id(question_id),
             grader.get_question_attempt(
-                user_id=resources.user.id,
+                user_id=question_service_bundle.resources.user.id,
                 question_id=question_id,
                 assessment_id=assessment_id,
             ),
         )
 
         attempted_answer = AttemptedAnswer(
-            question_type=validated_data["question_type"],
-            question_metadata=validated_data["question_metadata"],
+            question_type=question_service_bundle.validated_data["question_type"],
+            question_metadata=question_service_bundle.validated_data[
+                "question_metadata"
+            ],
         )
 
         grading_result = grader.grade(
-            user_id=resources.user.id,
+            user_id=question_service_bundle.resources.user.id,
             attempted_answer=attempted_answer,
             question=question,
             question_attempt=question_attempt,
         )
 
         grading_response_service = GradingResponseService.get_service(
-            collection_name=resources.collection_name
+            collection_name=question_service_bundle.resources.collection_name
         )
         if grading_result.success:
             await asyncio.gather(
                 grader.save_attempt(
-                    user_id=resources.user.id,
+                    user_id=question_service_bundle.resources.user.id,
                     question=question,
                     is_correct=grading_result.is_correct,
                     score=grading_result.score,
@@ -392,7 +289,7 @@ class PostQuestionAttemptView(CustomUpdateAPIView):
                     question_attempt=question_attempt,
                 ),
                 grading_response_service.save_grading_response(
-                    user_id=resources.user.id,
+                    user_id=question_service_bundle.resources.user.id,
                     question_id=question_id,
                     assessment_id=assessment_id,
                     grading_response=grading_result,
@@ -401,12 +298,12 @@ class PostQuestionAttemptView(CustomUpdateAPIView):
             )
 
         return Response(
-            grading_result.to_dict(),
+            {question.id: grading_result.to_dict()},
             status=status.HTTP_201_CREATED,
         )
 
 
-class QuizCompletionView(CustomUpdateAPIView):
+class AssessmentCompletionView(CustomUpdateAPIView):
     # TODO : one thing we need to implement is Authorization, Authentication and Auditing for the API endpoints
     """
     View to handle the completion of a quiz/challenge.
@@ -414,48 +311,102 @@ class QuizCompletionView(CustomUpdateAPIView):
 
     serializer_class = QueryParamsSerializer
 
-    def post(self, **kwargs):
 
-        serializer = self.get_serializer(**kwargs)
+class AssessmentStartView(QuestionServiceMixin, CustomRetrieveAPIView):
+    """
+    View to handle the start of an assessment.
+    """
 
-        qn_service = QuestionService(serializer=serializer)
-        qn_service.get_resources()
+    serializer_class = QueryParamsSerializer
 
-        # user_question_attempt = get_object_or_404(
-        #     UserQuestionAttempts, user=resources.user, sub_topic=resources.sub_topic
-        # )
-        # user_question_set = get_object_or_404(
-        #     UserQuestionSet, user=resources.user, sub_topic=resources.sub_topic
-        # )
-        #
-        # # prepare data for grading
-        # AssessmentPreparationService(
-        #     collection_name=resources.collection_name,
-        #     user_question_attempts=user_question_attempt,
-        #     user_question_set=user_question_set,
-        # ).prepare_data_for_grading()
-        #
-        # learning_mode = LearningModeType(user_question_attempt.current_learning_mode)
-        # learning_rule = LearningRuleFactory.get_rule(learning_mode)
-        #
-        # performance_stats = PerformanceStatsEngine.create_performance_stats(
-        #     user_question_attempts=user_question_attempt,
-        #     required_correct_questions=learning_rule.required_correct_questions,
-        # )
-        #
-        # grader = LearningProgressManager(
-        #     user_attempt=user_question_attempt,
-        #     user_question_set=user_question_set,
-        #     sub_topic=resources.sub_topic,
-        #     user=resources.user,
-        #     performance_stats=performance_stats(),
-        # )
+    def retrieve(self, request, *args, **kwargs):
+        return async_to_sync(self._async_retrieve)(request, *args, **kwargs)
 
-        # grading_result = grader.evaluate_and_process()
+    async def _async_retrieve(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=kwargs)
+        question_service_bundle = await self.get_validated_service_resources_async(
+            request.data, serializer
+        )
+        user = question_service_bundle.resources.user
+        learning_objective = question_service_bundle.resources.learning_objective
+
+        if assessment := await sync_to_async(UserAssessmentAttempt.get_active_attempt)(
+            user=user, learning_objective=learning_objective
+        ):
+            return Response(
+                data={"assessment_id": assessment.assessment_id},
+                status=status.HTTP_200_OK,
+            )
+
+        assessment, _ = await sync_to_async(
+            UserAssessmentAttempt.get_or_create_attempt
+        )(user=user, learning_objective=learning_objective)
 
         return Response(
-            {},
-            status=status.HTTP_201_CREATED,
+            data={"assessment_id": assessment.assessment_id},
+            status=status.HTTP_200_OK,
+        )
+
+
+class HasActiveAssessmentView(QuestionServiceMixin, CustomRetrieveAPIView):
+    """View that checks if the user has an active assessment."""
+
+    serializer_class = QueryParamsSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Synchronous entry point that delegates to the async implementation.
+        """
+        return async_to_sync(self._async_retrieve)(request, *args, **kwargs)
+
+    async def _async_retrieve(self, request, *args, **kwargs):
+        """
+        Asynchronous implementation that fetches assessment data concurrently.
+        """
+        serializer = self.get_serializer(data=kwargs)
+        question_service_bundle = await self.get_validated_service_resources_async(
+            kwargs, serializer
+        )
+
+        user = question_service_bundle.resources.user
+        learning_objective = question_service_bundle.resources.learning_objective
+
+        try:
+            assessment, assessment_questions = await asyncio.gather(
+                sync_to_async(UserAssessmentAttempt.get_active_attempt)(
+                    user=user, learning_objective=learning_objective
+                ),
+                sync_to_async(UserQuestionSet.objects.get)(
+                    user=user, learning_objective=learning_objective
+                ),
+            )
+        except UserQuestionSet.DoesNotExist:
+            return Response(
+                {
+                    "error": "No question set found for this user and learning objective."
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        num_questions = len(list(assessment_questions.question_list_ids))
+
+        if assessment:
+            return Response(
+                data={
+                    "assessment_id": assessment.assessment_id,
+                    "has_active": True,
+                    "num_questions": num_questions,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            data={
+                "assessment_id": None,
+                "has_active": False,
+                "num_questions": num_questions,
+            },
+            status=status.HTTP_200_OK,
         )
 
 
