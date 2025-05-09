@@ -241,6 +241,7 @@ class SingleQuestionGrader:
                     "sub_topic": question.sub_topic,
                     "learning_objective": question.learning_objective,
                     "first_attempt_at": current_time,
+                    "question_metadata": question.model_dump(),
                 },
                 # Set initial values for tracking fields
                 "$set": {
