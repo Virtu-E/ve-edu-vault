@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class AiCoreConfig(AppConfig):
+class ContentConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "ai_core"
+    name = "content"
