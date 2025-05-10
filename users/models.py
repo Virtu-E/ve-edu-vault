@@ -1,5 +1,6 @@
 from django.db import models
 
+
 # Create your models here.
 class EdxUser(models.Model):
     """Holds Edx user information. Not the Django primary user Model"""
