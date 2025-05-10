@@ -51,7 +51,6 @@ INSTALLED_APPS = [
     # "oauth2_provider",
     "oauth_clients",
     "django_elasticsearch_dsl",
-    "course_sync",
     "django_extensions",
     # "silk",
 ]

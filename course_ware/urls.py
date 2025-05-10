@@ -4,50 +4,54 @@ from .views import (
     AssessmentCompletionView,
     AssessmentStartView,
     CourseOutlinePathView,
-    GetQuestionAttemptView,
-    GetQuestionsView,
-    HasActiveAssessmentView,
-    PostQuestionAttemptView,
-    get_edx_content_view,
-    get_learning_objectives,
+    QuestionAttemptListView,
+    QuestionAttemptsCreateView,
+    QuestionsListView,
+    ActiveAssessmentView,
+    EdxContentView,
+    LearningObjectivesView,
 )
 
 app_name = "course_ware"
 
-# Assessment and Questions endpoints
+# Assessment endpoints
+assessment_patterns = [
+    path(
+        "assessments/<str:block_id>/active/",
+        ActiveAssessmentView.as_view(),
+        name="assessments-active",
+    ),
+    path(
+        "assessments/<str:block_id>/start/",
+        AssessmentStartView.as_view(),
+        name="assessments-start",
+    ),
+    path(
+        "assessments/<str:assessment_id>/complete/",
+        AssessmentCompletionView.as_view(),
+        name="assessments-complete",
+    ),
+]
+
+# Question endpoints
 question_patterns = [
     path(
-        "users/<str:username>/objective/<str:block_id>/questions/",
-        GetQuestionsView.as_view(),
+        "objectives/<str:block_id>/questions/",
+        QuestionsListView.as_view(),
         name="questions-list",
-    ),
-    path(
-        "assessment/completion/",
-        AssessmentCompletionView.as_view(),
-        name="assessment-completion",
-    ),
-    path(
-        "users/<str:username>/objective/<str:block_id>/assessment/start/",
-        AssessmentStartView.as_view(),
-        name="assessment-start",
-    ),
-    path(
-        "users/<str:username>/objective/<str:block_id>/assessment/active/",
-        HasActiveAssessmentView.as_view(),
-        name="assessment-get-active",
     ),
 ]
 
 # Question attempts endpoints
 attempt_patterns = [
     path(
-        "question-attempt/",
-        PostQuestionAttemptView.as_view(),
-        name="question-attempt-create",
+        "question-attempts/",
+        QuestionAttemptsCreateView.as_view(),
+        name="question-attempts-create",
     ),
     path(
-        "users/<str:username>/objectives/<str:block_id>/attempts/",
-        GetQuestionAttemptView.as_view(),
+        "objectives/<str:block_id>/question-attempts/",
+        QuestionAttemptListView.as_view(),
         name="question-attempts-list",
     ),
 ]
@@ -57,7 +61,7 @@ course_patterns = [
     path(
         "courses/<str:course_id>/sequentials/<str:sequential_id>/path/",
         CourseOutlinePathView.as_view(),
-        name="course-sequential-path",
+        name="course-paths",
     ),
 ]
 
@@ -65,20 +69,21 @@ course_patterns = [
 content_patterns = [
     path(
         "subtopics/<str:block_id>/objectives/",
-        get_learning_objectives,
+        LearningObjectivesView.as_view(),
         name="subtopic-objectives",
     ),
     path(
         "subtopics/<str:block_id>/resources/",
-        get_edx_content_view,
-        name="get_edx_content",
+        EdxContentView.as_view(),
+        name="subtopic-resources",
     ),
 ]
 
 # Main URL patterns
 urlpatterns = [
-    path("", include(question_patterns)),
-    path("", include(attempt_patterns)),
-    path("", include(course_patterns)),
-    path("", include(content_patterns)),
+    path("api/v1/", include(assessment_patterns)),
+    path("api/v1/", include(question_patterns)),
+    path("api/v1/", include(attempt_patterns)),
+    path("api/v1/", include(course_patterns)),
+    path("api/v1/", include(content_patterns)),
 ]

@@ -1,3 +1,0 @@
-Interesting reads here :
-1. https://www.mongodb.com/developer/code-examples/python/song-recommendations-example-app/
-2. https://www.ibm.com/think/topics/recommendation-engine

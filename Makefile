@@ -28,9 +28,15 @@ help:
 	@echo "  celery              - Runs a celery worker"
 	@echo "  shell               - Starts an Ipython shell"
 	@echo "  serve-async         - Start async server with uvicorn"
+	@echo "  shell-reload        - Starts an Ipython shell with auto-reloading enabled"
 
 .PHONY: shell
 shell:
+	$(DJANGO_SHELL) --ipython
+
+# Add a new target for reloadable shell
+.PHONY: shell-reload
+shell-reload:
 	$(DJANGO_SHELL) --ipython
 
 .PHONY: celery
