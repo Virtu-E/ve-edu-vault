@@ -8,7 +8,7 @@ private_key = rsa.generate_private_key(
 )
 
 # Save Private Key
-with open("lti_provider/private_key.pem", "wb") as f:
+with open("src/apps/integrations/lti_provider/private_key.pem", "wb") as f:
     f.write(
         private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
@@ -19,7 +19,7 @@ with open("lti_provider/private_key.pem", "wb") as f:
 
 # Save Public Key
 public_key = private_key.public_key()
-with open("lti_provider/public_key.pem", "wb") as f:
+with open("src/apps/integrations/lti_provider/public_key.pem", "wb") as f:
     f.write(
         public_key.public_bytes(
             encoding=serialization.Encoding.PEM,
