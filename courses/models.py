@@ -45,27 +45,6 @@ class Course(models.Model):
         return self.name
 
 
-# TODO : will probably be deprecated
-class CoreElement(models.Model):
-    """Core curriculum element representing a subject area or theme (e.g. Algebra, Geometry)"""
-
-    name = models.CharField(max_length=255, unique=True)
-    tags = models.JSONField(default=dict)
-    description = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=True)
-    order = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        ordering = ["order", "name"]
-        verbose_name = "Core Element"
-        verbose_name_plural = "Core Elements"
-
-    def __str__(self):
-        return self.name
-
-
 class ExaminationLevel(models.Model):
     """Stores Examination Levels related to the Malawian School system"""
 
