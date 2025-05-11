@@ -1,6 +1,7 @@
 from django_elasticsearch_dsl import Document, fields
 
-from course_ware.models import SubTopic, Topic
+from .models import Topic, SubTopic
+
 
 # TODO : add support for academic level filtering
 # TODO : add support for images and maybe even some AI input ?

@@ -4,6 +4,9 @@ from typing import Optional, Tuple
 
 from django.db import models, transaction
 
+from src.apps.core.content.models import LearningObjective
+from src.apps.core.users.models import EdxUser
+
 
 # Create your models here.
 class AttemptStatusEnum(Enum):

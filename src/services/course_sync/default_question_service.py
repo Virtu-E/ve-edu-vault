@@ -4,8 +4,14 @@ from typing import Optional, Type, TypedDict
 from asgiref.sync import sync_to_async
 from django.core.exceptions import ObjectDoesNotExist
 
-from course_ware.models import DefaultQuestionSet, LearningObjective, QuestionCategory
-from src.repository import MongoQuestionRepository
+from src.apps.core.content.models import LearningObjective
+from src.apps.learning_tools.questions.models import (
+    DefaultQuestionSet,
+    QuestionCategory,
+)
+from src.repository.question_repository.mongo_qn_repository import (
+    MongoQuestionRepository,
+)
 
 logger = logging.getLogger(__name__)
 

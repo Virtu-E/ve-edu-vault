@@ -4,14 +4,13 @@ from typing import Dict, List
 
 from rest_framework.exceptions import ValidationError
 
+from src.apps.core.content.models import SubTopic
 from src.exceptions import ParsingError, QuestionNotFoundError
 from src.repository.question_repository.mongo_qn_repository import (
     MongoQuestionRepository,
 )
 from src.repository.question_repository.qn_repository_data_types import Question
-
-from ..models import SubTopic
-from .mixins import RetrieveUserAndResourcesMixin
+from src.utils.mixins.resource import UserResourceContextMixin
 
 log = logging.getLogger(__name__)
 

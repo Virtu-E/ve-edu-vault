@@ -10,11 +10,11 @@ import logging
 from collections import namedtuple
 from typing import List, Optional
 
+from src.apps.core.courses.models import Course, ExaminationLevel, AcademicClass
 from src.services.course_sync.change_processor import ChangeProcessor
 from src.services.course_sync.data_transformer import EdxDataTransformer
 from src.services.course_sync.data_types import ChangeOperation, EdxCourseOutline
 from src.services.course_sync.diff_engine import DiffEngine
-from course_ware.models import AcademicClass, Course, ExaminationLevel
 
 log = logging.getLogger(__name__)
 

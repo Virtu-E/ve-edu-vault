@@ -6,7 +6,7 @@ from celery import Celery
 log = logging.getLogger(__name__)
 
 # Set the default Django settings module for the 'celery' program.
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "edu_vault.settings.dev")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "src.edu_vault.settings.dev")
 
 
 app = Celery("edu_vault")
@@ -16,7 +16,6 @@ app = Celery("edu_vault")
 # - namespace='CELERY' means all celery-related configuration keys
 #   should have a `CELERY_` prefix.
 app.config_from_object("django.conf:settings", namespace="CELERY")
-app.autodiscover_tasks(packages=["course_sync.side_effects"])
 
 
 # Load task modules from all registered Django apps.

@@ -1,4 +1,8 @@
+from django.http import JsonResponse
+
 from src.apps.core.content.edx_content_manager import EdxContentManager
+from src.apps.integrations.oauth_clients.edx_client import EdxClient
+from src.apps.integrations.oauth_clients.services import OAuthClient
 
 
 # Create your views here.

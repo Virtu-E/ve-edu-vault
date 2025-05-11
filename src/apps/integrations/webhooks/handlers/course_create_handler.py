@@ -1,9 +1,9 @@
 import logging
 from typing import Any, Dict
 
-from course_ware.models import AcademicClass, Course
-from course_ware.utils import academic_class_from_course_id
+from src.apps.core.courses.models import Course, AcademicClass
 from src.apps.integrations.webhooks.handlers.abstract_type import WebhookHandler
+from src.utils.tools import academic_class_from_course_id
 
 log = logging.getLogger(__name__)
 

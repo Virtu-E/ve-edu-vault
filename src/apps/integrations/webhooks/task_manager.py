@@ -1,10 +1,10 @@
 import logging
 from typing import Any, Dict
 
-from data_types.course_ware_schema import CourseSyncResponse
 from src.apps.integrations.webhooks.handlers.abstract_type import WebhookHandler
 from src.apps.integrations.webhooks.tasks import process_course_update
 from src.apps.integrations.webhooks.validators import WebhookValidator
+from src.services.course_sync.data_types import CourseSyncResponse
 
 log = logging.getLogger(__name__)
 
@@ -62,31 +62,17 @@ class CourseTaskManager(WebhookHandler):
                 "course_key": payload["course"]["course_key"],
             }
         }
+        log.info(f"Dispatching course update task for course_id: {course_id}")
 
-        try:
-            log.info(f"Dispatching course update task for course_id: {course_id}")
+        task = process_course_update.delay(task_payload)
 
-            task = process_course_update.delay(task_payload)
+        log.debug(
+            f"Task dispatched successfully with task_id: {task.id} for course_id: {course_id}"
+        )
 
-            log.debug(
-                f"Task dispatched successfully with task_id: {task.id} for course_id: {course_id}"
-            )
-
-            return CourseSyncResponse(
-                status="pending",
-                message="Course update workflow initiated",
-                course_id=course_id,
-                changes_made=False,
-            )
-
-        except Exception as e:
-            log.exception(
-                f"Failed to initiate course update workflow for course_id: {course_id}",
-                exc_info=True,
-            )
-            return CourseSyncResponse(
-                status="error",
-                message=f"Failed to queue tasks: {str(e)}",
-                course_id=course_id,
-                changes_made=False,
-            )
+        return CourseSyncResponse(
+            status="pending",
+            message="Course update workflow initiated",
+            course_id=course_id,
+            changes_made=False,
+        )

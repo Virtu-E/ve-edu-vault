@@ -46,7 +46,7 @@ celery:
 # Run async server with uvicorn
 .PHONY: serve-async
 serve-async:
-	$(UVICORN) edu_vault.asgi:application --reload
+	$(UVICORN) src.edu_vault.asgi:application --reload
 
 # Run tests with default options
 .PHONY: test

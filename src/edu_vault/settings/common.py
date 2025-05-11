@@ -32,28 +32,49 @@ DEBUG = config("DEBUG", default=False, cast=bool)
 
 # Application definition
 
-INSTALLED_APPS = [
+INSTALLED_APPS = []
+
+DJANGO_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "lti_provider",
+]
+
+EXTERNAL_APPS = [
     "pylti1p3.contrib.django.lti1p3_tool_config",
-    "ai_core",
-    "course_ware",
     "rest_framework",
     "corsheaders",
-    "course_ware_ext",
     "django_json_widget",
-    "webhooks",
-    # "oauth2_provider",
-    "oauth_clients",
     "django_elasticsearch_dsl",
     "django_extensions",
+    # "oauth2_provider",
     # "silk",
 ]
+
+CORE_APPS = [
+    "src.apps.core.content",
+    "src.apps.content_ext",
+    "src.apps.core.courses",
+    "src.apps.core.users",
+]
+
+INTEGRATION_APPS = [
+    "src.apps.integrations.lti_provider",
+    "src.apps.integrations.oauth_clients",
+    "src.apps.integrations.webhooks",
+]
+
+LEARNING_TOOLS_APPS = [
+    "src.apps.learning_tools.assessments",
+    "src.apps.learning_tools.questions",
+]
+
+INSTALLED_APPS = (
+    DJANGO_APPS + EXTERNAL_APPS + CORE_APPS + INTEGRATION_APPS + LEARNING_TOOLS_APPS
+)
 
 
 # TODO : csrf protection vs authentication
@@ -76,7 +97,7 @@ MIDDLEWARE = [
 ]
 
 
-ROOT_URLCONF = "edu_vault.urls"
+ROOT_URLCONF = "src.edu_vault.urls"
 
 TEMPLATES = [
     {
@@ -96,7 +117,7 @@ TEMPLATES = [
 
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-WSGI_APPLICATION = "edu_vault.wsgi.application"
+WSGI_APPLICATION = "src.edu_vault.wsgi.application"
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -237,5 +258,5 @@ ELASTICSEARCH_DSL = {
 # ELASTICSEARCH_DSL_AUTOSYNC = False
 # ELASTICSEARCH_DSL_AUTO_REFRESH = False
 ELASTICSEARCH_DSL_SIGNAL_PROCESSOR = (
-    "elastic_search.custom_signal_processor.CustomCelerySignalProcessor"
+    "src.apps.elastic_search.custom_signal_processor.CustomCelerySignalProcessor"
 )

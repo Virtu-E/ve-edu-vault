@@ -19,7 +19,7 @@ from pylti1p3.contrib.django import (
     DjangoOIDCLogin,
 )
 
-from course_ware.models import LearningObjective
+from src.apps.core.content.models import LearningObjective
 from src.edu_vault.settings import common
 
 tool_conf_2 = DjangoDbToolConf()

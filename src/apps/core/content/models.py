@@ -1,6 +1,6 @@
 from django.db import models
 
-from src.apps.core.courses import ExaminationLevel, AcademicClass, Course
+from src.apps.core.courses.models import ExaminationLevel, AcademicClass, Course
 
 
 # Create your models here.

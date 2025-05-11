@@ -2,12 +2,9 @@ from typing import Dict, List
 
 from django.shortcuts import get_object_or_404
 
-from course_ware.models import (
-    DefaultQuestionSet,
-    EdxUser,
-    LearningObjective,
-    UserQuestionSet,
-)
+from src.apps.core.content.models import LearningObjective
+from src.apps.core.users.models import EdxUser
+from src.apps.learning_tools.questions.models import DefaultQuestionSet, UserQuestionSet
 
 
 class UserResourceContextMixin:

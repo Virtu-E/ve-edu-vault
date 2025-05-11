@@ -22,11 +22,16 @@ urlpatterns = [
     # Admin interface
     path("admin/", admin.site.urls),
     # LTI provider endpoints
-    path("lti/", include("lti_provider.urls", namespace="lti_provider")),
+    path(
+        "lti/",
+        include("src.apps.integrations.lti_provider.urls", namespace="lti_provider"),
+    ),
     # API v1 endpoints grouped by domain
-    path("api/v1/courses/", include("course_ware.urls")),
-    path("api/v1/extensions/", include("course_ware_ext.urls")),
-    path("api/v1/webhooks/", include("webhooks.urls")),
-    path("api/v1/topics/", include("elastic_search.urls")),
-    path("api/v1/flashcards/", include("flash_cards.urls")),
+    path("api/v1/content/", include("src.apps.core.content.urls")),
+    path("api/v1/assessments/", include("src.apps.learning_tools.assessments.urls")),
+    path("api/v1/questions/", include("src.apps.learning_tools.questions.urls")),
+    path("api/v1/extensions/", include("src.apps.content_ext.urls")),
+    path("api/v1/webhooks/", include("src.apps.integrations.webhooks.urls")),
+    # path("api/v1/topics/", include("elastic_search.urls")),
+    path("api/v1/flashcards/", include("src.apps.learning_tools.flash_cards.urls")),
 ]

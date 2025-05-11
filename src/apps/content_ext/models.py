@@ -1,7 +1,8 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from course_ware.models import EdxUser, SubTopic, Topic
+from src.apps.core.content.models import SubTopic, Topic
+from src.apps.core.users.models import EdxUser
 
 
 class SubTopicExt(models.Model):

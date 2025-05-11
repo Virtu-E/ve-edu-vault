@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
-from data_types.course_ware_schema import CourseSyncResponse
+from src.services.course_sync.data_types import CourseSyncResponse
 
 
 class WebhookHandler(ABC):

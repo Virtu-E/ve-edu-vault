@@ -1,6 +1,14 @@
 from django.contrib import admin
+from django.db.models import JSONField
+from .models import UserAssessmentAttempt
+from django_json_widget.widgets import JSONEditorWidget
+
 
 # Register your models here.
+
+
+class JsonWidgetModelAdmin(admin.ModelAdmin):
+    formfield_overrides = {JSONField: {"widget": JSONEditorWidget}}
 
 
 @admin.register(UserAssessmentAttempt)

@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Set, Union
 
+from pydantic import BaseModel
+
 
 @dataclass
 class SubTopics:
@@ -121,3 +123,12 @@ class ChangeOperation:
     entity_type: EntityType
     entity_id: str
     data: Union[CourseChangeData, SubTopicChangeData | Topic | None]
+
+
+class CourseSyncResponse(BaseModel):
+    status: str
+    message: str
+    course_id: str
+    changes_made: bool
+    num_success: int = 0
+    num_failed: int = 0

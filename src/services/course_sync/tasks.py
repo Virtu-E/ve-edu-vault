@@ -5,8 +5,8 @@ from celery import shared_task
 from django.core.exceptions import ObjectDoesNotExist
 from redis.exceptions import LockError
 
+from src.apps.core.content.models import LearningObjective
 from src.services.course_sync.default_question_service import DefaultQuestionService
-from course_ware.models import LearningObjective
 from src.edu_vault.settings import common
 
 REDIS_CLIENT = common.REDIS_CLIENT

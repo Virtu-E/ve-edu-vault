@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
-from course_ware.models import Topic
 
 from .models import SubTopicExt, TopicExt, TopicMastery
+from src.apps.core.content.models import Topic
 
 
 class TopicExtSerializer(serializers.ModelSerializer):

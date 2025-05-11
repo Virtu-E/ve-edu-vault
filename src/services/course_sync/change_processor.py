@@ -12,6 +12,8 @@ from typing import Dict, List, Union
 
 from django.db import OperationalError, transaction
 
+from src.apps.core.content.models import Topic, SubTopic
+from src.apps.core.courses.models import Course, ExaminationLevel, AcademicClass
 from src.services.course_sync.data_types import (
     ChangeOperation,
     CourseChangeData,
@@ -19,7 +21,6 @@ from src.services.course_sync.data_types import (
     OperationType,
     SubTopicChangeData,
 )
-from course_ware.models import AcademicClass, Course, ExaminationLevel, SubTopic, Topic
 from src.exceptions import InvalidChangeDataTypeError
 
 log = logging.getLogger(__name__)

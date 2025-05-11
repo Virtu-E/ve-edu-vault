@@ -1,4 +1,14 @@
 from django.contrib import admin
+from django.urls import reverse
+from django.utils.html import format_html
+from django_json_widget.widgets import JSONEditorWidget
+
+from .models import Course, AcademicClass, ExaminationLevel
+from django.db.models import JSONField
+
+
+class JsonWidgetModelAdmin(admin.ModelAdmin):
+    formfield_overrides = {JSONField: {"widget": JSONEditorWidget}}
 
 
 # Register your models here.

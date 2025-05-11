@@ -4,10 +4,10 @@ from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from course_ware.models import Topic
 
 from .models import TopicExt, TopicMastery
 from .serializers import TopicDetailSerializer
+from src.apps.core.content.models import Topic
 
 
 class TopicDetailView(generics.RetrieveAPIView):

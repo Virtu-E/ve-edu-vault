@@ -8,7 +8,7 @@ from django.db import models
 from django_elasticsearch_dsl.registries import registry
 from django_elasticsearch_dsl.signals import CelerySignalProcessor
 
-from course_ware.models import SubTopic, Topic
+from src.apps.core.content.models import SubTopic, Topic
 
 log = logging.getLogger(__name__)
 

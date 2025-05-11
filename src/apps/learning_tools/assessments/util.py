@@ -3,7 +3,9 @@ from uuid import UUID
 
 from asgiref.sync import sync_to_async
 
-from course_ware.models import EdxUser, LearningObjective, UserAssessmentAttempt
+from src.apps.core.content.models import LearningObjective
+from src.apps.core.users.models import EdxUser
+from src.apps.learning_tools.assessments.models import UserAssessmentAttempt
 
 logger = logging.getLogger(__name__)
 

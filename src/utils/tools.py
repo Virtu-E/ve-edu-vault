@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
 
-from course_ware.models import ExaminationLevel
+from src.apps.core.courses.models import ExaminationLevel
 
 
 def academic_class_from_course_id(course_id: str) -> str | None:

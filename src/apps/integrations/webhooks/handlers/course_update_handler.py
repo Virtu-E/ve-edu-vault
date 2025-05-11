@@ -1,16 +1,16 @@
 import logging
 from typing import Any, Dict, Tuple
 
+from src.apps.core.courses.models import Course, AcademicClass, ExaminationLevel
 from src.services.course_sync.course_sync import ChangeResult, CourseSyncService
 from src.services.course_sync.data_transformer import EdxDataTransformer
-from src.services.course_sync.data_types import EdxCourseOutline
-from course_ware.models import AcademicClass, Course, ExaminationLevel
-from course_ware.utils import (
-    academic_class_from_course_id,
-    get_examination_level_from_course_id,
-)
-from data_types.course_ware_schema import CourseSyncResponse
+from src.services.course_sync.data_types import EdxCourseOutline, CourseSyncResponse
+
 from src.apps.integrations.webhooks.handlers.abstract_type import WebhookHandler
+from src.utils.tools import (
+    get_examination_level_from_course_id,
+    academic_class_from_course_id,
+)
 
 log = logging.getLogger(__name__)
 

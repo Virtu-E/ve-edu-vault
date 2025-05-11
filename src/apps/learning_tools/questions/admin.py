@@ -1,6 +1,17 @@
 from django.contrib import admin
+from django.db import transaction
+from django_json_widget.widgets import JSONEditorWidget
+from django.db.models import JSONField
 
-# Register your models here.
+from .models import (
+    UserQuestionSet,
+    DefaultQuestionSet,
+    QuestionCategory,
+)
+
+
+class JsonWidgetModelAdmin(admin.ModelAdmin):
+    formfield_overrides = {JSONField: {"widget": JSONEditorWidget}}
 
 
 @admin.register(UserQuestionSet)
