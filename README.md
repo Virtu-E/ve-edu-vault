@@ -122,12 +122,9 @@ The `src/learning_tools` directory houses educational tools that enhance the Ope
 
 6. Run the development server:
    ```
-   python manage.py runserver
+   make serve-async
    ```
 
-### Configuration
-
-Configuration files are located in the `config` directory (not visible in the provided structure but mentioned in the proposed solution).
 
 ## Development Guidelines
 
