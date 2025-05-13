@@ -119,8 +119,12 @@ The `src/learning_tools` directory houses educational tools that enhance the Ope
    ```
    python manage.py createsuperuser
    ```
-
 6. Run the development server:
+   ```
+   update .env ( I have sample values there, they wont work as the keys are all invalid )
+   ```
+
+7. Run the development server:
    ```
    make serve-async
    ```
