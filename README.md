@@ -4,14 +4,37 @@ An educational content management system with integrated learning tools and exte
 
 ## Overview
 
-VE-EDU-VAULT is an augmentation layer built on top of Open edX designed to extend and enhance its core functionality. While Open edX handles course creation, progress tracking, authentication, and analytics, VE-EDU-VAULT provides additional capabilities and integrations that aren't available in the standard Open edX platform.
+VE-EDU-VAULT is an augmentation layer built on top of Open edX designed to extend and enhance its core functionality. While Open edX handles basic course creation, progress tracking, authentication, and analytics, VE-EDU-VAULT provides additional capabilities and integrations that aren't available in the standard Open edX platform.
 
 This system allows you to:
-- Structure courses in more flexible ways (subjects, topics, etc.)
+- Structure courses in more flexible ways (topics, subtopics, etc.)
 - Add specialized learning tools without modifying Open edX core
 - Store student responses in MongoDB for AI analysis
 - Implement dynamic question assignment based on student progress
+- Track detailed learning history and assessment attempts
+- Grade student submissions with sophisticated feedback mechanisms
 - Integrate with external services through LTI, OAuth, and webhooks
+
+## Architecture
+
+VE-EDU-VAULT follows a structured architecture to maintain clear separation of concerns while augmenting Open edX:
+
+1. **Django Apps**: Handle HTTP requests, views, templates, and models
+2. **Repository Pattern**: Abstracts data access to different storage backends (MongoDB, PostgreSQL)
+3. **Services**: Contain business logic independent of Django
+   - **Course Sync**: Maintains content synchronization between Open edX and EDU Vault
+   - **Grade Book**: Provides enhanced grading capabilities
+   - **Vault QStash**: Manages timed assessment submissions
+4. **Learning Tools**: Extend Open edX's assessment capabilities
+   - Support for AI-enhanced question analysis
+   - Dynamic question assignment based on student progress
+   - MongoDB storage for detailed response analysis
+5. **Integrations**: Connect with external systems
+   - LTI Provider implementation
+   - OAuth clients for API access
+   - Webhooks for real-time events
+
+The system is designed to run alongside Open edX, enhancing its capabilities without requiring modifications to the Open edX core codebase.
 
 ## Project Structure
 
@@ -24,18 +47,26 @@ ve-edu-vault/
 │   │   │   ├── content/           # Content management
 │   │   │   ├── courses/           # Course models and views
 │   │   │   └── users/             # User management
-│   │   └── integrations/          # External service connections
-│   │       ├── lti_provider/      # LTI provider implementation
-│   │       ├── oauth_clients/     # OAuth client implementations
-│   │       └── webhooks/          # Webhook handlers
-│   ├── elastic_search/            # Elasticsearch integration
-│   ├── edu_vault/                 # Core education vault functionality
-│   ├── learning_tools/            # Educational tools
-│   │   ├── assessments/           # Assessment functionality
-│   │   ├── flash_cards/           # Flashcard system
-│   │   └── questions/             # Question management
+│   │   ├── elastic_search/        # Elasticsearch integration
+│   │   ├── integrations/          # External service connections
+│   │   │   ├── lti_provider/      # LTI provider implementation
+│   │   │   ├── oauth_clients/     # OAuth client implementations
+│   │   │   └── webhooks/          # Webhook handlers
+│   │   └── learning_tools/        # Educational tools
+│   │       ├── assessments/       # Assessment functionality
+│   │       ├── flash_cards/       # Flashcard system
+│   │       └── questions/         # Question management
+│   ├── edu_vault/                 # Core Django project settings
+│   ├── exceptions.py              # Custom exception classes
 │   ├── repository/                # Repository pattern implementations
-│   ├── services/                  # Non-Django business logic
+│   │   ├── databases/             # Database connectors
+│   │   ├── grading_repository/    # Repositories for grading data
+│   │   ├── question_repository/   # Repositories for question data
+│   │   └── history_repository/    # Repositories for learning history
+│   ├── services/                  # Business logic services
+│   │   ├── course_sync/           # Synchronization with Open edX courses
+│   │   ├── grade_book_v2/         # Question and assessment grading
+│   │   └── vault_qstash/          # Assessment timing service
 │   └── utils/                     # Shared utilities
 ```
 
@@ -51,6 +82,9 @@ The `src/apps` directory contains Django applications that form the core functio
   - **users**: User management, authentication, and permissions
 
 - **content_ext**: Extended functionality for the content management system
+  - TopicExt: Extends Topic with additional educational metadata
+  - SubTopicExt: Extends SubTopic with additional educational metadata
+  - TopicMastery: Tracks user progress and mastery of topics
 
 - **integrations**: External service connections
   - **lti_provider**: Learning Tools Interoperability (LTI) provider implementation
@@ -64,31 +98,68 @@ The `src/learning_tools` directory houses educational tools that enhance the Ope
 - **assessments**: Advanced assessment tools with features not available in standard Open edX
   - Dynamic assignment of questions based on student progress
   - Storage of detailed response data for AI analysis
+  - Assessment attempts tracking and management
+
 - **flash_cards**: Flashcard system for spaced repetition learning
+
 - **questions**: Enhanced question bank and management system
-  - Support for more question types
-  - AI-enhanced question analysis
+  - DefaultQuestionSet: Template question sets for learning objectives
+  - UserQuestionSet: Personalized question sets for each student
+  - Question repository pattern for flexible data storage
 
-### Supporting Services
+### Repositories
 
-- **elastic_search**: Integration with Elasticsearch for powerful content searching
-- **edu_vault**: Core augmentation layer built on top of Open edX, providing extended functionality like structuring courses as subjects, topics, etc.
-- **repository**: Repository pattern implementations for data access
-- **services**: Business logic services that are not part of Django apps
-  - **course_sync**: Synchronizes course content between Open edX and EDU Vault
-  - **grade_book_v2**: Handles question and assessment grading
-  - **vault_qstash**: Implementation for timing assessment submissions
-- **utils**: Shared utilities used throughout the codebase
+The `src/repository` directory implements the repository pattern to abstract data access:
+
+- **databases**: Low-level database connectors
+  - **no_sql_database**: MongoDB connection and query handling
+
+- **grading_repository**: Repositories for student grading data
+  - MongoDB implementation for storing grading attempts
+
+- **question_repository**: Repositories for question data
+  - MongoDB implementation for storing and retrieving questions
+
+### Services
+
+The `src/services` directory contains business logic that's independent from Django:
+
+- **course_sync**: Synchronizes course content between Open edX and EDU Vault
+  - DiffEngine: Detects changes between course versions
+  - ChangeProcessor: Applies detected changes to the database
+  - DataTransformer: Converts edX data to internal formats
+
+- **grade_book_v2**: Handles question and assessment grading
+  - SingleQuestionGrader: Grades individual question attempts
+  - GradingResponseService: Manages grading response data
+
+- **vault_qstash**: Implementation for timing assessment submissions
+  - Uses QStash for timed operations
+
+## Technology Stack
+
+- **Backend**: Python 3.13, Django 5.2
+- **Databases**: 
+  - PostgreSQL (via Django ORM)
+  - MongoDB for questions and student responses
+- **Search**: Elasticsearch
+- **Async Tasks**: Celery with Redis
+- **API**: Django REST Framework
+- **Timed Operations**: QStash
+- **OAuth/Authentication**: JWT, OAuth2
+- **LTI**: PyLTI1p3
+- **Code Quality**: Black, isort, flake8, mypy
 
 ## Getting Started
 
 ### Prerequisites
 
 - Python 3.8+
-- Django 3.2+
+- Django 5.2+
 - PostgreSQL 13+
-- MongoDB (for storing student responses for AI analysis)
+- MongoDB 
 - Elasticsearch 7.x (for search functionality)
+- Redis (for Celery)
 - Access to an Open edX instance
 
 ### Installation
@@ -119,16 +190,17 @@ The `src/learning_tools` directory houses educational tools that enhance the Ope
    ```
    python manage.py createsuperuser
    ```
-6. Run the development server:
+
+6. Configure environment variables:
    ```
-   update .env ( I have sample values there, they wont work as the keys are all invalid )
+   # Update .env with your configuration
+   # Sample values are provided but will not work as the keys are invalid
    ```
 
 7. Run the development server:
    ```
    make serve-async
    ```
-
 
 ## Development Guidelines
 
@@ -137,32 +209,33 @@ The `src/learning_tools` directory houses educational tools that enhance the Ope
 1. Identify the appropriate component for your feature
 2. Follow Django's app structure for Django-related features
 3. Place business logic in the appropriate service directory
-4. Write tests for your feature in the `tests` directory
-5. Update documentation as needed
+4. Use the repository pattern for data access
+5. Write tests for your feature
+6. Update documentation as needed
 
-### Coding Standards
+### Code Quality
 
-- Follow PEP 8 style guidelines
-- Write docstrings for all functions, classes, and modules
-- Maintain test coverage for new features
+The project uses several tools to maintain code quality:
 
-## Architecture
+- **Black**: Code formatter
+- **isort**: Import sorter
+- **flake8**: Code linter
+- **mypy**: Static type checker
 
-VE-EDU-VAULT follows a structured architecture to maintain clear separation of concerns while augmenting Open edX:
+Run pre-commit checks with:
+```
+make pre-commit
+```
 
-1. **Django Apps**: Handle HTTP requests, views, templates, and models
-2. **Services**: Contain business logic independent of Django
-   - **Course Sync**: Maintains content synchronization between Open edX and EDU Vault
-   - **Grade Book**: Provides enhanced grading capabilities
-   - **Vault QStash**: Manages timed assessment submissions
-3. **Learning Tools**: Extend Open edX's assessment capabilities
-   - Support for AI-enhanced question analysis
-   - Dynamic question assignment based on student progress
-   - MongoDB storage for detailed response analysis
-4. **Repositories**: Manage data access patterns
-5. **Utils**: Provide common functionality used across the system
+### Testing
 
-The system is designed to run alongside Open edX, enhancing its capabilities without requiring modifications to the Open edX core codebase.
+The project uses pytest for testing. Run tests with:
+
+```
+make test                # Run all tests
+make test-verbose        # Run tests with verbose output
+make test-with-coverage  # Run tests with coverage report
+```
 
 ## Contributing
 
