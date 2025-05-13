@@ -18,7 +18,7 @@ from redis import ConnectionPool, Redis
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-MONGO_URL = "mongodb+srv://myAtlasDBUser:tkB0QqcKTztNhnWW@myatlasclusteredu.2khcb.mongodb.net/?retryWrites=true&w=majority&appName=myAtlasClusterEDU"
+MONGO_URL = config("MONGO_URL")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -209,17 +209,17 @@ NO_SQL_GRADING_RESPONSE_DATABASE_NAME = config("NO_SQL_GRADING_RESPONSE_DATABASE
 MINIMUM_QUESTIONS_THRESHOLD = 9
 COMPLETION_THRESHOLD = 2 / 3
 
-ENCRYPTION_KEY = "gk79FsqK0sTh03Xo6MFkQW6g44-bk4cXj3gFvmpk8kA="
-LTI_LAUNCH_URL = "https://vault.virtueducate.edly.io/lti/launch/"
+ENCRYPTION_KEY = config("ENCRYPTION_KEY")
+LTI_LAUNCH_URL = config("LTI_LAUNCH_URL")
 LEARNING_HISTORY_COLLECTION_NAME = "learning_history"
 
 
 # CELERY SETTINGS
-CELERY_BROKER_URL = "rediss://default:AVNS_yIn8MR4Pkm7b5groMJN@virtu-educate-18cd5531-virtu-educate-1.j.aivencloud.com:14435?ssl_cert_reqs=CERT_NONE"
-CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+CELERY_BROKER_URL = config("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = config("CELERY_BROKER_URL")
 
 # Redis configuration
-REDIS_URL = "rediss://default:AVNS_yIn8MR4Pkm7b5groMJN@virtu-educate-18cd5531-virtu-educate-1.j.aivencloud.com:14435"
+REDIS_URL = config("REDIS_URL")
 REDIS_CONNECTION_POOL = ConnectionPool.from_url(REDIS_URL, ssl_cert_reqs=ssl.CERT_NONE)
 REDIS_CLIENT = Redis(connection_pool=REDIS_CONNECTION_POOL)
 
@@ -248,7 +248,7 @@ QSTASH_NEXT_SIGNING_KEY = config("QSTASH_NEXT_SIGNING_KEY")
 
 ELASTICSEARCH_DSL = {
     "default": {
-        "hosts": ["https://139.59.12.248:9200"],
+        "hosts": [config("ELASTIC_SEARCH_URL")],
         "http_auth": ("elastic", ""),
         "timeout": 30,
         "retry_on_timeout": True,
