@@ -1,17 +1,33 @@
 import asyncio
 import logging
+from datetime import datetime
 
 from asgiref.sync import async_to_sync, sync_to_async
 from rest_framework import status
 from rest_framework.response import Response
 
 from src.apps.learning_tools.assessments.models import UserAssessmentAttempt
-from .serializers import AssessmentSerializer
 from src.apps.learning_tools.questions.models import UserQuestionSet
+from src.services.quiz_countdown.main import (
+    AssessmentTimerData,
+    schedule_test_assessment,
+)
 from src.utils.mixins.context import EducationContextMixin
-from src.utils.views.base import CustomUpdateAPIView, CustomRetrieveAPIView
+from src.utils.views.base import CustomRetrieveAPIView, CustomUpdateAPIView
+
+from .serializers import AssessmentSerializer
 
 logger = logging.getLogger(__name__)
+
+
+async def assessment_expiry_view(request):
+    pass
+
+
+class AssessmentExpiryView(CustomUpdateAPIView):
+
+    def post(self, request, **kwargs):
+        pass
 
 
 class AssessmentCompletionView(CustomUpdateAPIView):
@@ -75,6 +91,23 @@ class AssessmentStartView(EducationContextMixin, CustomRetrieveAPIView):
         assessment, created = await sync_to_async(
             UserAssessmentAttempt.get_or_create_attempt
         )(user=user, learning_objective=learning_objective)
+
+        # setting assessment expiry
+        assessment_data = AssessmentTimerData(
+            assessment_id=assessment.assessment_id,
+            student_id=user.id,
+            started_at=datetime.now(),
+            assessment_duration_seconds=600,  # defaulting to 10 min for now.but should create dynamic time depending on questions
+        )
+
+        scheduler_response = await schedule_test_assessment(data=assessment_data)
+        if not scheduler_response:
+            return Response(
+                data={
+                    "message": "Failed to schedule assessment. Please try again later."
+                },
+                status=status.HTTP_408_REQUEST_TIMEOUT,
+            )
 
         if created:
             logger.info(f"Created new assessment {assessment.assessment_id}")

@@ -1,9 +1,10 @@
 from django.urls import path
 
 from .views import (
-    AssessmentStartView,
-    AssessmentCompletionView,
     ActiveAssessmentView,
+    AssessmentCompletionView,
+    AssessmentExpiryView,
+    AssessmentStartView,
 )
 
 app_name = "assessments"
@@ -23,5 +24,10 @@ urlpatterns = [
         "<str:assessment_id>/complete/",
         AssessmentCompletionView.as_view(),
         name="assessments-complete",
+    ),
+    path(
+        "<str:assessment_id>/expire/",
+        AssessmentExpiryView.as_view(),
+        name="assessment-expire",
     ),
 ]

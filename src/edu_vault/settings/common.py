@@ -199,6 +199,8 @@ STATIC_URL = "static/"
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
+SITE_URL = config("SITE_URL")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # TODO : thinking of using getattr when accessing this. Food for thought
