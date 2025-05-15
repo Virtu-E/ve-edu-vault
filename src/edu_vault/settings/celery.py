@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "src.edu_vault.settings.dev")
 
 
-app = Celery("edu_vault")
+app = Celery("src.edu_vault")
 
 # Using a string here means the worker doesn't have to serialize
 # the configuration object to child processes.

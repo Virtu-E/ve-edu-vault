@@ -41,7 +41,7 @@ shell-reload:
 
 .PHONY: celery
 celery:
-	$(CELERY) -A edu_vault worker -l info
+	$(CELERY) -A src.edu_vault worker -l info
 
 # Run async server with uvicorn
 .PHONY: serve-async
