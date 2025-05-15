@@ -1,5 +1,7 @@
 from django.urls import path
 
+app_name = "content_ext"
+
 urlpatterns = [
     # path(
     #     "category/<str:block_id>/",

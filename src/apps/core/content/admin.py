@@ -22,23 +22,23 @@ class TopicAdmin(admin.ModelAdmin):
     search_help_text = "Search by topic name, academic class, or course key"
 
     def view_subtopics(self, obj):
-        url = reverse("admin:course_ware_subtopic_changelist") + f"?topic__id={obj.id}"
+        url = reverse("admin:content_subtopic_changelist") + f"?topic__id={obj.id}"
         return format_html('<a href="{}">View Subtopics</a>', url)
 
     def topic_augments(self, obj):
         try:
             if hasattr(obj, "extension"):
                 url = reverse(
-                    "admin:course_ware_ext_topicext_change", args=[obj.extension.id]
+                    "admin:content_ext_topicext_change", args=[obj.extension.id]
                 )
                 return format_html('<a href="{}">View Topic Extension</a>', url)
 
-            create_url = reverse("admin:course_ware_ext_topicext_add")
+            create_url = reverse("admin:content_ext_topicext_add")
             return format_html(
                 '<a href="{}?topic={}">Create Extension</a>', create_url, obj.id
             )
         except Exception:
-            create_url = reverse("admin:course_ware_ext_topicext_add")
+            create_url = reverse("admin:content_ext_topicext_add")
             return format_html(
                 '<a href="{}?topic={}">Create Extension</a>', create_url, obj.id
             )
@@ -69,16 +69,16 @@ class SubTopicAdmin(admin.ModelAdmin):
         try:
             if hasattr(obj, "extension"):
                 url = reverse(
-                    "admin:course_ware_ext_subtopicext_change", args=[obj.extension.id]
+                    "admin:content_ext_subtopicext_change", args=[obj.extension.id]
                 )
                 return format_html('<a href="{}">View Subtopic Extension</a>', url)
 
-            create_url = reverse("admin:course_ware_ext_subtopicext_add")
+            create_url = reverse("admin:content_ext_subtopicext_add")
             return format_html(
                 '<a href="{}?sub_topic={}">Create Extension</a>', create_url, obj.id
             )
         except Exception:
-            create_url = reverse("admin:course_ware_ext_subtopicext_add")
+            create_url = reverse("admin:content_ext_subtopicext_add")
             return format_html(
                 '<a href="{}?sub_topic={}">Create Extension</a>', create_url, obj.id
             )
@@ -91,7 +91,7 @@ class SubTopicAdmin(admin.ModelAdmin):
         if objectives_count > 0:
             # Assuming you have a change list view for LearningObjective
             url = (
-                reverse("admin:course_ware_learningobjective_changelist")
+                reverse("admin:content_learningobjective_changelist")
                 + f"?sub_topic__id__exact={obj.id}"
             )
             return format_html(
@@ -140,7 +140,7 @@ class LearningObjectiveAdmin(admin.ModelAdmin):
     def view_related_question_categories(self, request, queryset):
         """Custom admin action to view question categories related to selected objectives"""
         selected = queryset.values_list("id", flat=True)
-        url = f"/admin/course_ware/questioncategory/?learning_objective__id__in={','.join(map(str, selected))}"
+        url = f"/admin/content/questioncategory/?learning_objective__id__in={','.join(map(str, selected))}"
         return redirect(url)
 
     view_related_question_categories.short_description = (

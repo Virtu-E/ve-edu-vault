@@ -18,7 +18,7 @@ class CourseAdmin(JsonWidgetModelAdmin):
     search_fields = ["name", "course_key"]
 
     def view_topics(self, obj):
-        url = reverse("admin:course_ware_topic_changelist") + f"?course__id={obj.id}"
+        url = reverse("admin:content_topic_changelist") + f"?course__id={obj.id}"
         return format_html('<a href="{}">View Topics</a>', url)
 
     view_topics.short_description = "Topics"
