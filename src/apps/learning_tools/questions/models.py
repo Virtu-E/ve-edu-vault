@@ -20,7 +20,7 @@ class QuestionCategory(models.Model):
 
     def save(self, *args, **kwargs):
         # to avoid circular import error
-        from src.services.course_sync.tasks import add_default_question_set
+        from src.apps.learning_tools.questions.tasks import add_default_question_set
 
         super().save(*args, **kwargs)
         transaction.on_commit(

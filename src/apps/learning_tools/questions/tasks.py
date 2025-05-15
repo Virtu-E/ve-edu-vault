@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(
-    name="course_sync.tasks.add_default_question_set",
+    name="src.apps.learning_tools.questions.tasks.add_default_question_set",
     max_retries=3,
     default_retry_delay=30,
     ignore_result=True,
