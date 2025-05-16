@@ -6,10 +6,10 @@ from celery import Celery
 log = logging.getLogger(__name__)
 
 # Set the default Django settings module for the 'celery' program.
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "src.edu_vault.settings.dev")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "src.config.django.base")
 
 
-app = Celery("src.edu_vault")
+app = Celery("edu_vault")
 
 # Using a string here means the worker doesn't have to serialize
 # the configuration object to child processes.

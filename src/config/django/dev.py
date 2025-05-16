@@ -1,9 +1,7 @@
-# ruff: noqa
-from .common import *  # noqa: F401
+from src.config.django.base import *  # noqa: F401
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
@@ -22,13 +20,11 @@ DATABASES = {
     },
 }
 
-# Disable Celery tasks for testing
-CELERY_TASK_ALWAYS_EAGER = True
-CELERY_TASK_EAGER_PROPAGATES = True
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
-# Disable Elasticsearch indexing
-ELASTICSEARCH_DSL_AUTOSYNC = False
-ELASTICSEARCH_DSL_INDEX_SETTINGS = {}
-
-
-DISABLE_CUSTOM_SIGNAL_PROCESSOR = True
+CSRF_TRUSTED_ORIGINS = [
+    "https://virtueducate.edly.io",
+    "https://local.edly.io",
+    "https://vault.virtueducate.edly.io",
+]

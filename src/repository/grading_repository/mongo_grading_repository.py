@@ -5,7 +5,7 @@ from uuid import UUID
 from bson import ObjectId
 from bson.binary import UUID_SUBTYPE, Binary
 
-from src.edu_vault.settings import common
+from src.config.django import base
 from src.repository.databases.no_sql_database.mongodb import (
     AsyncMongoDatabaseEngine,
     mongo_database,
@@ -150,7 +150,7 @@ class MongoGradingRepository(AbstractGradingRepository):
         Raises:
             RuntimeError: If database name is not configured in settings
         """
-        database_name = getattr(common, "NO_SQL_GRADING_DATABASE_NAME", None)
+        database_name = getattr(base, "NO_SQL_GRADING_DATABASE_NAME", None)
         if database_name is None:
             log.error("NO_SQL_GRADING_DATABASE_NAME not configured in settings")
             # TODO : raise custom error exception here for better details

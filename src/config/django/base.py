@@ -10,11 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
-import ssl
 from pathlib import Path
 
 from decouple import config
-from redis import ConnectionPool, Redis
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -32,7 +30,6 @@ DEBUG = config("DEBUG", default=False, cast=bool)
 
 # Application definition
 
-INSTALLED_APPS = []
 
 DJANGO_APPS = [
     "django.contrib.admin",
@@ -72,9 +69,13 @@ LEARNING_TOOLS_APPS = [
     "src.apps.learning_tools.questions",
 ]
 
-INSTALLED_APPS = (
-    DJANGO_APPS + EXTERNAL_APPS + CORE_APPS + INTEGRATION_APPS + LEARNING_TOOLS_APPS
-)
+INSTALLED_APPS = [
+    *DJANGO_APPS,
+    *EXTERNAL_APPS,
+    *CORE_APPS,
+    *INTEGRATION_APPS,
+    *LEARNING_TOOLS_APPS,
+]
 
 
 # TODO : csrf protection vs authentication
@@ -97,7 +98,7 @@ MIDDLEWARE = [
 ]
 
 
-ROOT_URLCONF = "src.edu_vault.urls"
+ROOT_URLCONF = "src.config.urls"
 
 TEMPLATES = [
     {
@@ -117,7 +118,7 @@ TEMPLATES = [
 
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-WSGI_APPLICATION = "src.edu_vault.wsgi.application"
+WSGI_APPLICATION = "src.config.wsgi.application"
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -221,9 +222,6 @@ CELERY_BROKER_URL = config("CELERY_BROKER_URL")
 CELERY_RESULT_BACKEND = config("CELERY_BROKER_URL")
 
 # Redis configuration
-REDIS_URL = config("REDIS_URL")
-REDIS_CONNECTION_POOL = ConnectionPool.from_url(REDIS_URL, ssl_cert_reqs=ssl.CERT_NONE)
-REDIS_CLIENT = Redis(connection_pool=REDIS_CONNECTION_POOL)
 
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
@@ -250,17 +248,4 @@ FRONT_END_URL = config("FRONT_END_URL")
 # 'use_ssl': True,
 # 'verify_certs': True,
 
-ELASTICSEARCH_DSL = {
-    "default": {
-        "hosts": [config("ELASTIC_SEARCH_URL")],
-        "http_auth": ("elastic", ""),
-        "timeout": 30,
-        "retry_on_timeout": True,
-        "verify_certs": False,  # In production, you should use proper certificates
-    },
-}
-# ELASTICSEARCH_DSL_AUTOSYNC = False
-# ELASTICSEARCH_DSL_AUTO_REFRESH = False
-ELASTICSEARCH_DSL_SIGNAL_PROCESSOR = (
-    "src.apps.elastic_search.custom_signal_processor.CustomCelerySignalProcessor"
-)
+from src.config.settings.elastic_search import *  # noqa

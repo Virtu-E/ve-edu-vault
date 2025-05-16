@@ -8,14 +8,14 @@ from django.urls import reverse
 from qstash import AsyncQStash, Receiver
 from qstash.message import PublishResponse, PublishUrlGroupResponse
 
-from src.edu_vault.settings import common
+from src.config.django import base
 
 logger = logging.getLogger(__name__)
 
-QSTASH_TOKEN = getattr(common, "QSTASH_TOKEN", "")
-QSTASH_CURRENT_SIGNING_KEY = getattr(common, "QSTASH_CURRENT_SIGNING_KEY", "")
-QSTASH_NEXT_SIGNING_KEY = getattr(common, "QSTASH_NEXT_SIGNING_KEY", "")
-SITE_URL = getattr(common, "SITE_URL", "")
+QSTASH_TOKEN = getattr(base, "QSTASH_TOKEN", "")
+QSTASH_CURRENT_SIGNING_KEY = getattr(base, "QSTASH_CURRENT_SIGNING_KEY", "")
+QSTASH_NEXT_SIGNING_KEY = getattr(base, "QSTASH_NEXT_SIGNING_KEY", "")
+SITE_URL = getattr(base, "SITE_URL", "")
 
 qstash = AsyncQStash(token=QSTASH_TOKEN)
 receiver = Receiver(

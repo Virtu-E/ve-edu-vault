@@ -6,6 +6,8 @@ PRECOMMIT = pre-commit
 CELERY = celery
 DJANGO_SHELL = $(PYTHON) manage.py shell_plus
 UVICORN = uvicorn
+DEV_SETTINGS = src.config.django.dev
+PROD_SETTINGS = src.config.django.production
 
 # Default target
 .PHONY: all
@@ -27,7 +29,9 @@ help:
 	@echo "  clean               - Clean up generated files"
 	@echo "  celery              - Runs a celery worker"
 	@echo "  shell               - Starts an Ipython shell"
-	@echo "  serve-async         - Start async server with uvicorn"
+	@echo "  serve-async         - Start async server with uvicorn (dev settings)"
+	@echo "  serve-async-prod    - Start async server with production settings"
+	@echo "  serve-async-dev     - Start async server with development settings"
 	@echo "  shell-reload        - Starts an Ipython shell with auto-reloading enabled"
 
 .PHONY: shell
@@ -41,12 +45,21 @@ shell-reload:
 
 .PHONY: celery
 celery:
-	$(CELERY) -A src.edu_vault worker -l info
+	$(CELERY) -A edu_vault worker -l info
 
-# Run async server with uvicorn
+# Run async server with uvicorn (defaults to dev settings)
 .PHONY: serve-async
-serve-async:
-	$(UVICORN) src.edu_vault.asgi:application --reload
+serve-async: serve-async-dev
+
+# Run async server with uvicorn using development settings
+.PHONY: serve-async-dev
+serve-async-dev:
+	DJANGO_SETTINGS_MODULE=$(DEV_SETTINGS) $(UVICORN) src.config.asgi:application --reload
+
+# Run async server with uvicorn using production settings
+.PHONY: serve-async-prod
+serve-async-prod:
+	DJANGO_SETTINGS_MODULE=$(PROD_SETTINGS) $(UVICORN) src.config.asgi:application
 
 # Run tests with default options
 .PHONY: test

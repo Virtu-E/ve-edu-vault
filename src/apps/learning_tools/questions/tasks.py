@@ -6,10 +6,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from redis.exceptions import LockError
 
 from src.apps.core.content.models import LearningObjective
-from src.services.course_sync.default_question_service import DefaultQuestionService
-from src.edu_vault.settings import common
-
-REDIS_CLIENT = common.REDIS_CLIENT
+from src.config.settings.redis import REDIS_CLIENT
+from src.library.course_sync.default_question_service import DefaultQuestionService
 
 logger = logging.getLogger(__name__)
 

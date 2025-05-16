@@ -3,7 +3,7 @@ from typing import Any, Dict, Iterable, List
 
 from bson import ObjectId, errors
 
-from src.edu_vault.settings import common
+from src.config.django import base
 from src.repository.databases.no_sql_database.mongodb import (
     AsyncMongoDatabaseEngine,
     mongo_database,
@@ -270,7 +270,7 @@ class MongoQuestionRepository(AbstractQuestionRepository):
 
     @classmethod
     def get_repo(cls):
-        database_name = getattr(common, "NO_SQL_QUESTIONS_DATABASE_NAME", None)
+        database_name = getattr(base, "NO_SQL_QUESTIONS_DATABASE_NAME", None)
         if database_name is None:
             log.error("NO_SQL_QUESTIONS_DATABASE_NAME not configured in settings")
             # TODO : raise custom error exception here for better details
