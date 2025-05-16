@@ -2,7 +2,7 @@ from collections import namedtuple
 
 from asgiref.sync import sync_to_async
 
-from src.lib.education_service import EducationalContextService
+from src.library.education_service import EducationalContextService
 
 ServiceResources = namedtuple(
     "ServiceResources",

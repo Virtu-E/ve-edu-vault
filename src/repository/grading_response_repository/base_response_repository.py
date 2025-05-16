@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 from uuid import UUID
 
-from src.lib.grade_book_v2.question_grading.qn_grading_types import GradingResponse
+from src.library.grade_book_v2.question_grading.qn_grading_types import GradingResponse
 from src.repository.grading_response_repository.response_data_types import (
     QuestionAttempt,
 )

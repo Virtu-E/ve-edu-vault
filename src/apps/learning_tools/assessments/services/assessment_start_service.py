@@ -3,7 +3,10 @@ from datetime import datetime
 
 from asgiref.sync import sync_to_async
 
-from src.lib.quiz_countdown.main import AssessmentTimerData, schedule_test_assessment
+from src.library.quiz_countdown.main import (
+    AssessmentTimerData,
+    schedule_test_assessment,
+)
 from src.utils.mixins.context import ServiceResources
 
 from ..exceptions import SchedulingError

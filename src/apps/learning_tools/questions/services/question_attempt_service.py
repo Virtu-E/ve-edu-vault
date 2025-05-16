@@ -5,13 +5,13 @@ from typing import Optional, Tuple
 from uuid import UUID
 
 from src.apps.learning_tools.assessments.util import get_assessment_id
-from src.lib.grade_book_v2.question_grading.grading_response_service import (
+from src.library.grade_book_v2.question_grading.grading_response_service import (
     GradingResponseService,
 )
-from src.lib.grade_book_v2.question_grading.qn_grading_service import (
+from src.library.grade_book_v2.question_grading.qn_grading_service import (
     SingleQuestionGrader,
 )
-from src.lib.grade_book_v2.question_grading.qn_grading_types import (
+from src.library.grade_book_v2.question_grading.qn_grading_types import (
     AttemptedAnswer,
     GradingResponse,
 )

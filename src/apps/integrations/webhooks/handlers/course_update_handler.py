@@ -2,9 +2,9 @@ import logging
 from typing import Any, Dict, Tuple
 
 from src.apps.core.courses.models import AcademicClass, Course, ExaminationLevel
-from src.lib.course_sync.course_sync import ChangeResult, CourseSyncService
-from src.lib.course_sync.data_transformer import EdxDataTransformer
-from src.lib.course_sync.data_types import EdxCourseOutline
+from src.library.course_sync.course_sync import ChangeResult, CourseSyncService
+from src.library.course_sync.data_transformer import EdxDataTransformer
+from src.library.course_sync.data_types import EdxCourseOutline
 from src.utils.tools import (
     academic_class_from_course_id,
     get_examination_level_from_course_id,

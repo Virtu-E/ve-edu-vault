@@ -7,7 +7,7 @@ from redis.exceptions import LockError
 from src.apps.integrations.oauth_clients.edx_client import EdxClient
 from src.apps.integrations.oauth_clients.services import OAuthClient
 from src.edu_vault.settings import common
-from src.lib.course_sync.course_sync import CourseSyncService
+from src.library.course_sync.course_sync import CourseSyncService
 
 from .data_types import WebhookRequestData
 from .handlers.abstract_type import WebhookResponse

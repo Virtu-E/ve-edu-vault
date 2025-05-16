@@ -7,7 +7,7 @@ from bson import ObjectId
 from bson.binary import UUID_SUBTYPE, Binary
 
 from src.edu_vault.settings import common
-from src.lib.grade_book_v2.question_grading.qn_grading_types import GradingResponse
+from src.library.grade_book_v2.question_grading.qn_grading_types import GradingResponse
 from src.repository.databases.no_sql_database.mongodb import (
     AsyncMongoDatabaseEngine,
     mongo_database,

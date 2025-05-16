@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 from src.apps.learning_tools.assessments.util import get_assessment_id
-from src.lib.grade_book_v2.question_grading.grading_response_service import (
+from src.library.grade_book_v2.question_grading.grading_response_service import (
     GradingResponseService,
 )
 from src.repository.grading_response_repository.response_data_types import (
