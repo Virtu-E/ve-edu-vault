@@ -1,6 +1,9 @@
-from typing import Any, Dict
+from src.apps.integrations.webhooks.handlers.abstract_type import (
+    WebhookHandler,
+    WebhookResponse,
+)
 
-from src.apps.integrations.webhooks.handlers.abstract_type import WebhookHandler
+from ..data_types import WebhookRequestData
 
 
 class UserRegistrationHandler(WebhookHandler):
@@ -8,5 +11,5 @@ class UserRegistrationHandler(WebhookHandler):
     Handles open Edx User Registration events
     """
 
-    def handle(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        pass
+    def handle(self, payload: WebhookRequestData) -> WebhookResponse:
+        return {"status": "success", "message": "User registration successful"}
