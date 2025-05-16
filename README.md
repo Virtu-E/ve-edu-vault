@@ -24,7 +24,7 @@ VE-EDU-VAULT follows a structured architecture to maintain clear separation of c
 3. **Services**: Contain business logic independent of Django
    - **Course Sync**: Maintains content synchronization between Open edX and EDU Vault
    - **Grade Book**: Provides enhanced grading capabilities
-   - **Vault QStash**: Manages timed assessment submissions
+   - **Assessment Timer**: Manages timed assessment submissions via QStash
 4. **Learning Tools**: Extend Open edX's assessment capabilities
    - Support for AI-enhanced question analysis
    - Dynamic question assignment based on student progress
@@ -56,18 +56,23 @@ ve-edu-vault/
 │   │       ├── assessments/       # Assessment functionality
 │   │       ├── flash_cards/       # Flashcard system
 │   │       └── questions/         # Question management
-│   ├── edu_vault/                 # Core Django project settings
+│   ├── config/                    # Core Django project settings
+│   │   ├── django/                # Django-specific configurations
+│   │   └── settings/              # Additional settings modules
 │   ├── exceptions.py              # Custom exception classes
+│   ├── library/                   # Business logic libraries
+│   │   ├── course_sync/           # Course synchronization
+│   │   ├── grade_book_v2/         # Grading system
+│   │   └── quiz_countdown/        # Assessment timing service
 │   ├── repository/                # Repository pattern implementations
 │   │   ├── databases/             # Database connectors
 │   │   ├── grading_repository/    # Repositories for grading data
-│   │   ├── question_repository/   # Repositories for question data
-│   │   └── history_repository/    # Repositories for learning history
-│   ├── services/                  # Business logic services
-│   │   ├── course_sync/           # Synchronization with Open edX courses
-│   │   ├── grade_book_v2/         # Question and assessment grading
-│   │   └── vault_qstash/          # Assessment timing service
+│   │   ├── grading_response_repository/ # Repositories for grading responses
+│   │   ├── history_repository/    # Repositories for learning history
+│   │   └── question_repository/   # Repositories for question data
 │   └── utils/                     # Shared utilities
+│       ├── mixins/                # Reusable view and service mixins
+│       └── views/                 # Base view classes
 ```
 
 ## Core Components
@@ -93,7 +98,7 @@ The `src/apps` directory contains Django applications that form the core functio
 
 ### Learning Tools
 
-The `src/learning_tools` directory houses educational tools that enhance the Open edX learning experience:
+The `src/apps/learning_tools` directory houses educational tools that enhance the Open edX learning experience:
 
 - **assessments**: Advanced assessment tools with features not available in standard Open edX
   - Dynamic assignment of questions based on student progress
@@ -120,9 +125,12 @@ The `src/repository` directory implements the repository pattern to abstract dat
 - **question_repository**: Repositories for question data
   - MongoDB implementation for storing and retrieving questions
 
-### Services
+- **grading_response_repository**: Repositories for detailed grading responses
+  - Stores attempt-specific feedback and results
 
-The `src/services` directory contains business logic that's independent from Django:
+### Library
+
+The `src/library` directory contains business logic that's independent from Django:
 
 - **course_sync**: Synchronizes course content between Open edX and EDU Vault
   - DiffEngine: Detects changes between course versions
@@ -133,13 +141,13 @@ The `src/services` directory contains business logic that's independent from Dja
   - SingleQuestionGrader: Grades individual question attempts
   - GradingResponseService: Manages grading response data
 
-- **vault_qstash**: Implementation for timing assessment submissions
-  - Uses QStash for timed operations
+- **quiz_countdown**: Implementation for timing assessment submissions
+  - Uses QStash for scheduling assessment expirations
 
 ## Technology Stack
 
 - **Backend**: Python 3.13, Django 5.2
-- **Databases**: 
+- **Databases**:
   - PostgreSQL (via Django ORM)
   - MongoDB for questions and student responses
 - **Search**: Elasticsearch
@@ -148,16 +156,16 @@ The `src/services` directory contains business logic that's independent from Dja
 - **Timed Operations**: QStash
 - **OAuth/Authentication**: JWT, OAuth2
 - **LTI**: PyLTI1p3
-- **Code Quality**: Black, isort, flake8, mypy
+- **Code Quality**: Black, isort, flake8, mypy, ruff
 
 ## Getting Started
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.13+
 - Django 5.2+
 - PostgreSQL 13+
-- MongoDB 
+- MongoDB
 - Elasticsearch 7.x (for search functionality)
 - Redis (for Celery)
 - Access to an Open edX instance
@@ -194,7 +202,7 @@ The `src/services` directory contains business logic that's independent from Dja
 6. Configure environment variables:
    ```
    # Update .env with your configuration
-   # Sample values are provided but will not work as the keys are invalid
+   # See .env.sample for required variables
    ```
 
 7. Run the development server:
@@ -221,6 +229,7 @@ The project uses several tools to maintain code quality:
 - **isort**: Import sorter
 - **flake8**: Code linter
 - **mypy**: Static type checker
+- **ruff**: Python linter with multiple rule sets
 
 Run pre-commit checks with:
 ```
