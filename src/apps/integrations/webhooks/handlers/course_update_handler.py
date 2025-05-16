@@ -1,8 +1,6 @@
 import logging
 from typing import Any, Dict, Tuple
 
-from abstract_type import WebhookHandler, WebhookResponse
-
 from src.apps.core.courses.models import AcademicClass, Course, ExaminationLevel
 from src.lib.course_sync.course_sync import ChangeResult, CourseSyncService
 from src.lib.course_sync.data_transformer import EdxDataTransformer
@@ -13,8 +11,18 @@ from src.utils.tools import (
 )
 
 from ..data_types import WebhookRequestData
+from ..tasks import process_course_update
+from .abstract_type import WebhookHandler, WebhookResponse
 
 log = logging.getLogger(__name__)
+
+
+class CourseUpdatedHandlerCelery(WebhookHandler):
+    """Handles OpenEdx Course Update events using celery"""
+
+    def handle(self, payload: WebhookRequestData) -> WebhookResponse:
+        process_course_update.delay(payload)
+        return {"status": "success", "message": "course queued for updating"}
 
 
 class CourseUpdatedHandler(WebhookHandler):

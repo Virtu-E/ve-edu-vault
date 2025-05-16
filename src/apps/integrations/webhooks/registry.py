@@ -5,7 +5,7 @@ from src.apps.integrations.webhooks.handlers.course_create_handler import (
     CourseCreatedHandler,
 )
 
-from .service import CourseUpdatedHandlerService
+from .handlers.course_update_handler import CourseUpdatedHandlerCelery
 
 
 class WebhookRegistry:
@@ -29,4 +29,4 @@ webhook_registry = WebhookRegistry()
 webhook_registry.register(
     "org.openedx.content_authoring.course.created.v1", CourseCreatedHandler()
 )
-webhook_registry.register("course_published", CourseUpdatedHandlerService())
+webhook_registry.register("course_published", CourseUpdatedHandlerCelery())

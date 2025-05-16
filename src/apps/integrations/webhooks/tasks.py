@@ -6,9 +6,6 @@ from redis.exceptions import LockError
 
 from src.apps.integrations.oauth_clients.edx_client import EdxClient
 from src.apps.integrations.oauth_clients.services import OAuthClient
-from src.apps.integrations.webhooks.handlers.course_update_handler import (
-    CourseUpdatedHandler,
-)
 from src.edu_vault.settings import common
 from src.lib.course_sync.course_sync import CourseSyncService
 
@@ -21,6 +18,11 @@ log = logging.getLogger(__name__)
 
 
 async def _process_course_update_async(payload: WebhookRequestData) -> WebhookResponse:
+    # to avoid circular imports
+    from src.apps.integrations.webhooks.handlers.course_update_handler import (
+        CourseUpdatedHandler,
+    )
+
     """Async implementation of the course update processing"""
     course_id = payload.data.course_key
 
