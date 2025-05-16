@@ -1,5 +1,11 @@
 # VE-EDU-VAULT
 
+## Note
+
+Currently, there are no unit tests in the codebase due to recent architectural and structural changes. Updating the old tests would delay the planned launch. As with all technical decisions, this represents a trade-off between immediate delivery and code quality. This has been documented in issue #121 (https://github.com/Virtu-E/ve-edu-vault/issues/121) and will be addressed in a future update.
+
+Nonetheless, the code still adheres to strong architectural patterns. Code quality and structure were not compromised during the refactoring process.
+
 An educational content management system with integrated learning tools and external service integrations.
 
 ## Overview
