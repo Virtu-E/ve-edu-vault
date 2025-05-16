@@ -1,27 +1,30 @@
-import asyncio
 import logging
-from typing import Any, Dict
 
-from asgiref.sync import async_to_sync
+from asgiref.sync import async_to_sync, sync_to_async
 from celery import shared_task
 from redis.exceptions import LockError
 
-from src.services.course_sync.course_sync import CourseSyncService
-from src.edu_vault.settings import common
 from src.apps.integrations.oauth_clients.edx_client import EdxClient
 from src.apps.integrations.oauth_clients.services import OAuthClient
-from src.apps.integrations.webhooks.handlers.course_update_handler import (
-    CourseUpdatedHandler,
-)
+from src.edu_vault.settings import common
+from src.lib.course_sync.course_sync import CourseSyncService
+
+from .data_types import WebhookRequestData
+from .handlers.abstract_type import WebhookResponse
 
 REDIS_CLIENT = common.REDIS_CLIENT
 
 log = logging.getLogger(__name__)
 
 
-async def _process_course_update_async(payload: Dict[str, Any]) -> Dict[str, Any]:
+async def _process_course_update_async(payload: WebhookRequestData) -> WebhookResponse:
+    # to avoid circular imports
+    from src.apps.integrations.webhooks.handlers.course_update_handler import (
+        CourseUpdatedHandler,
+    )
+
     """Async implementation of the course update processing"""
-    course_id = payload.get("course", {}).get("course_key")
+    course_id = payload.data.course_key
 
     log.info(f"Starting async course update processing for course_id: {course_id}")
     log.debug(f"Initializing CourseSyncService for course: {course_id}")
@@ -39,10 +42,10 @@ async def _process_course_update_async(payload: Dict[str, Any]) -> Dict[str, Any
     )
 
     log.info(f"Processing course update for course: {course_id}")
-    result = await asyncio.to_thread(handler.handle, payload)
+    result = await sync_to_async(handler.handle)(payload)
 
     log.info(f"Course update processing completed successfully for: {course_id}")
-    return result.model_dump()
+    return result
 
 
 @shared_task(
@@ -51,9 +54,9 @@ async def _process_course_update_async(payload: Dict[str, Any]) -> Dict[str, Any
     default_retry_delay=60,
     ignore_result=True,
 )
-def process_course_update(payload: Dict[str, Any]) -> None:
+def process_course_update(payload: WebhookRequestData) -> None:
     """Celery task to process course updates asynchronously with lock"""
-    course_id = payload.get("course", {}).get("course_key", "unknown")
+    course_id = payload.data.course_key
 
     # Create a lock with a timeout (in seconds)
     lock_name = f"lock:process_course_update:{course_id}"
@@ -75,6 +78,7 @@ def process_course_update(payload: Dict[str, Any]) -> None:
                 lock.release()
         else:
             # Task is already running, reschedule for later
+            # TODO : need to add exponential backoff here
             log.info(f"Task for course {course_id} is already running. Rescheduling.")
             process_course_update.apply_async(
                 args=[payload], countdown=60  # Try again after 1 minute

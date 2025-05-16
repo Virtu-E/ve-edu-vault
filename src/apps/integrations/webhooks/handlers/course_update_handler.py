@@ -1,30 +1,40 @@
 import logging
 from typing import Any, Dict, Tuple
 
-from src.apps.core.courses.models import Course, AcademicClass, ExaminationLevel
-from src.services.course_sync.course_sync import ChangeResult, CourseSyncService
-from src.services.course_sync.data_transformer import EdxDataTransformer
-from src.services.course_sync.data_types import EdxCourseOutline, CourseSyncResponse
-
-from src.apps.integrations.webhooks.handlers.abstract_type import WebhookHandler
+from src.apps.core.courses.models import AcademicClass, Course, ExaminationLevel
+from src.lib.course_sync.course_sync import ChangeResult, CourseSyncService
+from src.lib.course_sync.data_transformer import EdxDataTransformer
+from src.lib.course_sync.data_types import EdxCourseOutline
 from src.utils.tools import (
-    get_examination_level_from_course_id,
     academic_class_from_course_id,
+    get_examination_level_from_course_id,
 )
+
+from ..data_types import WebhookRequestData
+from ..tasks import process_course_update
+from .abstract_type import WebhookHandler, WebhookResponse
 
 log = logging.getLogger(__name__)
 
 
+class CourseUpdatedHandlerCelery(WebhookHandler):
+    """Handles OpenEdx Course Update events using celery"""
+
+    def handle(self, payload: WebhookRequestData) -> WebhookResponse:
+        process_course_update.delay(payload)
+        return {"status": "success", "message": "course queued for updating"}
+
+
 class CourseUpdatedHandler(WebhookHandler):
     """
-    Handles OpenEdx Course Update events with improved error handling and response tracking.
+    Handles OpenEdx Course Update events
     """
 
     def __init__(self, sync_service: CourseSyncService, new_course_outline_dict: Dict):
         self._sync_service = sync_service
         self._new_course_outline_dict = new_course_outline_dict
 
-    def handle(self, payload: Dict[str, Any]) -> CourseSyncResponse:
+    def handle(self, payload: WebhookRequestData) -> WebhookResponse:
         """
         Handles course update webhook.
 
@@ -35,7 +45,7 @@ class CourseUpdatedHandler(WebhookHandler):
             Dict containing status and message
         """
 
-        course_id = payload["course"]["course_key"]
+        course_id = payload.data.course_key
 
         course, created = self._get_or_create_course(
             course_id, self._new_course_outline_dict
@@ -63,14 +73,18 @@ class CourseUpdatedHandler(WebhookHandler):
             course.course_outline = self._new_course_outline_dict
             course.save()
 
-        return CourseSyncResponse(
-            status="success",
-            message=f"Course successfully {status_message}",
-            course_id=course_id,
-            changes_made=changes_made,
-            num_success=sync_result.num_success,
-            num_failed=sync_result.num_failed,
+        logging.info(
+            "Response message: %s",
+            {
+                "course_id": course_id,
+                "changes_made": changes_made,
+                "num_success": sync_result.num_success,
+                "num_failed": sync_result.num_failed,
+                "status_message": status_message,
+            },
         )
+
+        return {"status": "success", "message": f"Course Successfully {status_message}"}
 
     @staticmethod
     def _get_or_create_course(

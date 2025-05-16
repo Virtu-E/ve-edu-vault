@@ -4,8 +4,8 @@ from src.apps.integrations.webhooks.handlers.abstract_type import WebhookHandler
 from src.apps.integrations.webhooks.handlers.course_create_handler import (
     CourseCreatedHandler,
 )
-from src.apps.integrations.webhooks.task_manager import CourseTaskManager
-from src.apps.integrations.webhooks.validators import EdxWebhookValidator
+
+from .handlers.course_update_handler import CourseUpdatedHandlerCelery
 
 
 class WebhookRegistry:
@@ -29,4 +29,4 @@ webhook_registry = WebhookRegistry()
 webhook_registry.register(
     "org.openedx.content_authoring.course.created.v1", CourseCreatedHandler()
 )
-webhook_registry.register("course_published", CourseTaskManager(EdxWebhookValidator()))
+webhook_registry.register("course_published", CourseUpdatedHandlerCelery())
