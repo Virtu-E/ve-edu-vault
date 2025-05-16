@@ -2,7 +2,7 @@ from base64 import b64decode, b64encode
 
 from cryptography.fernet import Fernet
 
-from src.edu_vault.settings.common import ENCRYPTION_KEY
+from src.config.django.base import ENCRYPTION_KEY
 
 
 def get_encryption_key():

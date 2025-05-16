@@ -6,13 +6,11 @@ from redis.exceptions import LockError
 
 from src.apps.integrations.oauth_clients.edx_client import EdxClient
 from src.apps.integrations.oauth_clients.services import OAuthClient
-from src.edu_vault.settings import common
+from src.config.settings.redis import REDIS_CLIENT
 from src.library.course_sync.course_sync import CourseSyncService
 
 from .data_types import WebhookRequestData
 from .handlers.abstract_type import WebhookResponse
-
-REDIS_CLIENT = common.REDIS_CLIENT
 
 log = logging.getLogger(__name__)
 

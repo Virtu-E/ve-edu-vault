@@ -12,7 +12,7 @@ def main():
     BASE_DIR = Path(__file__).resolve().parent
     sys.path.insert(0, str(BASE_DIR))
 
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "src.edu_vault.settings.dev")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "src.config.django.base")
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

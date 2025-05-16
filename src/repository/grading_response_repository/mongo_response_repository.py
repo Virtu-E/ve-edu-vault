@@ -6,7 +6,7 @@ from uuid import UUID
 from bson import ObjectId
 from bson.binary import UUID_SUBTYPE, Binary
 
-from src.edu_vault.settings import common
+from src.config.django import base
 from src.library.grade_book_v2.question_grading.qn_grading_types import GradingResponse
 from src.repository.databases.no_sql_database.mongodb import (
     AsyncMongoDatabaseEngine,
@@ -134,7 +134,7 @@ class MongoGradingResponseRepository(AbstractGradingResponseRepository):
         Returns:
             MongoGradingResponseRepository: A configured repository instance
         """
-        database_name = getattr(common, "NO_SQL_GRADING_RESPONSE_DATABASE_NAME", None)
+        database_name = getattr(base, "NO_SQL_GRADING_RESPONSE_DATABASE_NAME", None)
         if database_name is None:
             log.error(
                 "NO_SQL_GRADING_RESPONSE_DATABASE_NAME not configured in settings"

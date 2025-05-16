@@ -8,11 +8,11 @@ from pylti1p3.contrib.django import (
 )
 
 from src.apps.integrations.lti_provider.service import get_lti_redirect_context
-from src.edu_vault.settings import common
+from src.config.django import base
 
 tool_conf_2 = DjangoDbToolConf()
 
-FRONT_END_URL = getattr(common, "FRONT_END_URL")
+FRONT_END_URL = getattr(base, "FRONT_END_URL")
 
 
 @csrf_exempt
@@ -20,7 +20,7 @@ def lti_login(request):
     """Handles the OpenID Connect (OIDC) login flow."""
     try:
         oidc_login = DjangoOIDCLogin(request, tool_conf_2)
-        return oidc_login.redirect(getattr(common, "LTI_LAUNCH_URL", ""))
+        return oidc_login.redirect(getattr(base, "LTI_LAUNCH_URL", ""))
     # TODO : we should catch the actual exception here instead of overall exception
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
