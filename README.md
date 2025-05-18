@@ -1,5 +1,11 @@
 # VE-EDU-VAULT
 
+## Note
+
+Currently, there are no unit tests in the codebase due to recent architectural and structural changes. Updating the old tests would delay the planned launch. As with all technical decisions, this represents a trade-off between immediate delivery and code quality. This has been documented in issue #121 (https://github.com/Virtu-E/ve-edu-vault/issues/121) and will be addressed in a future update.
+
+Nonetheless, the code still adheres to strong architectural patterns. Code quality and structure were not compromised during the refactoring process.
+
 An educational content management system with integrated learning tools and external service integrations.
 
 ## Overview
@@ -180,13 +186,13 @@ The `src/library` directory contains business logic that's independent from Djan
 
 2. Create and activate a virtual environment:
    ```
-   python -m venv venv
+   uv venv .venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. Install dependencies:
    ```
-   pip install -r requirements.txt
+   uv sync --all-groups
    ```
 
 4. Setup the database:
