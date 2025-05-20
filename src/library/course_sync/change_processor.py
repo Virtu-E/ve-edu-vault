@@ -89,8 +89,9 @@ class CreateStrategy(ChangeStrategy):
         )
         return True
 
+    @staticmethod
     def _create_subtopic(
-        self, block_id: str, subtopic_data: Union[SubTopicChangeData, CourseChangeData]
+        block_id: str, subtopic_data: Union[SubTopicChangeData, CourseChangeData]
     ) -> bool:
         """Implement subtopic creation logic"""
         log.info("Creating subtopic: %s", block_id)
@@ -135,8 +136,9 @@ class UpdateStrategy(ChangeStrategy):
         log.error(f"Unsupported entity type for UPDATE: {entity_type}")
         return False
 
+    @staticmethod
     def _update_course(
-        self, course_id: str, course_data: SubTopicChangeData | CourseChangeData
+        course_id: str, course_data: SubTopicChangeData | CourseChangeData
     ):
         """Updates course data"""
         log.info("Updating course: %s", course_id)
@@ -154,9 +156,8 @@ class UpdateStrategy(ChangeStrategy):
         course.save()
         return True
 
-    def _update_topic(
-        self, block_id: str, topic_data: SubTopicChangeData | CourseChangeData
-    ):
+    @staticmethod
+    def _update_topic(block_id: str, topic_data: SubTopicChangeData | CourseChangeData):
         """Updates topic data"""
         log.info(f"Updating topic: {block_id}")
 
@@ -165,8 +166,9 @@ class UpdateStrategy(ChangeStrategy):
         topic.save()
         return True
 
+    @staticmethod
     def _update_subtopic(
-        self, block_id: str, subtopic_data: SubTopicChangeData | CourseChangeData
+        block_id: str, subtopic_data: SubTopicChangeData | CourseChangeData
     ):
         """Updates subtopic data"""
         log.info(f"Updating subtopic: {block_id}")
@@ -198,14 +200,16 @@ class DeleteStrategy(ChangeStrategy):
             log.error(f"Unsupported entity type for DELETE: {entity_type}")
             return False
 
-    def _delete_course(self, course_id: str) -> bool:
+    @staticmethod
+    def _delete_course(course_id: str) -> bool:
         """Deletion of a course"""
         log.info(f"Deleting course: {course_id}")
         course = Course.objects.get(id=course_id)
         course.delete()
         return True
 
-    def _delete_topic(self, block_id: str) -> bool:
+    @staticmethod
+    def _delete_topic(block_id: str) -> bool:
         """deletion of a topic"""
         log.info(f"Deleting topic: {block_id}")
         topic = Topic.objects.get(block_id=block_id)
@@ -213,7 +217,8 @@ class DeleteStrategy(ChangeStrategy):
 
         return True
 
-    def _delete_subtopic(self, block_id: str) -> bool:
+    @staticmethod
+    def _delete_subtopic(block_id: str) -> bool:
         """Implement subtopic deletion logic"""
         log.info(f"Deleting subtopic: {block_id}")
         subtopic = SubTopic.objects.get(block_id=block_id)
