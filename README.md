@@ -1,180 +1,244 @@
 # VE-EDU-VAULT
 
-## Note
-
-Currently, there are no unit tests in the codebase due to recent architectural and structural changes. Updating the old tests would delay the planned launch. As with all technical decisions, this represents a trade-off between immediate delivery and code quality. This has been documented in issue #121 (https://github.com/Virtu-E/ve-edu-vault/issues/121) and will be addressed in a future update.
-
-Nonetheless, the code still adheres to strong architectural patterns. Code quality and structure were not compromised during the refactoring process.
-
-An educational content management system with integrated learning tools and external service integrations.
+![Python](https://img.shields.io/badge/python-3.13-blue.svg)
+![Django](https://img.shields.io/badge/django-5.2-green.svg)
+![MongoDB](https://img.shields.io/badge/mongodb-latest-green.svg)
+![PostgreSQL](https://img.shields.io/badge/postgresql-13+-blue.svg)
+![Redis](https://img.shields.io/badge/redis-latest-red.svg)
+![Celery](https://img.shields.io/badge/celery-5.4.0-brightgreen.svg)
+![Elasticsearch](https://img.shields.io/badge/elasticsearch-7.x-yellow.svg)
+![Asyncio](https://img.shields.io/badge/asyncio-✓-blue.svg)
+![REST API](https://img.shields.io/badge/REST_API-✓-orange.svg)
+![Docker](https://img.shields.io/badge/docker-✓-blue.svg)
+![Type Hints](https://img.shields.io/badge/type_hints-✓-lightgrey.svg)
 
 ## Overview
 
-VE-EDU-VAULT is an augmentation layer built on top of Open edX designed to extend and enhance its core functionality. While Open edX handles basic course creation, progress tracking, authentication, and analytics, VE-EDU-VAULT provides additional capabilities and integrations that aren't available in the standard Open edX platform.
+VE-EDU-VAULT is a robust backend system built to augment the Open edX platform with advanced educational features. It leverages modern Python and Django architecture to provide an enhanced learning experience through flexible course structuring, sophisticated assessment tools, and comprehensive analytics capabilities.
 
-This system allows you to:
-- Structure courses in more flexible ways (topics, subtopics, etc.)
-- Add specialized learning tools without modifying Open edX core
-- Store student responses in MongoDB for AI analysis
-- Implement dynamic question assignment based on student progress
-- Track detailed learning history and assessment attempts
-- Grade student submissions with sophisticated feedback mechanisms
-- Integrate with external services through LTI, OAuth, and webhooks
+## System Architecture
 
-## Architecture
-
-VE-EDU-VAULT follows a structured architecture to maintain clear separation of concerns while augmenting Open edX:
-
-1. **Django Apps**: Handle HTTP requests, views, templates, and models
-2. **Repository Pattern**: Abstracts data access to different storage backends (MongoDB, PostgreSQL)
-3. **Services**: Contain business logic independent of Django
-   - **Course Sync**: Maintains content synchronization between Open edX and EDU Vault
-   - **Grade Book**: Provides enhanced grading capabilities
-   - **Assessment Timer**: Manages timed assessment submissions via QStash
-4. **Learning Tools**: Extend Open edX's assessment capabilities
-   - Support for AI-enhanced question analysis
-   - Dynamic question assignment based on student progress
-   - MongoDB storage for detailed response analysis
-5. **Integrations**: Connect with external systems
-   - LTI Provider implementation
-   - OAuth clients for API access
-   - Webhooks for real-time events
-
-The system is designed to run alongside Open edX, enhancing its capabilities without requiring modifications to the Open edX core codebase.
-
-## Project Structure
+The application follows clean architecture principles with clear separation of concerns:
 
 ```
 ve-edu-vault/
-├── src/                           # All application code
-│   ├── apps/                      # Django applications
-│   │   ├── content_ext/           # Extended content functionality
-│   │   ├── core/                  # Core system functionality
-│   │   │   ├── content/           # Content management
-│   │   │   ├── courses/           # Course models and views
-│   │   │   └── users/             # User management
-│   │   ├── elastic_search/        # Elasticsearch integration
-│   │   ├── integrations/          # External service connections
-│   │   │   ├── lti_provider/      # LTI provider implementation
-│   │   │   ├── oauth_clients/     # OAuth client implementations
-│   │   │   └── webhooks/          # Webhook handlers
-│   │   └── learning_tools/        # Educational tools
-│   │       ├── assessments/       # Assessment functionality
-│   │       ├── flash_cards/       # Flashcard system
-│   │       └── questions/         # Question management
-│   ├── config/                    # Core Django project settings
-│   │   ├── django/                # Django-specific configurations
-│   │   └── settings/              # Additional settings modules
-│   ├── exceptions.py              # Custom exception classes
-│   ├── library/                   # Business logic libraries
-│   │   ├── course_sync/           # Course synchronization
-│   │   ├── grade_book_v2/         # Grading system
-│   │   └── quiz_countdown/        # Assessment timing service
-│   ├── repository/                # Repository pattern implementations
-│   │   ├── databases/             # Database connectors
-│   │   ├── grading_repository/    # Repositories for grading data
-│   │   ├── grading_response_repository/ # Repositories for grading responses
-│   │   ├── history_repository/    # Repositories for learning history
-│   │   └── question_repository/   # Repositories for question data
+├── src/                           # Core application code
+│   ├── apps/                      # Django applications (presentation layer)
+│   ├── library/                   # Business logic (domain layer)
+│   ├── repository/                # Data access (infrastructure layer)
 │   └── utils/                     # Shared utilities
-│       ├── mixins/                # Reusable view and service mixins
-│       └── views/                 # Base view classes
 ```
+
+### Key Architectural Patterns
+
+- **Repository Pattern**: Abstracts data access with clear interfaces, enabling swappable storage backends (MongoDB, PostgreSQL) through dependency injection
+- **Service Layer**: Contains pure business logic independent of web frameworks
+- **Domain-Driven Design**: Models and entities align with educational domain concepts
+- **CQRS-inspired Approach**: Separation of read and write operations through specialized repositories
+- **Command Pattern**: Used in the course sync module for handling change operations
+
+## Technical Stack
+
+- **Backend Framework**: Django 5.2 with Python 3.13
+- **API Layer**: Django REST Framework with custom async views
+- **Data Storage**:
+  - PostgreSQL (via Django ORM) for relational data
+  - MongoDB (via Motor) for flexible document storage and analytics
+- **Asynchronous Processing**:
+  - Asyncio for asynchronous database operations
+  - Celery with Redis for background task processing
+  - QStash for reliable scheduled operations (assessment timing)
+- **Search**: Elasticsearch with custom indexing
+- **Authentication**: JWT implementation with robust security
+- **Integration**: LTI 1.3 provider capability with OAuth2
+- **Code Quality**: Black, isort, flake8, mypy, pre-commit hooks
 
 ## Core Components
 
-### Apps
+### Repository Layer
 
-The `src/apps` directory contains Django applications that form the core functionality of the system:
+Implements the Repository pattern with specialized repositories for different data concerns:
 
-- **core**: Contains the fundamental models and views for the platform
-  - **content**: Content management system for educational materials
-  - **courses**: Course creation, management, and delivery
-  - **users**: User management, authentication, and permissions
+```python
+# Abstract base repositories with clean interfaces
+class AbstractQuestionRepository(ABC):
+    @abstractmethod
+    async def get_questions_by_ids(self, question_ids: List[Dict[str, str]], collection_name: str) -> List[Question]:
+        pass
 
-- **content_ext**: Extended functionality for the content management system
-  - TopicExt: Extends Topic with additional educational metadata
-  - SubTopicExt: Extends SubTopic with additional educational metadata
-  - TopicMastery: Tracks user progress and mastery of topics
+    @abstractmethod
+    async def get_question_by_single_id(self, question_id: str, collection_name: str) -> Question:
+        pass
 
-- **integrations**: External service connections
-  - **lti_provider**: Learning Tools Interoperability (LTI) provider implementation
-  - **oauth_clients**: OAuth client implementations for third-party integration
-  - **webhooks**: Webhook handlers for real-time communication with external systems
+    # Additional methods...
+```
 
-### Learning Tools
+Concrete implementations handle specific data sources:
 
-The `src/apps/learning_tools` directory houses educational tools that enhance the Open edX learning experience:
+```python
+class MongoQuestionRepository(AbstractQuestionRepository):
+    # Implementation with MongoDB-specific logic
+```
 
-- **assessments**: Advanced assessment tools with features not available in standard Open edX
-  - Dynamic assignment of questions based on student progress
-  - Storage of detailed response data for AI analysis
-  - Assessment attempts tracking and management
+### Domain Services
 
-- **flash_cards**: Flashcard system for spaced repetition learning
+Pure business logic encapsulated in service classes:
 
-- **questions**: Enhanced question bank and management system
-  - DefaultQuestionSet: Template question sets for learning objectives
-  - UserQuestionSet: Personalized question sets for each student
-  - Question repository pattern for flexible data storage
+```python
+class CourseSyncService:
+    """
+    Service that orchestrates the course synchronization process.
+    Coordinates detection of changes using DiffEngine and
+    application of those changes using ChangeProcessor.
+    """
 
-### Repositories
+    def sync_course(self, new_course_outline: EdxCourseOutline, course: Course,
+                   examination_level: ExaminationLevel, academic_class: AcademicClass) -> ChangeResult:
+        # Business logic implementation
+```
 
-The `src/repository` directory implements the repository pattern to abstract data access:
+### Asynchronous Data Access
 
-- **databases**: Low-level database connectors
-  - **no_sql_database**: MongoDB connection and query handling
+Leverages Python's asyncio for non-blocking database operations:
 
-- **grading_repository**: Repositories for student grading data
-  - MongoDB implementation for storing grading attempts
+```python
+async def get_question_by_custom_query(self, collection_name: str, query: dict[Any, Any]) -> List[Question]:
+    all_questions = []
 
-- **question_repository**: Repositories for question data
-  - MongoDB implementation for storing and retrieving questions
+    async for batch in await self.database_engine.fetch_from_db(
+        collection_name, self.database_name, query
+    ):
+        all_questions.extend(batch)
 
-- **grading_response_repository**: Repositories for detailed grading responses
-  - Stores attempt-specific feedback and results
+    result = self._process_mongo_question_data(all_questions)
+    return result
+```
 
-### Library
+### Distributed Task Processing
 
-The `src/library` directory contains business logic that's independent from Django:
+Utilizes Celery for handling background tasks:
 
-- **course_sync**: Synchronizes course content between Open edX and EDU Vault
-  - DiffEngine: Detects changes between course versions
-  - ChangeProcessor: Applies detected changes to the database
-  - DataTransformer: Converts edX data to internal formats
+```python
+@shared_task(
+    name="course_ware.tasks.process_course_update",
+    max_retries=3,
+    default_retry_delay=60,
+    ignore_result=True,
+)
+def process_course_update(payload: WebhookRequestData) -> None:
+    """Celery task to process course updates asynchronously with lock"""
+    # Task implementation with Redis locking
+```
 
-- **grade_book_v2**: Handles question and assessment grading
-  - SingleQuestionGrader: Grades individual question attempts
-  - GradingResponseService: Manages grading response data
+### REST API Layer
 
-- **quiz_countdown**: Implementation for timing assessment submissions
-  - Uses QStash for scheduling assessment expirations
+Custom API views with both synchronous and asynchronous support:
 
-## Technology Stack
+```python
+class ActiveAssessmentView(EducationContextMixin, CustomRetrieveAPIView):
+    """View that checks if the user has an active assessment."""
 
-- **Backend**: Python 3.13, Django 5.2
-- **Databases**:
-  - PostgreSQL (via Django ORM)
-  - MongoDB for questions and student responses
-- **Search**: Elasticsearch
-- **Async Tasks**: Celery with Redis
-- **API**: Django REST Framework
-- **Timed Operations**: QStash
-- **OAuth/Authentication**: JWT, OAuth2
-- **LTI**: PyLTI1p3
-- **Code Quality**: Black, isort, flake8, mypy, ruff
+    serializer_class = AssessmentSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        """Synchronous entry point that delegates to the async implementation."""
+        return async_to_sync(self._async_retrieve)(request, *args, **kwargs)
+
+    async def _async_retrieve(self, request, *args, **kwargs):
+        """Asynchronous implementation that fetches assessment data concurrently."""
+        # Implementation
+```
+
+## Implementation Details
+
+### Data Modeling
+
+- **Domain Models**: Rich domain models with behavior and validation
+- **Data Transfer Objects**: Clear separation between domain and presentation with Pydantic models
+- **Type Annotations**: Comprehensive static typing throughout the codebase
+
+### Error Handling
+
+Structured exception hierarchy for different error types:
+
+```python
+class VirtuEducateError(Exception):
+    pass
+
+class DatabaseError(VirtuEducateError):
+    """Base exception for all database-related operations."""
+
+    def __init__(self, message="A database error occurred", *args):
+        self.message = message
+        super().__init__(self.message, *args)
+        self.details = kwargs.get("details")
+        self.operation = kwargs.get("operation")
+        self.collection = kwargs.get("collection")
+        self.query = kwargs.get("query")
+
+class MongoDbConnectionError(DatabaseError):
+    """Raised when connection to MongoDB fails."""
+    pass
+```
+
+### Connection Pooling and Optimization
+
+Optimized database connections with proper connection pooling:
+
+```python
+self._client = AsyncIOMotorClient(
+    self._url,
+    tlsCAFile=certifi.where(),
+    serverSelectionTimeoutMS=5000,
+    maxPoolSize=10,
+    minPoolSize=0,
+    waitQueueTimeoutMS=1000,
+    retryWrites=True,
+    connectTimeoutMS=2000,
+    socketTimeoutMS=5000,
+)
+```
+
+### Concurrency Control
+
+Proper locking mechanisms for concurrent operations:
+
+```python
+lock_name = f"lock:process_course_update:{course_id}"
+lock_timeout = 3600  # 1 hour max lock time
+
+# Try to acquire the lock
+lock = REDIS_CLIENT.lock(lock_name, timeout=lock_timeout)
+try:
+    if lock.acquire(blocking=False):
+        try:
+            # Critical section
+        finally:
+            # Always release the lock when done
+            lock.release()
+    else:
+        # Task is already running, reschedule for later
+```
+
+## Development Workflow
+
+The project uses a comprehensive development workflow with:
+
+- **Docker Containerization**: Consistent development and deployment environments
+- **Pre-commit Hooks**: Automated code quality checks before commits
+- **Type Checking**: Static type analysis with mypy
+- **Automated Tests**: Pytest-based testing framework
+- **CI/CD Pipeline**: Automated builds, tests, and deployments
 
 ## Getting Started
 
 ### Prerequisites
 
 - Python 3.13+
-- Django 5.2+
 - PostgreSQL 13+
 - MongoDB
-- Elasticsearch 7.x (for search functionality)
-- Redis (for Celery)
-- Access to an Open edX instance
+- Redis
+- Elasticsearch 7.x
 
 ### Installation
 
@@ -187,7 +251,7 @@ The `src/library` directory contains business logic that's independent from Djan
 2. Create and activate a virtual environment:
    ```
    uv venv .venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
 3. Install dependencies:
@@ -195,67 +259,26 @@ The `src/library` directory contains business logic that's independent from Djan
    uv sync --all-groups
    ```
 
-4. Setup the database:
+4. Setup environment variables:
+   ```
+   cp .env.sample .env
+   # Edit .env with your configuration
+   ```
+
+5. Setup the database:
    ```
    python manage.py migrate
    ```
 
-5. Create a superuser:
-   ```
-   python manage.py createsuperuser
-   ```
-
-6. Configure environment variables:
-   ```
-   # Update .env with your configuration
-   # See .env.sample for required variables
-   ```
-
-7. Run the development server:
+6. Run the development server:
    ```
    make serve-async
    ```
 
-## Development Guidelines
+### Available Commands
 
-### Adding New Features
-
-1. Identify the appropriate component for your feature
-2. Follow Django's app structure for Django-related features
-3. Place business logic in the appropriate service directory
-4. Use the repository pattern for data access
-5. Write tests for your feature
-6. Update documentation as needed
-
-### Code Quality
-
-The project uses several tools to maintain code quality:
-
-- **Black**: Code formatter
-- **isort**: Import sorter
-- **flake8**: Code linter
-- **mypy**: Static type checker
-- **ruff**: Python linter with multiple rule sets
-
-Run pre-commit checks with:
-```
-make pre-commit
-```
-
-### Testing
-
-The project uses pytest for testing. Run tests with:
+To see all available commands with their descriptions and implementations:
 
 ```
-make test                # Run all tests
-make test-verbose        # Run tests with verbose output
-make test-with-coverage  # Run tests with coverage report
+make help
 ```
-
-## Contributing
-
-Please read our CONTRIBUTING.md file for details on our code of conduct and the process for submitting pull requests.
-
-## License
-
-This project is licensed under [LICENSE] - see the LICENSE file for details.
