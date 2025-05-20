@@ -109,8 +109,8 @@ class CourseSyncService:
         log.info("Detecting changes for course ID: %s", new_course_outline.course_id)
         return self.diff_engine.diff(old_course_outline, new_course_outline)
 
+    @staticmethod
     def _process_changes(
-        self,
         changes: List[ChangeOperation],
         course: Course,
         examination_level: ExaminationLevel,
