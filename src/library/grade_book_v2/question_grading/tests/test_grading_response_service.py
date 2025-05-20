@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -13,15 +12,24 @@ from src.repository.grading_response_repository.response_data_types import (
 from src.repository.grading_response_repository.response_data_types import (
     QuestionAttempt,
 )
+from src.repository.grading_response_repository.tests.factories import (
+    CorrectQuestionAttemptFactory,
+    IncorrectQuestionAttemptFactory,
+)
 
 from ..grading_response_service import GradingResponseService
-from ..qn_grading_types import AttemptedAnswer, Feedback, GradingResponse
+from ..qn_grading_types import Feedback, GradingResponse
+from .factories import (
+    FeedbackFactory,
+    GradingResponseFactory,
+    MultipleChoiceAnswerFactory,
+)
 
 
 @pytest.fixture
 def sample_feedback():
-    """Fixture to create a sample feedback object."""
-    return Feedback(
+    """Fixture to create a sample feedback object using the factory."""
+    return FeedbackFactory(
         message="Good job!",
         explanation="Your answer demonstrates understanding of the concept.",
         steps=["Identify the variables", "Apply the formula", "Calculate the result"],
@@ -33,8 +41,8 @@ def sample_feedback():
 
 @pytest.fixture
 def sample_grading_response(sample_feedback):
-    """Fixture to create a sample grading response."""
-    return GradingResponse(
+    """Fixture to create a sample grading response using the factory."""
+    return GradingResponseFactory(
         question_metadata={"difficulty": "medium", "topic": "algebra"},
         success=True,
         is_correct=True,
@@ -47,10 +55,9 @@ def sample_grading_response(sample_feedback):
 
 @pytest.fixture
 def sample_attempted_answer():
-    """Fixture to create a sample attempted answer."""
-    return AttemptedAnswer(
-        question_type="multiple-choice",
-        question_metadata={"selected_option": "B", "time_taken": 45},
+    """Fixture to create a sample attempted answer using the factory."""
+    return MultipleChoiceAnswerFactory(
+        question_metadata={"selected_option": "B", "time_taken": 45}
     )
 
 
@@ -81,43 +88,15 @@ def sample_assessment_id():
 def sample_question_attempts():
     """Fixture to create sample question attempts."""
     return [
-        QuestionAttempt(
+        CorrectQuestionAttemptFactory(
             question_id="q1",
             user_id=12345,
             attempts_remaining=2,
-            created_at=datetime.now(),
-            feedback=ResponseFeedback(
-                message="Good job!",
-                explanation="Your answer demonstrates understanding.",
-                steps=["Step 1", "Step 2"],
-                hint=None,
-                show_solution=False,
-                misconception=None,
-            ),
-            grading_version="1.0",
-            is_correct=True,
-            question_metadata={"difficulty": "medium"},
-            question_type="multiple-choice",
-            score=10.0,
         ),
-        QuestionAttempt(
+        IncorrectQuestionAttemptFactory(
             question_id="q2",
             user_id=12345,
             attempts_remaining=1,
-            created_at=datetime.now(),
-            feedback=ResponseFeedback(
-                message="Try again.",
-                explanation="Consider reviewing the formula.",
-                steps=None,
-                hint="Look at the units.",
-                show_solution=False,
-                misconception="Common confusion between mass and weight.",
-            ),
-            grading_version="1.0",
-            is_correct=False,
-            question_metadata={"difficulty": "hard"},
-            question_type="numeric",
-            score=0.0,
         ),
     ]
 
