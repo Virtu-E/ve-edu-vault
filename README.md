@@ -274,3 +274,11 @@ The project uses a comprehensive development workflow with:
    ```
    make serve-async
    ```
+
+### Available Commands
+
+To see all available commands with their descriptions and implementations:
+
+```
+make help
+```
