@@ -79,21 +79,12 @@ class GradingResponseService:
             f"question {question_id}, assessment {assessment_id}"
         )
 
-        # Prepare enriched grading response with metadata
-        enriched_response = self._enrich_grading_response(
-            grading_response,
-            topic=topic,
-            sub_topic=sub_topic,
-            learning_objective=learning_objective,
-            question_type=question_type,
-        )
-
         # Save to repository
         result = await self.repository.save_grading_response(
             user_id=user_id,
             question_id=question_id,
             assessment_id=assessment_id,
-            response=enriched_response,
+            response=grading_response,
             collection_name=self.collection_name,
         )
 
@@ -103,43 +94,6 @@ class GradingResponseService:
             logger.error("Failed to save grading response")
 
         return result
-
-    def _enrich_grading_response(
-        self,
-        grading_response: GradingResponse,
-        topic: Optional[str] = None,
-        sub_topic: Optional[str] = None,
-        learning_objective: Optional[str] = None,
-        question_type: Optional[str] = None,
-    ) -> GradingResponse:
-        """
-        Enrich the grading response with additional metadata.
-
-        This method doesn't modify the original object, but creates an enriched copy.
-        The MongoDB repository will handle adding these fields to the document.
-
-        Args:
-            grading_response: Original GradingResponse
-            topic: Optional topic categorization
-            sub_topic: Optional sub-topic categorization
-            learning_objective: Optional learning objective
-            question_type: Optional question type
-
-        Returns:
-            GradingResponse: Enriched copy of the original response
-        """
-        grading_response.question_type = question_type
-
-        logger.debug(
-            f"Enriching grading response with metadata: "
-            f"topic={topic}, sub_topic={sub_topic}, "
-            f"learning_objective={learning_objective}, question_type={question_type}"
-        )
-
-        # In a real implementation, you might want to extend the GradingResponse
-        # class to include these fields, but for now we'll just pass them to the repository
-
-        return grading_response
 
     async def get_grading_responses(
         self,
