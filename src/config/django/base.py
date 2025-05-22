@@ -26,7 +26,7 @@ MONGO_URL = config("MONGO_URL")
 SECRET_KEY = "django-insecure-$%pf&(zm7psez39!gruk&7^_ao%@&6xhwtsg7=_bctml77s4gw"
 DEBUG = config("DEBUG", default=False, cast=bool)
 
-EDX_AUTH_MODEL = "users.EdxUser"
+EDX_AUTH_MODEL = "edx_users.EdxUser"
 
 
 DJANGO_APPS = [
@@ -79,9 +79,11 @@ INSTALLED_APPS = [
 
 # TODO : csrf protection vs authentication
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
+    "DEFAULT_AUTHENTICATION_CLASSES": (
         "knox.auth.TokenAuthentication",
-    ],
+        "oauth2_provider.contrib.rest_framework.OAuth2Authentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
 }
 
 # TODO : need to sync the token expiry time with edx token expiry time
@@ -91,6 +93,16 @@ REST_KNOX = {
     "AUTO_REFRESH_MAX_TTL": timedelta(days=30),
     "MIN_REFRESH_INTERVAL": 300,
     "TOKEN_LIMIT_PER_USER": 10,
+}
+
+OAUTH2_PROVIDER = {
+    "SCOPES": {
+        "read": "Read scope",
+        "write": "Write scope",
+        "edx_login": "EDX Login scope",
+    },
+    "ACCESS_TOKEN_EXPIRE_SECONDS": 3600,
+    "REFRESH_TOKEN_EXPIRE_SECONDS": 86400,
 }
 
 MIDDLEWARE = [

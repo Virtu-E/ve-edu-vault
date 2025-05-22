@@ -1,12 +1,13 @@
 from knox.views import LoginView as KnoxLoginView
-from rest_framework.permissions import AllowAny
+from oauth2_provider.contrib.rest_framework import TokenHasScope
 from rest_framework.response import Response
 
 from src.apps.core.users.models import EdxUser
 
 
 class EdxLoginView(KnoxLoginView):
-    permission_classes = (AllowAny,)
+    permission_classes = [TokenHasScope]
+    required_scopes = ["edx_login"]
 
     def post(self, request, format=None):
         username = request.data.get("username")
