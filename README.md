@@ -267,7 +267,7 @@ The project uses a comprehensive development workflow with:
 
 5. Setup the database:
    ```
-   python manage.py migrate
+   make migrate-dev
    ```
 
 6. Run the development server:

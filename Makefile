@@ -49,10 +49,24 @@ help:
 	@echo "                        Command: DJANGO_SETTINGS_MODULE=$(DEV_SETTINGS) $(UVICORN) src.config.asgi:application --reload"
 	@echo "  shell-reload        - Starts an Ipython shell with auto-reloading enabled"
 	@echo "                        Command: $(DJANGO_SHELL) --ipython"
+	@echo "  migrate-dev         - Run database migrations with development settings"
+	@echo "                        Command: DJANGO_SETTINGS_MODULE=$(DEV_SETTINGS) $(PYTHON) manage.py migrate"
+	@echo "  migrate-prod        - Run database migrations with production settings"
+	@echo "                        Command: DJANGO_SETTINGS_MODULE=$(PROD_SETTINGS) $(PYTHON) manage.py migrate"
 
 .PHONY: shell
 shell:
 	$(DJANGO_SHELL) --ipython
+
+# Run database migrations with development settings
+.PHONY: migrate-dev
+migrate-dev:
+	DJANGO_SETTINGS_MODULE=$(DEV_SETTINGS) $(PYTHON) manage.py migrate
+
+# Run database migrations with production settings
+.PHONY: migrate-prod
+migrate-prod:
+	DJANGO_SETTINGS_MODULE=$(PROD_SETTINGS) $(PYTHON) manage.py migrate
 
 # Add a new target for reloadable shell
 .PHONY: shell-reload
