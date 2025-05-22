@@ -86,10 +86,11 @@ REST_FRAMEWORK = {
 
 # TODO : need to sync the token expiry time with edx token expiry time
 REST_KNOX = {
-    "TOKEN_TTL": timedelta(hours=24),
+    "TOKEN_TTL": timedelta(hours=8),
     "AUTO_REFRESH": True,
-    "AUTO_REFRESH_MAX_TTL": timedelta(days=7),
-    "MIN_REFRESH_INTERVAL": 60,
+    "AUTO_REFRESH_MAX_TTL": timedelta(days=30),
+    "MIN_REFRESH_INTERVAL": 300,
+    "TOKEN_LIMIT_PER_USER": 10,
 }
 
 MIDDLEWARE = [
