@@ -17,6 +17,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import include, path
+from oauth2_provider import urls as oauth2_urls
 
 urlpatterns = [
     # Admin interface
@@ -34,4 +35,6 @@ urlpatterns = [
     path("api/v1/webhooks/", include("src.apps.integrations.webhooks.urls")),
     # path("api/v1/topics/", include("elastic_search.urls")),
     path("api/v1/flashcards/", include("src.apps.learning_tools.flash_cards.urls")),
+    path("api/v1/oauth/", include(oauth2_urls)),
+    path("api/v1/auth/", include("src.apps.core.authentication.urls")),
 ]
