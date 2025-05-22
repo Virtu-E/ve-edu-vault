@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 from decouple import config
@@ -25,10 +26,7 @@ MONGO_URL = config("MONGO_URL")
 SECRET_KEY = "django-insecure-$%pf&(zm7psez39!gruk&7^_ao%@&6xhwtsg7=_bctml77s4gw"
 DEBUG = config("DEBUG", default=False, cast=bool)
 
-# Disable SSL verification globally for all requests
-
-
-# Application definition
+EDX_AUTH_MODEL = "edx_users.EdxUser"
 
 
 DJANGO_APPS = [
@@ -47,7 +45,8 @@ EXTERNAL_APPS = [
     "django_json_widget",
     "django_elasticsearch_dsl",
     "django_extensions",
-    # "oauth2_provider",
+    "oauth2_provider",
+    "knox",
     # "silk",
 ]
 
@@ -80,21 +79,41 @@ INSTALLED_APPS = [
 
 # TODO : csrf protection vs authentication
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.BasicAuthentication",
-        "rest_framework.authentication.TokenAuthentication",
-    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "knox.auth.TokenAuthentication",
+        "oauth2_provider.contrib.rest_framework.OAuth2Authentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+}
+
+# TODO : need to sync the token expiry time with edx token expiry time
+REST_KNOX = {
+    "TOKEN_TTL": timedelta(hours=8),
+    "AUTO_REFRESH": True,
+    "AUTO_REFRESH_MAX_TTL": timedelta(days=30),
+    "MIN_REFRESH_INTERVAL": 300,
+    "TOKEN_LIMIT_PER_USER": 10,
+}
+
+OAUTH2_PROVIDER = {
+    "SCOPES": {
+        "read": "Read scope",
+        "write": "Write scope",
+        "edx_login": "EDX Login scope",
+    },
+    "ACCESS_TOKEN_EXPIRE_SECONDS": 3600,
+    "REFRESH_TOKEN_EXPIRE_SECONDS": 86400,
 }
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
 ]
 
 
