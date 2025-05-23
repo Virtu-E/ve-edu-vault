@@ -25,7 +25,7 @@ class Feedback(BaseModel):
     misconception: Optional[str] = None
 
 
-class QuestionAttempt(BaseModel):
+class GradedResponse(BaseModel):
     """
     Represents a user's attempt at answering a question.
 
