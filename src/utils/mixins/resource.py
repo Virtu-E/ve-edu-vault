@@ -1,16 +1,20 @@
+import logging
 from typing import Dict, List
 
 from django.shortcuts import get_object_or_404
 
-from src.apps.core.content.models import LearningObjective
+from src.apps.core.content.models import LearningObjective, SubTopic
 from src.apps.core.users.models import EdxUser
 from src.apps.learning_tools.questions.models import DefaultQuestionSet, UserQuestionSet
+from src.exceptions import ParsingError, ValidationError
+
+log = logging.getLogger(__name__)
 
 
 class UserResourceContextMixin:
     """
-    Mixin to retrieve a User, Topic, and UserQuestionSet object based on
-    validated serializer data.
+    Mixin to retrieve User, LearningObjective, UserQuestionSet, and related
+    resources based on validated serializer data.
     """
 
     @staticmethod
@@ -22,13 +26,10 @@ class UserResourceContextMixin:
             username: The username of the user.
 
         Returns:
-            User: The retrieved User object.
-
+            EdxUser: The retrieved User object.
         """
-
         return get_object_or_404(EdxUser, username=username)
 
-    # TODO : i have to provide more data like category, course etc
     @staticmethod
     def get_learning_objective_from_block_id(block_id) -> LearningObjective:
         """
@@ -39,9 +40,7 @@ class UserResourceContextMixin:
 
         Returns:
             LearningObjective: The retrieved LearningObjective object.
-
         """
-
         return get_object_or_404(LearningObjective, block_id=block_id)
 
     @staticmethod
@@ -52,13 +51,13 @@ class UserResourceContextMixin:
         Retrieve the UserQuestionSet object for the given user and learning objective.
 
         Args:
-            user (EdxUser): The User object.
-            objective (LearningObjective): The LearningObjective object.
+            user: The User object.
+            objective: The LearningObjective object.
 
         Returns:
-            UserQuestionSet: The retrieved UserQuestionSet object.
+            List[Dict[str, str]]: The question list IDs from the UserQuestionSet.
         """
-        # the first requirement is for the default question set to exist
+        # The first requirement is for the default question set to exist
         default_question_set = get_object_or_404(
             DefaultQuestionSet, learning_objective=objective
         )
@@ -68,3 +67,33 @@ class UserResourceContextMixin:
             defaults={"question_list_ids": default_question_set.question_list_ids},
         )
         return user_question_set.question_list_ids
+
+    @staticmethod
+    def get_collection_name_from_subtopic(sub_topic: SubTopic) -> str:
+        """
+        Extract the database collection name from a SubTopic instance.
+
+        Args:
+            sub_topic: A SubTopic instance containing the course information.
+
+        Returns:
+            str: The database collection name derived from the course key.
+
+        Raises:
+            ValidationError: If the provided sub_topic is not a valid SubTopic instance.
+            ParsingError: If the course key cannot be determined from the sub_topic.
+        """
+        if not isinstance(sub_topic, SubTopic):
+            log.error("Invalid topic instance: not a SubTopic object")
+            raise ValidationError("Invalid topic instance: expected SubTopic object")
+
+        course_id = sub_topic.topic.course.course_key
+        if not course_id:
+            log.error(
+                "Could not find database collection associated with the course ID: %s",
+                course_id,
+            )
+            raise ParsingError(
+                f"Could not find database collection associated with the course ID: {course_id}"
+            )
+        return course_id

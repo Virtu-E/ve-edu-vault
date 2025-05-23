@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from src.apps.learning_tools.questions.models import UserQuestionSet
-from src.utils.mixins.context import ServiceResources
+from src.utils.mixins.question_mixin import QuestionSetResources
 
 from ..exceptions import UserQuestionSetNotFoundError
 from ..models import UserAssessmentAttempt
@@ -18,7 +18,7 @@ class OngoingAssessmentData:
 
 
 def get_current_ongoing_assessment(
-    *, education_context: ServiceResources
+    *, resources_context: QuestionSetResources
 ) -> OngoingAssessmentData:
     """
     Retrieve the current ongoing assessment data for a user based on their learning objective.
@@ -28,7 +28,7 @@ def get_current_ongoing_assessment(
     containing information about the assessment and number of questions.
 
     Args:
-        education_context (ServiceResources): Context containing user and learning objective resources.
+        resources_context (ServiceResources): Context containing user and learning objective resources.
 
     Returns:
         OngoingAssessmentData: A data class containing:
@@ -38,8 +38,8 @@ def get_current_ongoing_assessment(
     Raises:
         UserQuestionSetNotFoundError: If no question set is found for the user and learning objective.
     """
-    user = education_context.resources.user
-    learning_objective = education_context.resources.learning_objective
+    user = resources_context.resources.user
+    learning_objective = resources_context.resources.learning_objective
 
     logger.debug(
         f"Fetching assessment data for user {user.id} and objective {learning_objective.id}"
