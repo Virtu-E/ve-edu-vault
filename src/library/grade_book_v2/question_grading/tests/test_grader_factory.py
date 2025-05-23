@@ -4,9 +4,9 @@ import pytest
 
 from src.repository.question_repository.qn_repository_data_types import Question
 
+from ..data_types import AttemptedAnswer
 from ..grader_factory import GraderFactory
-from ..qn_graders import AbstractQuestionGrader, MultipleChoiceGrader
-from ..qn_grading_types import AttemptedAnswer
+from ..grader_types import AbstractQuestionGrader, MultipleChoiceGrader
 
 
 class TestGraderFactory:
