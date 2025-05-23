@@ -26,7 +26,7 @@ MONGO_URL = config("MONGO_URL")
 SECRET_KEY = "django-insecure-$%pf&(zm7psez39!gruk&7^_ao%@&6xhwtsg7=_bctml77s4gw"
 DEBUG = config("DEBUG", default=False, cast=bool)
 
-EDX_AUTH_MODEL = "edx_users.EdxUser"
+EDX_AUTH_MODEL = "users.EdxUser"
 
 
 DJANGO_APPS = [
