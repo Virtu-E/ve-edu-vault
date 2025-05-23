@@ -9,13 +9,13 @@ from src.apps.integrations.oauth_clients.services import OAuthClient
 from src.config.settings.redis import REDIS_CLIENT
 from src.library.course_sync.course_sync import CourseSyncService
 
-from .data_types import WebhookRequestData
+from .data_types import WebhookRequest
 from .handlers.abstract_type import WebhookResponse
 
 log = logging.getLogger(__name__)
 
 
-async def _process_course_update_async(payload: WebhookRequestData) -> WebhookResponse:
+async def _process_course_update_async(payload: WebhookRequest) -> WebhookResponse:
     # to avoid circular imports
     from src.apps.integrations.webhooks.handlers.course_update_handler import (
         CourseUpdatedHandler,
@@ -52,7 +52,7 @@ async def _process_course_update_async(payload: WebhookRequestData) -> WebhookRe
     default_retry_delay=60,
     ignore_result=True,
 )
-def process_course_update(payload: WebhookRequestData) -> None:
+def process_course_update(payload: WebhookRequest) -> None:
     """Celery task to process course updates asynchronously with lock"""
     course_id = payload.data.course_key
 

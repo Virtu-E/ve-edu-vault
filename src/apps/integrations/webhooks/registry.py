@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Dict, Optional
 
 from src.apps.integrations.webhooks.handlers.abstract_type import WebhookHandler
@@ -5,7 +6,14 @@ from src.apps.integrations.webhooks.handlers.course_create_handler import (
     CourseCreatedHandler,
 )
 
+from .handlers.assessment_expiration_handler import AssessmentExpirationHandler
 from .handlers.course_update_handler import CourseUpdatedHandlerCelery
+
+
+class HandlerTypeEnum(Enum):
+    COURSE_CREATED = "org.openedx.content_authoring.course.created.v1"
+    COURSE_PUBLISHED = "course_published"
+    ASSESSMENT_EXPIRATION = "assessment_expiration"
 
 
 class WebhookRegistry:
@@ -26,7 +34,10 @@ class WebhookRegistry:
 webhook_registry = WebhookRegistry()
 
 # Register handlers
+webhook_registry.register(HandlerTypeEnum.COURSE_CREATED.value, CourseCreatedHandler())
 webhook_registry.register(
-    "org.openedx.content_authoring.course.created.v1", CourseCreatedHandler()
+    HandlerTypeEnum.COURSE_PUBLISHED.value, CourseUpdatedHandlerCelery()
 )
-webhook_registry.register("course_published", CourseUpdatedHandlerCelery())
+webhook_registry.register(
+    HandlerTypeEnum.ASSESSMENT_EXPIRATION.value, AssessmentExpirationHandler()
+)

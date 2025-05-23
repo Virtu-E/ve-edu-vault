@@ -6,6 +6,8 @@ from typing import List, Union
 
 from qstash.message import PublishResponse, PublishUrlGroupResponse
 
+from ...apps.integrations.webhooks.data_types import WebhookRequest
+from ...apps.integrations.webhooks.registry import HandlerTypeEnum
 from .config import QSTASH, get_webhook_url
 
 logger = logging.getLogger(__name__)
@@ -46,6 +48,13 @@ def schedule_test_assessment(
         "started_at": data.started_at.isoformat(),
     }
 
+    scheduled_data = WebhookRequest(
+        event_type=HandlerTypeEnum.ASSESSMENT_EXPIRATION.value,
+        event_id=f"{data.assessment_id}-{data.student_id}",
+        timestamp=data.started_at,
+        data=assessment_data,
+    )
+
     end_time = datetime.now() + timedelta(seconds=data.assessment_duration_seconds)
 
     logger.info(
@@ -58,7 +67,7 @@ def schedule_test_assessment(
 
     response = QSTASH.message.publish(
         url=get_webhook_url(),
-        body=json.dumps(assessment_data),
+        body=json.dumps(scheduled_data.model_dump(mode="json")),
         delay=data.assessment_duration_seconds,
         retries=3,
     )
