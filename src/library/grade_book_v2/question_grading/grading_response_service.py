@@ -9,10 +9,10 @@ from src.repository.grading_response_repository.mongo_response_repository import
     MongoGradingResponseRepository,
 )
 from src.repository.grading_response_repository.response_data_types import (
-    QuestionAttempt,
+    GradedResponse,
 )
 
-from .qn_grading_types import GradingResponse
+from .data_types import GradingResponse
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +53,10 @@ class GradingResponseService:
         question_id: str,
         assessment_id: UUID,
         grading_response: GradingResponse,
+        question_type: Optional[str] = None,
         topic: Optional[str] = None,
         sub_topic: Optional[str] = None,
         learning_objective: Optional[str] = None,
-        question_type: Optional[str] = None,
     ) -> bool:
         """
         Save a grading response to the database with additional metadata.
@@ -100,7 +100,7 @@ class GradingResponseService:
         user_id: str,
         assessment_id: UUID,
         collection_name: str,
-    ) -> List[QuestionAttempt]:
+    ) -> List[GradedResponse]:
         """
         Retrieves grading responses for a specific user, question, assessment, and collection.
 

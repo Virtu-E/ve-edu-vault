@@ -7,7 +7,7 @@ from bson import ObjectId
 from bson.binary import UUID_SUBTYPE, Binary
 
 from src.config.django import base
-from src.library.grade_book_v2.question_grading.qn_grading_types import GradingResponse
+from src.library.grade_book_v2.question_grading.data_types import GradingResponse
 from src.repository.databases.no_sql_database.mongodb import (
     AsyncMongoDatabaseEngine,
     mongo_database,
@@ -16,7 +16,7 @@ from src.repository.grading_response_repository.base_response_repository import 
     AbstractGradingResponseRepository,
 )
 from src.repository.grading_response_repository.response_data_types import (
-    QuestionAttempt,
+    GradedResponse,
 )
 
 log = logging.getLogger(__name__)
@@ -105,7 +105,7 @@ class MongoGradingResponseRepository(AbstractGradingResponseRepository):
         user_id: str,
         assessment_id: UUID,
         collection_name: str,
-    ) -> List[QuestionAttempt]:
+    ) -> List[GradedResponse]:
 
         all_grading_responses = []
 
@@ -121,7 +121,7 @@ class MongoGradingResponseRepository(AbstractGradingResponseRepository):
             all_grading_responses.extend(batch)
 
         converted_data = [
-            QuestionAttempt(**{**attempt, "question_id": str(attempt["question_id"])})
+            GradedResponse(**{**attempt, "question_id": str(attempt["question_id"])})
             for attempt in all_grading_responses
         ]
 

@@ -3,12 +3,7 @@ import uuid
 import factory
 import factory.fuzzy
 
-from ..qn_grading_types import (
-    AttemptedAnswer,
-    Feedback,
-    GradingRequest,
-    GradingResponse,
-)
+from ..data_types import AttemptedAnswer, Feedback, GradingRequest, GradingResponse
 
 
 class AttemptedAnswerFactory(factory.Factory):
