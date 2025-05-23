@@ -78,16 +78,17 @@ class ActiveAssessmentView(EducationContextMixin, CustomRetrieveAPIView):
         Synchronous entry point that delegates to the async implementation.
         """
         logger.info(f"Active assessment check requested for {kwargs}")
+
         return async_to_sync(self._async_retrieve)(request, *args, **kwargs)
 
     async def _async_retrieve(self, request, *args, **kwargs):
         """
         Asynchronous implementation that fetches assessment data concurrently.
         """
-        serializer = self.get_serializer(data=kwargs)
-        education_context = await self.get_validated_service_resources_async(
-            kwargs, serializer
+        serializer = self.get_serializer(
+            data={**kwargs, "username": request.user.username}
         )
+        education_context = await self.get_validated_service_resources_async(serializer)
 
         try:
             assessment_data = await get_current_ongoing_assessment(

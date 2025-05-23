@@ -46,13 +46,9 @@ class EducationContextMixin:
         )
 
     @staticmethod
-    async def get_validated_service_resources_async(data_dict, serializer):
+    async def get_validated_service_resources_async(serializer):
         """
         Asynchronous method to validate data and get QuestionService resources.
-
-        Args:
-            data_dict: Dictionary containing data to validate (typically request.data or kwargs)
-
         Returns:
             ServiceResources: A namedtuple with validated_data, service, and resources
         """
