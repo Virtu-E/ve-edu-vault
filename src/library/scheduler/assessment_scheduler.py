@@ -4,24 +4,11 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List, Union
 
-from django.urls import reverse
-from qstash import QStash, Receiver
 from qstash.message import PublishResponse, PublishUrlGroupResponse
 
-from src.config.django import base
+from .config import QSTASH, get_webhook_url
 
 logger = logging.getLogger(__name__)
-
-QSTASH_TOKEN = getattr(base, "QSTASH_TOKEN", "")
-QSTASH_CURRENT_SIGNING_KEY = getattr(base, "QSTASH_CURRENT_SIGNING_KEY", "")
-QSTASH_NEXT_SIGNING_KEY = getattr(base, "QSTASH_NEXT_SIGNING_KEY", "")
-SITE_URL = getattr(base, "SITE_URL", "")
-
-qstash = QStash(token=QSTASH_TOKEN)
-receiver = Receiver(
-    current_signing_key=QSTASH_CURRENT_SIGNING_KEY,
-    next_signing_key=QSTASH_NEXT_SIGNING_KEY,
-)
 
 
 @dataclass
@@ -39,23 +26,6 @@ class AssessmentTimerData:
     student_id: int
     started_at: datetime
     assessment_duration_seconds: int
-
-
-def get_webhook_url(assessment_id: str) -> str:
-    """Construct the full webhook URL for an assessment expiration endpoint.
-
-    Args:
-        assessment_id: Unique identifier for the assessment
-
-    Returns:
-        str: Complete URL for the assessment expiration webhook
-    """
-    relative_url = reverse(
-        "assessments:assessment-expire", kwargs={"assessment_id": assessment_id}
-    )
-    full_url = f"{SITE_URL}{relative_url}"
-    # full_url = "https://webhook.site/155a7d00-9e55-4b22-bff3-1dffcdbdb4c9"
-    return full_url
 
 
 def schedule_test_assessment(
@@ -77,7 +47,6 @@ def schedule_test_assessment(
     }
 
     end_time = datetime.now() + timedelta(seconds=data.assessment_duration_seconds)
-    webhook_url = get_webhook_url(data.assessment_id)
 
     logger.info(
         "Scheduling assessment expiration webhook - ID: %s, Student: %s, Duration: %s seconds, End time: %s",
@@ -87,8 +56,8 @@ def schedule_test_assessment(
         end_time.isoformat(),
     )
 
-    response = qstash.message.publish(
-        url=webhook_url,
+    response = QSTASH.message.publish(
+        url=get_webhook_url(),
         body=json.dumps(assessment_data),
         delay=data.assessment_duration_seconds,
         retries=3,

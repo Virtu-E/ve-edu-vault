@@ -3,7 +3,7 @@ from datetime import datetime
 
 from django.db import transaction
 
-from src.library.quiz_countdown.main import (
+from src.library.scheduler.assessment_scheduler import (
     AssessmentTimerData,
     schedule_test_assessment,
 )
@@ -63,7 +63,7 @@ def start_assessment(*, education_context: ServiceResources) -> UserAssessmentAt
                 assessment_id=str(assessment.assessment_id),
                 student_id=user.id,
                 started_at=datetime.now(),
-                assessment_duration_seconds=60,  # defaulting to 1 min for now, but should create dynamic time depending on questions
+                assessment_duration_seconds=30,  # defaulting to 30 sec for now, but should create dynamic time depending on questions
             )
 
             scheduler_response = schedule_test_assessment(data=assessment_data)
