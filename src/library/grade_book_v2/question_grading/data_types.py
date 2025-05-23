@@ -26,7 +26,7 @@ class GradingResponse:
     score: float
     feedback: Feedback
     attempts_remaining: int
-    question_type: Optional[str] = None
+    question_type: str
 
     def to_dict(self):
         data_dict = asdict(self)
