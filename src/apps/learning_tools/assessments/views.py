@@ -1,6 +1,5 @@
 import logging
 
-from asgiref.sync import async_to_sync
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -44,18 +43,16 @@ class AssessmentStartView(EducationContextMixin, CustomRetrieveAPIView):
     serializer_class = AssessmentSerializer
 
     def retrieve(self, request, *args, **kwargs):
-        logger.info(
-            f"Assessment start requested by user {request.user.id if hasattr(request, 'user') and request.user else 'unknown'}"
+        """
+        Main entry point for this view.
+        """
+        logger.info(f"Assessment start requested by user {request.user.username}")
+        serializer = self.get_serializer(
+            data={**kwargs, "username": request.user.username}
         )
-        return async_to_sync(self._async_retrieve)(request, *args, **kwargs)
-
-    async def _async_retrieve(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=kwargs)
-        education_context = await self.get_validated_service_resources_async(
-            request.data, serializer
-        )
+        education_context = self.get_validated_service_resources(serializer)
         try:
-            assessment = await start_assessment(education_context=education_context)
+            assessment = start_assessment(education_context=education_context)
             return Response(
                 data={"assessment_id": assessment.assessment_id},
                 status=status.HTTP_200_OK,
@@ -75,23 +72,17 @@ class ActiveAssessmentView(EducationContextMixin, CustomRetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         """
-        Synchronous entry point that delegates to the async implementation.
+        Main entry point for this view.
         """
         logger.info(f"Active assessment check requested for {kwargs}")
 
-        return async_to_sync(self._async_retrieve)(request, *args, **kwargs)
-
-    async def _async_retrieve(self, request, *args, **kwargs):
-        """
-        Asynchronous implementation that fetches assessment data concurrently.
-        """
         serializer = self.get_serializer(
             data={**kwargs, "username": request.user.username}
         )
-        education_context = await self.get_validated_service_resources_async(serializer)
+        education_context = self.get_validated_service_resources(serializer)
 
         try:
-            assessment_data = await get_current_ongoing_assessment(
+            assessment_data = get_current_ongoing_assessment(
                 education_context=education_context
             )
             if assessment_data.assessment:
