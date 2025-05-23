@@ -1,11 +1,6 @@
 from django.urls import path
 
-from .views import (
-    ActiveAssessmentView,
-    AssessmentCompletionView,
-    AssessmentExpiryView,
-    AssessmentStartView,
-)
+from .views import ActiveAssessmentView, AssessmentCompletionView, AssessmentStartView
 
 app_name = "assessments"
 
@@ -24,10 +19,5 @@ urlpatterns = [
         "<str:assessment_id>/complete/",
         AssessmentCompletionView.as_view(),
         name="assessments-complete",
-    ),
-    path(
-        "<str:assessment_id>/expire/",
-        AssessmentExpiryView.as_view(),
-        name="assessment-expire",
     ),
 ]
