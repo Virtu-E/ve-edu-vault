@@ -3,7 +3,7 @@ import logging
 from src.apps.core.courses.models import AcademicClass, Course
 from src.utils.tools import academic_class_from_course_id
 
-from ..data_types import WebhookRequestData
+from ..data_types import WebhookRequest
 from .abstract_type import WebhookHandler, WebhookResponse
 
 log = logging.getLogger(__name__)
@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 class CourseCreatedHandler(WebhookHandler):
     """Handles OpenEdx Course Creation events"""
 
-    def handle(self, payload: WebhookRequestData) -> WebhookResponse:
+    def handle(self, payload: WebhookRequest) -> WebhookResponse:
         # Process course creation
         course_id = payload.data.course_key
         display_name = payload.data.display_name
