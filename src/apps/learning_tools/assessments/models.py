@@ -81,6 +81,15 @@ class UserAssessmentAttempt(models.Model):
         return cls.get_active_attempt(user, learning_objective) is not None
 
     @classmethod
+    def create_attempt(cls, user, learning_objective) -> "UserAssessmentAttempt":
+        attempt = cls.objects.get_or_create(
+            user=user,
+            learning_objective=learning_objective,
+            status=AttemptStatusEnum.ACTIVE.value,
+        )
+        return attempt
+
+    @classmethod
     def get_or_create_attempt(
         cls, user, learning_objective, **kwargs
     ) -> Tuple["UserAssessmentAttempt", bool]:

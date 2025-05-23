@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import List, Union
 
 from django.urls import reverse
-from qstash import AsyncQStash, Receiver
+from qstash import QStash, Receiver
 from qstash.message import PublishResponse, PublishUrlGroupResponse
 
 from src.config.django import base
@@ -17,7 +17,7 @@ QSTASH_CURRENT_SIGNING_KEY = getattr(base, "QSTASH_CURRENT_SIGNING_KEY", "")
 QSTASH_NEXT_SIGNING_KEY = getattr(base, "QSTASH_NEXT_SIGNING_KEY", "")
 SITE_URL = getattr(base, "SITE_URL", "")
 
-qstash = AsyncQStash(token=QSTASH_TOKEN)
+qstash = QStash(token=QSTASH_TOKEN)
 receiver = Receiver(
     current_signing_key=QSTASH_CURRENT_SIGNING_KEY,
     next_signing_key=QSTASH_NEXT_SIGNING_KEY,
@@ -54,10 +54,11 @@ def get_webhook_url(assessment_id: str) -> str:
         "assessments:assessment-expire", kwargs={"assessment_id": assessment_id}
     )
     full_url = f"{SITE_URL}{relative_url}"
+    # full_url = "https://webhook.site/155a7d00-9e55-4b22-bff3-1dffcdbdb4c9"
     return full_url
 
 
-async def schedule_test_assessment(
+def schedule_test_assessment(
     data: AssessmentTimerData,
 ) -> Union[PublishResponse, List[PublishUrlGroupResponse]]:
     """Schedule an assessment expiration webhook using QStash.
@@ -80,13 +81,13 @@ async def schedule_test_assessment(
 
     logger.info(
         "Scheduling assessment expiration webhook - ID: %s, Student: %s, Duration: %s seconds, End time: %s",
-        data.assessment_id,
+        str(data.assessment_id),
         data.student_id,
         data.assessment_duration_seconds,
         end_time.isoformat(),
     )
 
-    response = await qstash.message.publish(
+    response = qstash.message.publish(
         url=webhook_url,
         body=json.dumps(assessment_data),
         delay=data.assessment_duration_seconds,
@@ -95,7 +96,7 @@ async def schedule_test_assessment(
 
     logger.info(
         "Assessment expiration scheduled - ID: %s, QStash message ID: %s",
-        data.assessment_id,
+        str(data.assessment_id),
         response,
     )
 
