@@ -82,7 +82,7 @@ class UserAssessmentAttempt(models.Model):
 
     @classmethod
     def create_attempt(cls, user, learning_objective) -> "UserAssessmentAttempt":
-        attempt = cls.objects.get_or_create(
+        attempt = cls.objects.create(
             user=user,
             learning_objective=learning_objective,
             status=AttemptStatusEnum.ACTIVE.value,

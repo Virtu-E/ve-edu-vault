@@ -60,7 +60,7 @@ def start_assessment(*, education_context: ServiceResources) -> UserAssessmentAt
             logger.info(f"Created new assessment {assessment.assessment_id}")
 
             assessment_data = AssessmentTimerData(
-                assessment_id=assessment.assessment_id,
+                assessment_id=str(assessment.assessment_id),
                 student_id=user.id,
                 started_at=datetime.now(),
                 assessment_duration_seconds=60,  # defaulting to 1 min for now, but should create dynamic time depending on questions

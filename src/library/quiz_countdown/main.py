@@ -73,7 +73,7 @@ def schedule_test_assessment(
     assessment_data = {
         "assessment_id": data.assessment_id,
         "student_id": data.student_id,
-        "started_at": data.started_at,
+        "started_at": data.started_at.isoformat(),
     }
 
     end_time = datetime.now() + timedelta(seconds=data.assessment_duration_seconds)
@@ -81,7 +81,7 @@ def schedule_test_assessment(
 
     logger.info(
         "Scheduling assessment expiration webhook - ID: %s, Student: %s, Duration: %s seconds, End time: %s",
-        str(data.assessment_id),
+        data.assessment_id,
         data.student_id,
         data.assessment_duration_seconds,
         end_time.isoformat(),
@@ -96,7 +96,7 @@ def schedule_test_assessment(
 
     logger.info(
         "Assessment expiration scheduled - ID: %s, QStash message ID: %s",
-        str(data.assessment_id),
+        data.assessment_id,
         response,
     )
 
