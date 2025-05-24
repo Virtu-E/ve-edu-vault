@@ -3,7 +3,7 @@ from datetime import datetime
 import factory.fuzzy
 
 from ..response_data_types import Feedback as ResponseFeedback
-from ..response_data_types import QuestionAttempt
+from ..response_data_types import GradedResponse
 
 
 class ResponseFeedbackFactory(factory.Factory):
@@ -58,7 +58,7 @@ class NegativeResponseFeedbackFactory(ResponseFeedbackFactory):
 
 class QuestionAttemptFactory(factory.Factory):
     class Meta:
-        model = QuestionAttempt
+        model = GradedResponse
 
     question_id = factory.Sequence(lambda n: f"q{n+1}")
     user_id = factory.fuzzy.FuzzyInteger(10000, 99999)

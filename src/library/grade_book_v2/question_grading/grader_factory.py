@@ -1,6 +1,6 @@
 from typing import Dict, Type
 
-from .qn_graders import AbstractQuestionGrader, MultipleChoiceGrader
+from .grader_types import AbstractQuestionGrader, MultipleChoiceGrader
 
 
 class GraderFactory:

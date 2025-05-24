@@ -10,15 +10,15 @@ from src.repository.grading_response_repository.response_data_types import (
     Feedback as ResponseFeedback,
 )
 from src.repository.grading_response_repository.response_data_types import (
-    QuestionAttempt,
+    GradedResponse,
 )
 from src.repository.grading_response_repository.tests.factories import (
     CorrectQuestionAttemptFactory,
     IncorrectQuestionAttemptFactory,
 )
 
+from ..data_types import Feedback, GradingResponse
 from ..grading_response_service import GradingResponseService
-from ..qn_grading_types import Feedback, GradingResponse
 from .factories import (
     FeedbackFactory,
     GradingResponseFactory,
@@ -331,7 +331,7 @@ class TestGradingResponseService:
         # Assert
         # Verify first attempt structure
         attempt1 = result[0]
-        assert isinstance(attempt1, QuestionAttempt)
+        assert isinstance(attempt1, GradedResponse)
         assert hasattr(attempt1, "question_id")
         assert hasattr(attempt1, "user_id")
         assert hasattr(attempt1, "attempts_remaining")

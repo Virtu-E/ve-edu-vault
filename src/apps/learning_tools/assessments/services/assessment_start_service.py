@@ -7,7 +7,7 @@ from src.library.scheduler.assessment_scheduler import (
     AssessmentTimerData,
     schedule_test_assessment,
 )
-from src.utils.mixins.context import ServiceResources
+from src.utils.mixins.question_mixin import QuestionSetResources
 
 from ..exceptions import SchedulingError
 from ..models import UserAssessmentAttempt
@@ -15,7 +15,9 @@ from ..models import UserAssessmentAttempt
 logger = logging.getLogger(__name__)
 
 
-def start_assessment(*, education_context: ServiceResources) -> UserAssessmentAttempt:
+def start_assessment(
+    *, resources_context: QuestionSetResources
+) -> UserAssessmentAttempt:
     """
     Start or retrieve an active assessment for a user based on their learning objective.
 
@@ -24,7 +26,7 @@ def start_assessment(*, education_context: ServiceResources) -> UserAssessmentAt
     a new assessment attempt and schedules it with a timer for expiration.
 
     Args:
-        education_context (ServiceResources): Context containing user and learning objective resources.
+        resources_context (ServiceResources): Context containing user and learning objective resources.
 
     Returns:
         UserAssessmentAttempt: The active or newly created assessment attempt.
@@ -32,8 +34,8 @@ def start_assessment(*, education_context: ServiceResources) -> UserAssessmentAt
     Raises:
         SchedulingError: If the assessment timer could not be scheduled.
     """
-    user = education_context.resources.user
-    learning_objective = education_context.resources.learning_objective
+    user = resources_context.resources.user
+    learning_objective = resources_context.resources.learning_objective
 
     logger.debug(
         f"Fetching active assessment for user {user.id} and objective {learning_objective.id}"

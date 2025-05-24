@@ -1,9 +1,5 @@
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Type
-from uuid import UUID
-
-from bson import ObjectId
+from typing import Optional, Type
 
 from src.repository.grading_repository.base_grading_repository import (
     AbstractGradingRepository,
@@ -14,8 +10,8 @@ from src.repository.grading_repository.mongo_grading_repository import (
 )
 from src.repository.question_repository.qn_repository_data_types import Question
 
+from .data_types import AttemptedAnswer, Feedback, GradingResponse
 from .grader_factory import GraderFactory
-from .qn_grading_types import AttemptedAnswer, Feedback, GradingResponse
 
 logger = logging.getLogger(__name__)
 
@@ -60,75 +56,6 @@ class SingleQuestionGrader:
         logger.info(
             f"SingleQuestionGrader initialized with collection: {collection_name}, max_attempts: {max_attempts}"
         )
-
-    # Async methods for external operations
-
-    async def get_question_attempt(
-        self,
-        user_id: str,
-        question_id: str,
-        assessment_id: UUID,
-    ) -> Optional[StudentQuestionAttempt]:
-        """
-        Retrieve the current question attempt for a user and question.
-
-        Args:
-            user_id: Unique identifier for the student
-            question_id: Unique identifier for the question
-            assessment_id: Unique identifier for the assessment
-
-        Returns:
-            StudentQuestionAttempt object if found, None otherwise
-        """
-        logger.debug(f"Retrieving attempt for user: {user_id}, question: {question_id}")
-        attempt = await self.grading_repository.get_question_attempt_single(
-            user_id=user_id,
-            assessment_id=assessment_id,
-            question_id=question_id,
-            collection_name=self.collection_name,
-        )
-        logger.debug(f"Found attempt: {attempt is not None}")
-        return attempt
-
-    async def save_attempt(
-        self,
-        user_id: str,
-        question: Question,
-        assessment_id: UUID,
-        is_correct: bool,
-        score: float,
-        question_attempt: Optional[StudentQuestionAttempt],
-    ) -> None:
-        """
-        Save an attempt to the repository.
-
-        Args:
-            user_id: Unique identifier for the student
-            question: Question object containing metadata about the question
-            is_correct: Whether the current attempt was correct
-            score: Numerical score for the current attempt
-            assessment_id: Unique identifier for the assessment
-            question_attempt: Previous attempt data if exists
-        """
-        logger.info(
-            f"Saving attempt for user: {user_id}, question: {question.id}, correct: {is_correct}, score: {score}"
-        )
-        document_to_update = self._build_save_attempt_data(
-            user_id=user_id,
-            question=question,
-            is_correct=is_correct,
-            score=score,
-            question_attempt=question_attempt,
-        )
-
-        await self.grading_repository.save_attempt(
-            user_id=user_id,
-            question_id=question.id,
-            assessment_id=assessment_id,
-            update=document_to_update,
-            collection_name=self.collection_name,
-        )
-        logger.debug(f"Attempt saved for user: {user_id}, question: {question.id}")
 
     def grade(
         self,
@@ -189,96 +116,8 @@ class SingleQuestionGrader:
             feedback=grading_feedback,
             attempts_remaining=attempts_remaining,
             question_metadata=attempted_answer.question_metadata,
+            question_type=question.question_type,
         )
-
-    def _build_save_attempt_data(
-        self,
-        user_id: str,
-        question: Question,
-        is_correct: bool,
-        score: float,
-        question_attempt: Optional[StudentQuestionAttempt],
-    ) -> Dict[str, Any]:
-        """
-        Build the data structure for saving an attempt to the repository.
-
-        Args:
-            user_id: Unique identifier for the student
-            question: Question object containing metadata about the question
-            is_correct: Whether the current attempt was correct
-            score: Numerical score for the current attempt
-            question_attempt: Previous attempt data if exists
-
-        Returns:
-            Dictionary containing the update operation for the repository
-        """
-        current_time = datetime.now(timezone.utc)
-
-        attempt = {
-            "is_correct": is_correct,
-            "score": score,
-            "timestamp": current_time,
-        }
-
-        if not question_attempt:
-            # First attempt - create a new document
-            logger.debug(
-                f"Creating first attempt record for user: {user_id}, question: {question.id}"
-            )
-            create_operation: Dict[str, Any] = {
-                # Push to attempts array
-                "$push": {"attempts": attempt},
-                # Only set these fields if document is being created
-                "$setOnInsert": {
-                    "user_id": user_id,
-                    "question_id": ObjectId(question.id),
-                    "created_at": current_time,
-                    "question_type": question.question_type,
-                    "topic": question.topic,
-                    "sub_topic": question.sub_topic,
-                    "learning_objective": question.learning_objective,
-                    "first_attempt_at": current_time,
-                    "question_metadata": question.model_dump(),
-                },
-                # Set initial values for tracking fields
-                "$set": {
-                    "total_attempts": 1,
-                    "best_score": score,
-                    "latest_score": score,
-                    "mastered": is_correct and score >= self.MASTERY_THRESHOLD,
-                    "last_attempt_at": current_time,
-                },
-            }
-            return create_operation
-
-        # Subsequent attempt - update existing document
-        logger.debug(
-            f"Updating existing attempt record for user: {user_id}, question: {question.id}, attempt #: {question_attempt.total_attempts + 1}"
-        )
-        update_operation: Dict[str, Any] = {
-            # Push to attempts array
-            "$push": {"attempts": attempt},
-            # Increment attempt counter
-            "$inc": {"total_attempts": 1},
-            # Always update these fields
-            "$set": {"latest_score": score, "last_attempt_at": current_time},
-        }
-
-        current_best_score = getattr(question_attempt, "best_score", 0)
-        if score > current_best_score:
-            update_operation["$set"]["best_score"] = score
-            logger.debug(
-                f"New best score for user: {user_id}, question: {question.id}: {score}"
-            )
-
-        mastery_achieved = is_correct and score >= self.MASTERY_THRESHOLD
-        if mastery_achieved:
-            update_operation["$set"]["mastered"] = True
-            logger.info(
-                f"Mastery achieved for user: {user_id}, question: {question.id}"
-            )
-
-        return update_operation
 
     def _get_grading_feedback(
         self,
@@ -361,9 +200,8 @@ class SingleQuestionGrader:
         else:
             return "Well done! You've mastered this question."
 
-    def _get_attempt_count(
-        self, question_attempt: Optional[StudentQuestionAttempt]
-    ) -> int:
+    @staticmethod
+    def _get_attempt_count(question_attempt: Optional[StudentQuestionAttempt]) -> int:
         """
         Get the current attempt number for the student on this question.
 
@@ -435,6 +273,7 @@ class SingleQuestionGrader:
                 feedback=feedback,
                 attempts_remaining=attempts_remaining,
                 question_metadata=attempted_answer.question_metadata,
+                question_type=question.question_type,
             )
 
         # Check if max attempts exceeded BEFORE grading
@@ -456,6 +295,7 @@ class SingleQuestionGrader:
                 feedback=grading_feedback,
                 attempts_remaining=0,
                 question_metadata=attempted_answer.question_metadata,
+                question_type=question.question_type,
             )
 
         return None

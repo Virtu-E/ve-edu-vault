@@ -3,7 +3,7 @@ import logging
 from rest_framework import status
 from rest_framework.response import Response
 
-from src.utils.mixins.context import EducationContextMixin
+from src.utils.mixins.question_mixin import QuestionSetMixin
 from src.utils.views.base import CustomRetrieveAPIView, CustomUpdateAPIView
 
 from .exceptions import SchedulingError, UserQuestionSetNotFoundError
@@ -14,28 +14,19 @@ from .services.assessment_view_service import get_current_ongoing_assessment
 logger = logging.getLogger(__name__)
 
 
-async def assessment_expiry_view(request):
-    pass
-
-
-class AssessmentExpiryView(CustomUpdateAPIView):
-
-    def post(self, request, **kwargs):
-        pass
-
-
 class AssessmentCompletionView(CustomUpdateAPIView):
-    # TODO : one thing we need to implement is Authorization, Authentication and Auditing for the API endpoints
     """
     View to handle the completion of a quiz/challenge.
     """
 
     serializer_class = AssessmentSerializer
-    # TODO : to be implemented
-    pass
+
+    def retrieve(self, request, *args, **kwargs):
+        """Main entry point for the assessment view."""
+        pass
 
 
-class AssessmentStartView(EducationContextMixin, CustomRetrieveAPIView):
+class AssessmentStartView(QuestionSetMixin, CustomRetrieveAPIView):
     """
     View to handle the start of an assessment.
     """
@@ -50,9 +41,9 @@ class AssessmentStartView(EducationContextMixin, CustomRetrieveAPIView):
         serializer = self.get_serializer(
             data={**kwargs, "username": request.user.username}
         )
-        education_context = self.get_validated_service_resources(serializer)
+        resources_context = self.get_validated_question_set_resources(serializer)
         try:
-            assessment = start_assessment(education_context=education_context)
+            assessment = start_assessment(resources_context=resources_context)
             return Response(
                 data={"assessment_id": assessment.assessment_id},
                 status=status.HTTP_200_OK,
@@ -65,7 +56,7 @@ class AssessmentStartView(EducationContextMixin, CustomRetrieveAPIView):
             )
 
 
-class ActiveAssessmentView(EducationContextMixin, CustomRetrieveAPIView):
+class ActiveAssessmentView(QuestionSetMixin, CustomRetrieveAPIView):
     """View that checks if the user has an active assessment."""
 
     serializer_class = AssessmentSerializer
@@ -79,11 +70,11 @@ class ActiveAssessmentView(EducationContextMixin, CustomRetrieveAPIView):
         serializer = self.get_serializer(
             data={**kwargs, "username": request.user.username}
         )
-        education_context = self.get_validated_service_resources(serializer)
+        resources_context = self.get_validated_question_set_resources(serializer)
 
         try:
             assessment_data = get_current_ongoing_assessment(
-                education_context=education_context
+                resources_context=resources_context,
             )
             if assessment_data.assessment:
                 return Response(

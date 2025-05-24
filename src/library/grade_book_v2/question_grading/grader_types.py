@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 from src.repository.question_repository.qn_repository_data_types import Question
 
-from .qn_grading_types import AttemptedAnswer
+from .data_types import AttemptedAnswer
 
 logger = logging.getLogger(__name__)
 

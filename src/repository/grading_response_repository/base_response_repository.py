@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 from typing import List
 from uuid import UUID
 
-from src.library.grade_book_v2.question_grading.qn_grading_types import GradingResponse
+from src.library.grade_book_v2.question_grading.data_types import GradingResponse
 from src.repository.grading_response_repository.response_data_types import (
-    QuestionAttempt,
+    GradedResponse,
 )
 
 
@@ -27,6 +27,6 @@ class AbstractGradingResponseRepository(ABC):
         user_id: str,
         assessment_id: UUID,
         collection_name: str,
-    ) -> List[QuestionAttempt]:
+    ) -> List[GradedResponse]:
         """Save an attempt to the database"""
         pass

@@ -7,7 +7,7 @@ from src.repository.question_repository.tests.factories import (
     TrueFalseQuestionFactory,
 )
 
-from ..qn_graders import AbstractQuestionGrader, MultipleChoiceGrader
+from ..grader_types import AbstractQuestionGrader, MultipleChoiceGrader
 from .factories import AttemptedAnswerFactory
 
 
