@@ -1,6 +1,9 @@
 import logging
 from typing import Dict, List
 
+from src.repository.question_repository.base_qn_repository import (
+    AbstractQuestionRepository,
+)
 from src.repository.question_repository.mongo_qn_repository import (
     MongoQuestionRepository,
 )
@@ -15,7 +18,7 @@ logger = logging.getLogger(__name__)
 class QuestionService:
     """Service for fetching and managing questions with improved error handling."""
 
-    def __init__(self, question_repo: MongoQuestionRepository, collection_name: str):
+    def __init__(self, question_repo: AbstractQuestionRepository, collection_name: str):
         self._question_repo = question_repo
         self._collection_name = collection_name
         logger.info(f"QuestionService initialized for collection: {collection_name}")

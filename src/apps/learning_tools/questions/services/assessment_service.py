@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class AssessmentService:
-    """Service for handling assessment-related operations with improved error handling."""
+    """Service for handling assessment-related operations"""
 
     def __init__(self, timeout_seconds: Optional[int] = None):
         self.timeout_seconds = timeout_seconds
