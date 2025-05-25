@@ -18,7 +18,6 @@ from src.apps.integrations.oauth_clients.services import (
 log = logging.getLogger(__name__)
 
 
-# TODO : thinking of making this a singleton class instance
 # TODO : catch error responses that can happen, and make necessary moves
 class EdxClient:
     def __init__(self, client: OAuthClient):
