@@ -1,6 +1,6 @@
 import pytest
 
-from src.repository.question_repository.tests.factories import (
+from src.repository.question_repository.mongo.tests.factories import (
     EmptyOptionsContentFactory,
     NoCorrectOptionsQuestionFactory,
     QuestionFactory,
@@ -8,7 +8,7 @@ from src.repository.question_repository.tests.factories import (
 )
 
 from ..grader_types import AbstractQuestionGrader, MultipleChoiceGrader
-from .factories import AttemptedAnswerFactory
+from .factories import StudentAnswerFactory
 
 
 class TestMultipleChoiceGrader:
@@ -27,7 +27,7 @@ class TestMultipleChoiceGrader:
     @pytest.fixture
     def correct_answer(self):
         """Fixture for a correct answer with all correct options selected."""
-        return AttemptedAnswerFactory(
+        return StudentAnswerFactory(
             question_type="multiple-choice",
             question_metadata={"selected_option_ids": ["option1", "option4"]},
         )
@@ -35,7 +35,7 @@ class TestMultipleChoiceGrader:
     @pytest.fixture
     def partially_correct_answer(self):
         """Fixture for a partially correct answer with only some correct options selected."""
-        return AttemptedAnswerFactory(
+        return StudentAnswerFactory(
             question_type="multiple-choice",
             question_metadata={"selected_option_ids": ["option1"]},
         )
@@ -43,7 +43,7 @@ class TestMultipleChoiceGrader:
     @pytest.fixture
     def incorrect_answer(self):
         """Fixture for an incorrect answer with wrong options selected."""
-        return AttemptedAnswerFactory(
+        return StudentAnswerFactory(
             question_type="multiple-choice",
             question_metadata={"selected_option_ids": ["option2", "option3"]},
         )
@@ -51,7 +51,7 @@ class TestMultipleChoiceGrader:
     @pytest.fixture
     def mixed_answer(self):
         """Fixture for a mixed answer with both correct and incorrect options."""
-        return AttemptedAnswerFactory(
+        return StudentAnswerFactory(
             question_type="multiple-choice",
             question_metadata={"selected_option_ids": ["option1", "option2"]},
         )
@@ -59,7 +59,7 @@ class TestMultipleChoiceGrader:
     @pytest.fixture
     def empty_answer(self):
         """Fixture for an empty answer with no options selected."""
-        return AttemptedAnswerFactory(
+        return StudentAnswerFactory(
             question_type="multiple-choice",
             question_metadata={"selected_option_ids": []},
         )
@@ -117,7 +117,7 @@ class TestMultipleChoiceGrader:
         question = NoCorrectOptionsQuestionFactory()
 
         # Create an empty answer
-        answer = AttemptedAnswerFactory(
+        answer = StudentAnswerFactory(
             question_type="multiple-choice",
             question_metadata={"selected_option_ids": []},
         )
@@ -132,7 +132,7 @@ class TestMultipleChoiceGrader:
     def test_grade_with_duplicate_selections(self, grader, sample_question):
         """Test grading when the answer contains duplicate option IDs."""
         # Arrange
-        answer = AttemptedAnswerFactory(
+        answer = StudentAnswerFactory(
             question_type="multiple-choice",
             question_metadata={
                 "selected_option_ids": ["option1", "option1", "option4"]
@@ -176,7 +176,7 @@ class TestMultipleChoiceGrader:
     def test_case_insensitive_option_ids(self, grader, sample_question):
         """Test handling of case-insensitive option IDs."""
         # Arrange
-        answer = AttemptedAnswerFactory(
+        answer = StudentAnswerFactory(
             question_type="multiple-choice",
             question_metadata={"selected_option_ids": ["OPTION1", "OPTION4"]},
         )
@@ -191,12 +191,12 @@ class TestMultipleChoiceGrader:
     def test_order_independence(self, grader, sample_question):
         """Test that the order of selected options doesn't matter."""
         # Arrange
-        answer1 = AttemptedAnswerFactory(
+        answer1 = StudentAnswerFactory(
             question_type="multiple-choice",
             question_metadata={"selected_option_ids": ["option1", "option4"]},
         )
 
-        answer2 = AttemptedAnswerFactory(
+        answer2 = StudentAnswerFactory(
             question_type="multiple-choice",
             question_metadata={"selected_option_ids": ["option4", "option1"]},
         )
@@ -217,7 +217,7 @@ class TestMultipleChoiceGrader:
         question = QuestionFactory(content=EmptyOptionsContentFactory())
 
         # Create a standard answer
-        answer = AttemptedAnswerFactory(
+        answer = StudentAnswerFactory(
             question_type="multiple-choice",
             question_metadata={"selected_option_ids": ["option1"]},
         )
@@ -233,7 +233,7 @@ class TestMultipleChoiceGrader:
     def test_grade_with_malformed_answer(self, grader, sample_question):
         """Test handling malformed answer without required metadata."""
         # Arrange
-        malformed_answer = AttemptedAnswerFactory(
+        malformed_answer = StudentAnswerFactory(
             question_type="multiple-choice",
             question_metadata={},  # Missing selected_option_ids
         )
@@ -245,7 +245,7 @@ class TestMultipleChoiceGrader:
     def test_grade_with_invalid_option_ids(self, grader, sample_question):
         """Test grading when the answer contains option IDs that don't exist in the question."""
         # Arrange
-        answer = AttemptedAnswerFactory(
+        answer = StudentAnswerFactory(
             question_type="multiple-choice",
             question_metadata={"selected_option_ids": ["option1", "option999"]},
         )
@@ -264,13 +264,13 @@ class TestMultipleChoiceGrader:
         question = TrueFalseQuestionFactory()
 
         # Create a correct answer
-        correct_answer = AttemptedAnswerFactory(
+        correct_answer = StudentAnswerFactory(
             question_type="multiple-choice",
             question_metadata={"selected_option_ids": ["true"]},
         )
 
         # Create an incorrect answer
-        incorrect_answer = AttemptedAnswerFactory(
+        incorrect_answer = StudentAnswerFactory(
             question_type="multiple-choice",
             question_metadata={"selected_option_ids": ["false"]},
         )
