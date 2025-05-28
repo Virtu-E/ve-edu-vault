@@ -13,7 +13,6 @@ class MaximumAttemptsError(GradingError):
     pass
 
 
-
 class ConfigurationError(QuestionAttemptError):
     """Raised when configuration is invalid"""
 

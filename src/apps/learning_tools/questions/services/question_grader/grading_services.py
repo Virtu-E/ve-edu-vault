@@ -2,13 +2,24 @@ import asyncio
 import logging
 from uuid import UUID
 
-from src.apps.learning_tools.questions.services.data_types import AssessmentContext, GradingContext
-from src.apps.learning_tools.questions.services.graded_responses import GradedResponseService
+from src.apps.learning_tools.questions.services.data_types import (
+    AssessmentContext,
+    GradingContext,
+)
+from src.apps.learning_tools.questions.services.graded_responses import (
+    GradedResponseService,
+)
 from src.exceptions import QuestionNotFoundError
-from src.library.grade_book_v2.question_grading.question_grader import SingleQuestionGrader
-from src.repository.graded_responses.data_types import GradedResponse, StudentAnswer
-from src.repository.question_repository.providers.question_provider import QuestionProvider
-from src.repository.student_attempts.providers.attempt_provider import StudentAttemptProvider
+from src.library.grade_book_v2.question_grading.question_grader import (
+    SingleQuestionGrader,
+)
+from src.repository.graded_responses.data_types import GradedResponse
+from src.repository.question_repository.providers.question_provider import (
+    QuestionProvider,
+)
+from src.repository.student_attempts.providers.attempt_provider import (
+    StudentAttemptProvider,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +33,11 @@ class GradingDataService:
         attempt_provider (StudentAttemptProvider): Provider for accessing student attempt data
     """
 
-    def __init__(self, question_provider: QuestionProvider, attempt_provider: StudentAttemptProvider):
+    def __init__(
+        self,
+        question_provider: QuestionProvider,
+        attempt_provider: StudentAttemptProvider,
+    ):
         """
         Initialize the GradingDataService with required providers.
 
@@ -35,7 +50,7 @@ class GradingDataService:
         logger.info("GradingDataService initialized")
 
     async def prepare_grading_data(
-            self, context: AssessmentContext, assessment_id: UUID
+        self, context: AssessmentContext, assessment_id: UUID
     ) -> GradingContext:
         """
         Prepare all necessary data for grading a student's answer.
@@ -57,7 +72,9 @@ class GradingDataService:
         """
         logger.info(
             "Preparing grading data for question_id=%s, user_id=%s, assessment_id=%s",
-            context.question_id, context.user_id, assessment_id
+            context.question_id,
+            context.user_id,
+            assessment_id,
         )
 
         try:
@@ -72,36 +89,40 @@ class GradingDataService:
 
             logger.debug(
                 "Successfully retrieved question (found=%s) and previous attempt (found=%s)",
-                target_question is not None, previous_attempt is not None
+                target_question is not None,
+                previous_attempt is not None,
             )
 
         except Exception as e:
             logger.error(
                 "Failed to fetch grading data for question_id=%s, user_id=%s: %s",
-                context.question_id, context.user_id, str(e)
+                context.question_id,
+                context.user_id,
+                str(e),
             )
             raise
 
         if not target_question:
             logger.warning(
                 "Question not found: question_id=%s, user_id=%s",
-                context.question_id, context.user_id
+                context.question_id,
+                context.user_id,
             )
             raise QuestionNotFoundError(
-                question_id=context.question_id,
-                username=context.user_id
+                question_id=context.question_id, username=context.user_id
             )
 
         grading_context = GradingContext(
             target_question=target_question,
             previous_attempt_history=previous_attempt,
             student_user_id=context.user_id,
-            submitted_answer=context.submitted_answer
+            submitted_answer=context.submitted_answer,
         )
 
         logger.info(
             "Successfully prepared grading data for question_id=%s, user_id=%s",
-            context.question_id, context.user_id
+            context.question_id,
+            context.user_id,
         )
 
         return grading_context
@@ -127,7 +148,9 @@ class GradingExecutionService:
             grader (SingleQuestionGrader): The grading engine to use for scoring answers
         """
         self.grader = grader
-        logger.info("GradingExecutionService initialized with grader: %s", type(grader).__name__)
+        logger.info(
+            "GradingExecutionService initialized with grader: %s", type(grader).__name__
+        )
 
     async def execute_grading(self, grading_data: GradingContext) -> GradedResponse:
         """
@@ -146,7 +169,8 @@ class GradingExecutionService:
         """
         logger.info(
             "Executing grading for user_id=%s, question_id=%s",
-            grading_data.student_user_id, grading_data.target_question.id
+            grading_data.student_user_id,
+            grading_data.target_question.id,
         )
 
         try:
@@ -156,7 +180,7 @@ class GradingExecutionService:
                 "Grading completed successfully for user_id=%s, question_id=%s, score=%s",
                 grading_data.student_user_id,
                 grading_data.target_question.id,
-                getattr(result, 'score', 'unknown')
+                getattr(result, "score", "unknown"),
             )
 
             return result
@@ -166,7 +190,7 @@ class GradingExecutionService:
                 "Grading execution failed for user_id=%s, question_id=%s: %s",
                 grading_data.student_user_id,
                 grading_data.target_question.id,
-                str(e)
+                str(e),
             )
             raise
 
@@ -190,7 +214,7 @@ class GradingResultService:
         logger.info("GradingResultService initialized")
 
     async def process_result(
-            self, result: GradedResponse, context: AssessmentContext
+        self, result: GradedResponse, context: AssessmentContext
     ) -> GradedResponse:
         """
         Process and persist a graded response.
@@ -212,15 +236,20 @@ class GradingResultService:
         """
         logger.info(
             "Processing grading result for user_id=%s, assessment_id=%s, score=%s",
-            context.user_id, context.assessment_id, getattr(result, 'score', 'unknown')
+            context.user_id,
+            context.assessment_id,
+            getattr(result, "score", "unknown"),
         )
 
         try:
-            await self.response_service.save_graded_response(result, context.assessment_id)
+            await self.response_service.save_graded_response(
+                result, context.assessment_id
+            )
 
             logger.info(
                 "Successfully saved graded response for user_id=%s, assessment_id=%s",
-                context.user_id, context.assessment_id
+                context.user_id,
+                context.assessment_id,
             )
 
             # Future enhancements could include:
@@ -234,6 +263,8 @@ class GradingResultService:
         except Exception as e:
             logger.error(
                 "Failed to process grading result for user_id=%s, assessment_id=%s: %s",
-                context.user_id, context.assessment_id, str(e)
+                context.user_id,
+                context.assessment_id,
+                str(e),
             )
             raise

@@ -1,12 +1,14 @@
+from typing import List, TypedDict
+
 from django.db import models, transaction
 
 from src.apps.core.content.models import LearningObjective
 from src.apps.core.users.models import EdxUser
-from typing import TypedDict, List
 
 
 class QuestionSet(TypedDict):
-    id : str
+    id: str
+
 
 class QuestionCategory(models.Model):
     """
@@ -62,7 +64,6 @@ class BaseQuestionSet(models.Model):
     @property
     def questions(self) -> List[QuestionSet]:
         return self.question_list_ids
-
 
 
 class UserQuestionSet(BaseQuestionSet):

@@ -5,29 +5,39 @@ from uuid import UUID
 from src.apps.learning_tools.assessments.selectors.assessment import AssessmentSelector
 from src.apps.learning_tools.questions.exceptions import MaximumAttemptsError
 from src.apps.learning_tools.questions.services.data_types import AssessmentContext
-from src.apps.learning_tools.questions.services.graded_responses import GradedResponseService
-from src.apps.learning_tools.questions.services.question_grader.grading_services import GradingDataService, \
-    GradingExecutionService, GradingResultService
-from src.library.grade_book_v2.question_grading.question_grader import SingleQuestionGrader
+from src.apps.learning_tools.questions.services.graded_responses import (
+    GradedResponseService,
+)
+from src.apps.learning_tools.questions.services.question_grader.grading_services import (
+    GradingDataService,
+    GradingExecutionService,
+    GradingResultService,
+)
+from src.library.grade_book_v2.question_grading.question_grader import (
+    SingleQuestionGrader,
+)
 from src.repository.graded_responses.data_types import GradedResponse, StudentAnswer
-from src.repository.question_repository.providers.question_provider import QuestionProvider
+from src.repository.question_repository.providers.question_provider import (
+    QuestionProvider,
+)
 from src.repository.student_attempts.providers.data_types import GradingConfig
-from src.repository.student_attempts.providers.factories import StudentAttemptProviderFactory
+from src.repository.student_attempts.providers.factories import (
+    StudentAttemptProviderFactory,
+)
 from src.utils.mixins.question_mixin import QuestionSetResources
 
 logger = logging.getLogger(__name__)
-
 
 
 class StudentGradingMediator:
     """Coordinates the complete grading workflow through service orchestration."""
 
     def __init__(
-            self,
-            data_service: GradingDataService,
-            grading_service: GradingExecutionService,
-            result_service: GradingResultService,
-            context: AssessmentContext
+        self,
+        data_service: GradingDataService,
+        grading_service: GradingExecutionService,
+        result_service: GradingResultService,
+        context: AssessmentContext,
     ):
         """
         Initialize mediator with required services and context.
@@ -45,7 +55,8 @@ class StudentGradingMediator:
 
         logger.info(
             "StudentGradingMediator initialized for user_id=%s, question_id=%s",
-            context.user_id, context.question_id
+            context.user_id,
+            context.question_id,
         )
 
     async def grade_submission(self, assessment_id: UUID) -> GradedResponse:
@@ -63,7 +74,9 @@ class StudentGradingMediator:
         """
         logger.info(
             "Starting grading workflow for assessment_id=%s, user_id=%s, question_id=%s",
-            assessment_id, self.context.user_id, self.context.question_id
+            assessment_id,
+            self.context.user_id,
+            self.context.question_id,
         )
 
         try:
@@ -72,30 +85,38 @@ class StudentGradingMediator:
                 self.context, assessment_id
             )
 
-            if grading_data.previous_attempt_history and grading_data.previous_attempt_history.total_attempts == 0:
-                raise MaximumAttemptsError("User has exceeded the maximum number of attempts")
-
+            if (
+                grading_data.previous_attempt_history
+                and grading_data.previous_attempt_history.total_attempts == 0
+            ):
+                raise MaximumAttemptsError(
+                    "User has exceeded the maximum number of attempts"
+                )
 
             logger.debug("Executing grading for assessment_id=%s", assessment_id)
             result = await self.grading_service.execute_grading(grading_data)
 
             logger.debug("Processing results for assessment_id=%s", assessment_id)
 
-            if grading_data.previous_attempt_history and not grading_data.previous_attempt_history.mastered:
-                await self.result_service.process_result(
-                    result, self.context
-                )
+            if (
+                grading_data.previous_attempt_history
+                and not grading_data.previous_attempt_history.mastered
+            ):
+                await self.result_service.process_result(result, self.context)
 
             logger.info(
                 "Successfully completed grading workflow for assessment_id=%s, score=%s",
-                assessment_id, getattr(result, 'score', 'unknown')
+                assessment_id,
+                getattr(result, "score", "unknown"),
             )
             return result
 
         except Exception as e:
             logger.error(
                 "Grading workflow failed for assessment_id=%s, user_id=%s: %s",
-                assessment_id, self.context.user_id, str(e)
+                assessment_id,
+                self.context.user_id,
+                str(e),
             )
             raise
 
@@ -105,9 +126,9 @@ class GradingMediatorFactory:
 
     @staticmethod
     def create_grading_mediator(
-            question_resources: QuestionSetResources,
-            assessment_id: UUID,
-            grading_config: Optional[GradingConfig] = None
+        question_resources: QuestionSetResources,
+        assessment_id: UUID,
+        grading_config: Optional[GradingConfig] = None,
     ) -> StudentGradingMediator:
         """
         Create a fully configured grading mediator.
@@ -122,20 +143,21 @@ class GradingMediatorFactory:
         """
         logger.info(
             "Creating grading mediator for assessment_id=%s, user_id=%s",
-            assessment_id, question_resources.resources.user.id
+            assessment_id,
+            question_resources.resources.user.id,
         )
 
         try:
             data_service = GradingDataService(
-                question_provider=QuestionProvider.get_mongo_provider(question_resources),
+                question_provider=QuestionProvider.get_mongo_provider(
+                    question_resources
+                ),
                 attempt_provider=StudentAttemptProviderFactory.create_mongo_attempt_provider(
                     question_resources.resources.collection_name
-                )
+                ),
             )
 
-            grading_service = GradingExecutionService(
-                grader=SingleQuestionGrader()
-            )
+            grading_service = GradingExecutionService(grader=SingleQuestionGrader())
 
             result_service = GradingResultService(
                 response_service=GradedResponseService.get_service(question_resources)
@@ -143,7 +165,9 @@ class GradingMediatorFactory:
 
             current_submission = StudentAnswer(
                 question_type=question_resources.validated_data["question_type"],
-                question_metadata=question_resources.validated_data["question_metadata"],
+                question_metadata=question_resources.validated_data[
+                    "question_metadata"
+                ],
             )
 
             context = AssessmentContext(
@@ -158,24 +182,27 @@ class GradingMediatorFactory:
                 data_service=data_service,
                 grading_service=grading_service,
                 result_service=result_service,
-                context=context
+                context=context,
             )
 
             logger.info(
                 "Successfully created grading mediator for assessment_id=%s",
-                assessment_id
+                assessment_id,
             )
             return mediator
 
         except Exception as e:
             logger.error(
                 "Failed to create grading mediator for assessment_id=%s: %s",
-                assessment_id, str(e)
+                assessment_id,
+                str(e),
             )
             raise
 
 
-async def grade_student_submission(*, resource_context: QuestionSetResources) -> GradedResponse:
+async def grade_student_submission(
+    *, resource_context: QuestionSetResources
+) -> GradedResponse:
     """
     Convenience function to grade a student submission.
 
@@ -188,11 +215,10 @@ async def grade_student_submission(*, resource_context: QuestionSetResources) ->
     Raises:
         Exception: Any grading errors are logged and re-raised
     """
-    selector = AssessmentSelector(resource_context=  resource_context)
-    assessment_id = await  selector.get_assessment_id()
+    selector = AssessmentSelector(resource_context=resource_context)
+    assessment_id = await selector.get_assessment_id()
     logger.info(
-        "Starting student submission grading for assessment_id=%s",
-        assessment_id
+        "Starting student submission grading for assessment_id=%s", assessment_id
     )
 
     try:
@@ -203,13 +229,15 @@ async def grade_student_submission(*, resource_context: QuestionSetResources) ->
 
         logger.info(
             "Student submission grading completed for assessment_id=%s, score=%s",
-            assessment_id, getattr(result, 'score', 'unknown')
+            assessment_id,
+            getattr(result, "score", "unknown"),
         )
         return result
 
     except Exception as e:
         logger.error(
             "Student submission grading failed for assessment_id=%s: %s",
-            assessment_id, str(e)
+            assessment_id,
+            str(e),
         )
         raise

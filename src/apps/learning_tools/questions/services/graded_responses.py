@@ -1,10 +1,12 @@
-from typing import List
 import logging
+from typing import List
 from uuid import UUID
 
 from src.apps.learning_tools.assessments.selectors.assessment import AssessmentSelector
 from src.repository.graded_responses.data_types import GradedResponse
-from src.repository.graded_responses.providers.response_provider import GradingResponseProvider
+from src.repository.graded_responses.providers.response_provider import (
+    GradingResponseProvider,
+)
 from src.repository.question_repository.exceptions import QuestionAttemptError
 from src.utils.mixins.question_mixin import QuestionSetResources
 
@@ -128,9 +130,15 @@ class GradedResponseService:
 
 
 async def get_graded_responses(
-        *, resource_context: QuestionSetResources,) -> List[GradedResponse]:
-    selector = AssessmentSelector(resource_context=    resource_context)
-    assessment_id = await  selector.get_assessment_id()
-    graded_response_service = GradedResponseService.get_service(resource_context=resource_context)
-    question_attempts = await graded_response_service.get_graded_responses(assessment_id=assessment_id)
+    *,
+    resource_context: QuestionSetResources,
+) -> List[GradedResponse]:
+    selector = AssessmentSelector(resource_context=resource_context)
+    assessment_id = await selector.get_assessment_id()
+    graded_response_service = GradedResponseService.get_service(
+        resource_context=resource_context
+    )
+    question_attempts = await graded_response_service.get_graded_responses(
+        assessment_id=assessment_id
+    )
     return question_attempts

@@ -8,20 +8,16 @@ from src.exceptions import QuestionNotFoundError
 from src.utils.mixins.question_mixin import QuestionSetMixin
 from src.utils.views.base import CustomRetrieveAPIView, CustomUpdateAPIView
 
-from .exceptions import (
-    GradingError,
-    MaximumAttemptsError,
-    QuestionAttemptError,
-)
+from .exceptions import GradingError, MaximumAttemptsError, QuestionAttemptError
 from .serializers import QuestionSerializer, UserQuestionAttemptSerializer
-from .services.graded_responses import  get_graded_responses
-from .services.question_grader.grading_mediator import grade_student_submission
+from .services.graded_responses import get_graded_responses
 from .services.question_fetch_service import fetch_student_questions
+from .services.question_grader.grading_mediator import grade_student_submission
 
 logger = logging.getLogger(__name__)
 
 
-#TODO : catch question not found error
+# TODO : catch question not found error
 class StudentQuestionSetView(QuestionSetMixin, CustomRetrieveAPIView):
     """API view to retrieve questions for a specific student and learning_objective."""
 
@@ -72,7 +68,6 @@ class StudentQuestionSetView(QuestionSetMixin, CustomRetrieveAPIView):
         )
 
 
-
 class QuestionAttemptListView(QuestionSetMixin, CustomRetrieveAPIView):
     """
     API view to retrieve all question attempts for a user and learning_objective.
@@ -94,8 +89,9 @@ class QuestionAttemptListView(QuestionSetMixin, CustomRetrieveAPIView):
         resource_context = await self.get_validated_question_set_resources_async(
             serializer
         )
-        question_attempts = await get_graded_responses(resource_context=resource_context)
-
+        question_attempts = await get_graded_responses(
+            resource_context=resource_context
+        )
 
         return Response(
             data={model.question_id: model.model_dump() for model in question_attempts},
@@ -139,7 +135,10 @@ class QuestionAttemptsCreateView(QuestionSetMixin, CustomUpdateAPIView):
             )
         except QuestionNotFoundError as e:
             logger.error(f"Question not found: {e}")
-            return Response({"message": "The specified question is not available for the user"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"message": "The specified question is not available for the user"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         except MaximumAttemptsError as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)

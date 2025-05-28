@@ -1,8 +1,11 @@
 import logging
-from typing import List, Dict
+from typing import Dict, List
+
 from asgiref.sync import async_to_sync
 
-from src.repository.question_repository.providers.question_provider import QuestionProvider
+from src.repository.question_repository.providers.question_provider import (
+    QuestionProvider,
+)
 from src.utils.mixins.question_mixin import QuestionSetResources
 
 logger = logging.getLogger(__name__)
@@ -26,7 +29,8 @@ def fetch_student_questions(*, resource_context: QuestionSetResources) -> List[D
 
     logger.info(
         "Fetching questions for user_id=%s, question_set_count=%d",
-        user_id, len(question_set_ids)
+        user_id,
+        len(question_set_ids),
     )
     logger.debug("Question set IDs: %s", question_set_ids)
 
@@ -41,14 +45,12 @@ def fetch_student_questions(*, resource_context: QuestionSetResources) -> List[D
 
         logger.info(
             "Successfully fetched %d questions for user_id=%s",
-            len(question_data), user_id
+            len(question_data),
+            user_id,
         )
 
         return question_data
 
     except Exception as e:
-        logger.error(
-            "Failed to fetch questions for user_id=%s: %s",
-            user_id, str(e)
-        )
+        logger.error("Failed to fetch questions for user_id=%s: %s", user_id, str(e))
         raise
