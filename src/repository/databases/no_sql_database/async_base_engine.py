@@ -1,10 +1,3 @@
-"""
-no_sql_database_engine.async_nosql_database_engine
-~~~~~~~~~~~~~~~~~~
-
-Asynchronous interface for all NoSQL database engines.
-"""
-
 import logging
 from abc import ABC, abstractmethod
 from typing import Any, AsyncGenerator, Dict, List, Union
@@ -12,7 +5,7 @@ from typing import Any, AsyncGenerator, Dict, List, Union
 log = logging.getLogger(__name__)
 
 
-class AsyncBaseNoSqLDatabaseEngine(ABC):
+class AsyncAbstractNoSqLDatabaseEngine(ABC):
     """
     Base interface for all asynchronous NoSQL database engines.
 

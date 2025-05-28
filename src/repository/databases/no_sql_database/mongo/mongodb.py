@@ -1,11 +1,3 @@
-"""
-repository.databases.no_sql_database.mongodb
-~~~~~~~~~~~
-
-Implementation for MongoDB using motor (AsyncMongoClient) which
-exposes the database using python module singleton pattern
-"""
-
 import asyncio
 import gc
 import logging
@@ -17,18 +9,18 @@ import pymongo.errors
 from django.conf import settings
 from motor.motor_asyncio import AsyncIOMotorClient
 
+from ..async_base_engine import AsyncAbstractNoSqLDatabaseEngine
 from .exceptions import (
     MongoDbConfigurationError,
     MongoDbConnectionError,
     MongoDbOperationError,
 )
-from .nosql_database_engine import AsyncBaseNoSqLDatabaseEngine
 
 log = logging.getLogger(__name__)
 
 
 # TODO : dont catch all exceptions. Only catch specific ones
-class AsyncMongoDatabaseEngine(AsyncBaseNoSqLDatabaseEngine):
+class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
     """
     Asynchronous MongoDB database engine implementation
 
