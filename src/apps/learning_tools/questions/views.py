@@ -130,7 +130,7 @@ class QuestionAttemptsCreateView(QuestionSetMixin, CustomUpdateAPIView):
             result = await grade_student_submission(resource_context=resource_context)
 
             return Response(
-                {result.question_id: result.grading_result.model_dump()},
+                {result.question_id: result.model_dump()},
                 status=status.HTTP_201_CREATED,
             )
         except QuestionNotFoundError as e:

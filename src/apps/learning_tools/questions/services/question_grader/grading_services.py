@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Optional
 from uuid import UUID
 
 from src.apps.learning_tools.questions.services.data_types import (
@@ -14,9 +15,11 @@ from src.library.grade_book_v2.question_grading.question_grader import (
     SingleQuestionGrader,
 )
 from src.repository.graded_responses.data_types import GradedResponse
+from src.repository.question_repository.data_types import Question
 from src.repository.question_repository.providers.question_provider import (
     QuestionProvider,
 )
+from src.repository.student_attempts.data_types import Attempt, StudentQuestionAttempt
 from src.repository.student_attempts.providers.attempt_provider import (
     StudentAttemptProvider,
 )
@@ -203,7 +206,11 @@ class GradingResultService:
         response_service (GradedResponseService): Service for persisting graded responses
     """
 
-    def __init__(self, response_service: GradedResponseService):
+    def __init__(
+        self,
+        response_service: GradedResponseService,
+        attempt_provider: StudentAttemptProvider,
+    ):
         """
         Initialize the GradingResultService with a response service.
 
@@ -211,10 +218,16 @@ class GradingResultService:
             response_service (GradedResponseService): Service for saving graded responses
         """
         self.response_service = response_service
+        self.attempt_provider = attempt_provider
+
         logger.info("GradingResultService initialized")
 
     async def process_result(
-        self, result: GradedResponse, context: AssessmentContext
+        self,
+        result: GradedResponse,
+        context: AssessmentContext,
+        target_question: Question,
+        previous_attempt: Optional[StudentQuestionAttempt],
     ) -> GradedResponse:
         """
         Process and persist a graded response.
@@ -226,6 +239,8 @@ class GradingResultService:
         Args:
             result (GradedResponse): The graded response to process
             context (AssessmentContext): Original assessment context for additional metadata
+            target_question (Question): Question being assessed
+            previous_attempt (StudentQuestionAttempt): Previous attempt
 
         Returns:
             GradedResponse: The processed graded response (may include additional metadata)
@@ -242,8 +257,18 @@ class GradingResultService:
         )
 
         try:
-            await self.response_service.save_graded_response(
-                result, context.assessment_id
+            await asyncio.gather(
+                self.response_service.save_graded_response(
+                    result, context.assessment_id
+                ),
+                self.attempt_provider.save_attempt(
+                    student_user_id=context.user_id,
+                    question=target_question,
+                    assessment_id=context.assessment_id,
+                    is_answer_correct=result.is_correct,
+                    attempt_score=result.score,
+                    existing_attempt=previous_attempt,
+                ),
             )
 
             logger.info(

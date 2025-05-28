@@ -85,9 +85,12 @@ class StudentGradingMediator:
                 self.context, assessment_id
             )
 
+            history = grading_data.previous_attempt_history
+
             if (
-                grading_data.previous_attempt_history
-                and grading_data.previous_attempt_history.total_attempts == 0
+                # TODO: remove hard coded number value
+                history
+                and history.total_attempts == 3
             ):
                 raise MaximumAttemptsError(
                     "User has exceeded the maximum number of attempts"
@@ -98,11 +101,13 @@ class StudentGradingMediator:
 
             logger.debug("Processing results for assessment_id=%s", assessment_id)
 
-            if (
-                grading_data.previous_attempt_history
-                and not grading_data.previous_attempt_history.mastered
-            ):
-                await self.result_service.process_result(result, self.context)
+            if not history or not history.mastered:
+                await self.result_service.process_result(
+                    result=result,
+                    context=self.context,
+                    target_question=grading_data.target_question,
+                    previous_attempt=grading_data.previous_attempt_history,
+                )
 
             logger.info(
                 "Successfully completed grading workflow for assessment_id=%s, score=%s",
@@ -148,19 +153,25 @@ class GradingMediatorFactory:
         )
 
         try:
+
+            attempt_provider = (
+                StudentAttemptProviderFactory.create_mongo_attempt_provider(
+                    question_resources.resources.collection_name
+                )
+            )
+
             data_service = GradingDataService(
                 question_provider=QuestionProvider.get_mongo_provider(
                     question_resources
                 ),
-                attempt_provider=StudentAttemptProviderFactory.create_mongo_attempt_provider(
-                    question_resources.resources.collection_name
-                ),
+                attempt_provider=attempt_provider,
             )
 
             grading_service = GradingExecutionService(grader=SingleQuestionGrader())
 
             result_service = GradingResultService(
-                response_service=GradedResponseService.get_service(question_resources)
+                response_service=GradedResponseService.get_service(question_resources),
+                attempt_provider=attempt_provider,
             )
 
             current_submission = StudentAnswer(
