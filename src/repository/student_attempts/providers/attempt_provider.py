@@ -8,7 +8,6 @@ from src.repository.question_repository.exceptions import QuestionAttemptError
 from ..data_types import StudentQuestionAttempt
 from ..mongo.attempts_repo import MongoAttemptRepository
 from .data_types import AttemptBuildContext, GradingConfig
-from .factories import AttemptDataBuilderFactory
 from .validators import AttemptValidationService
 
 logger = logging.getLogger(__name__)
@@ -122,6 +121,7 @@ class StudentAttemptProvider:
             existing_attempt=existing_attempt,
             config=self.grading_config,
         )
+        from .factories import AttemptDataBuilderFactory
 
         attempt_builder = AttemptDataBuilderFactory.get_builder(
             existing_attempt is not None

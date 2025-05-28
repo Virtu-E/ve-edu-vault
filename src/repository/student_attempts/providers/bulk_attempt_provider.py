@@ -9,9 +9,6 @@ from src.repository.student_attempts.providers.data_types import (
     BulkAttemptBuildContext,
     GradingConfig,
 )
-from src.repository.student_attempts.providers.factories import (
-    AttemptDataBuilderFactory,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +70,11 @@ class BulkAttemptProvider:
             config=self.grading_config,
             default_score=0.0,
             is_correct=False,
+        )
+
+        # avoding circular imports
+        from src.repository.student_attempts.providers.factories import (
+            AttemptDataBuilderFactory,
         )
 
         bulk_builder = AttemptDataBuilderFactory.get_bulk_builder()
