@@ -30,3 +30,6 @@ class EdxUser(models.Model):
     @property
     def is_anonymous(self):
         return False
+
+    def get_username(self):
+        return self.username
