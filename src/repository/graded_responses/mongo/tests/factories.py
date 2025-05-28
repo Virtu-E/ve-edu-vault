@@ -2,13 +2,12 @@ from datetime import datetime
 
 import factory.fuzzy
 
-from ..response_data_types import Feedback as ResponseFeedback
-from ..response_data_types import GradedResponse
+from src.repository.graded_responses.data_types import GradedFeedback, GradedResponse
 
 
 class ResponseFeedbackFactory(factory.Factory):
     class Meta:
-        model = ResponseFeedback
+        model = GradedFeedback
 
     message = factory.Faker("sentence")
     explanation = factory.Maybe(

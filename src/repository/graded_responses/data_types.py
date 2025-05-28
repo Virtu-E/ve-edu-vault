@@ -1,10 +1,11 @@
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
 
-class Feedback(BaseModel):
+class GradedFeedback(BaseModel):
     """
     Contains feedback information for a question attempt.
 
@@ -46,7 +47,7 @@ class GradedResponse(BaseModel):
     user_id: int
     attempts_remaining: int
     created_at: datetime
-    feedback: Feedback
+    feedback: GradedFeedback
     grading_version: str
     is_correct: bool
     question_metadata: Dict[str, Any]
@@ -58,3 +59,16 @@ class GradedResponse(BaseModel):
 
         populate_by_name = True
         json_encoders = {datetime: lambda v: v.strftime("%Y-%m-%dT%H:%M:%SZ")}
+
+
+@dataclass
+class StudentAnswer:
+    question_type: Any
+    question_metadata: Dict[str, Any]
+
+
+@dataclass
+class GradingRequest:
+    question_id: str
+    user_id: str
+    attempted_answer: StudentAnswer
