@@ -1,16 +1,15 @@
 import logging
 from abc import ABC, abstractmethod
 
-from src.repository.question_repository.qn_repository_data_types import Question
-
-from .data_types import AttemptedAnswer
+from src.repository.graded_responses.data_types import StudentAnswer
+from src.repository.question_repository.data_types import Question
 
 logger = logging.getLogger(__name__)
 
 
 class AbstractQuestionGrader(ABC):
     @abstractmethod
-    def grade(self, question: Question, attempted_answer: AttemptedAnswer) -> bool:
+    def grade(self, question: Question, attempted_answer: StudentAnswer) -> bool:
         """Grade the question based on the attempted answer"""
         pass
 
@@ -28,7 +27,7 @@ class MultipleChoiceGrader(AbstractQuestionGrader):
     with the correct option IDs from the question to determine correctness.
     """
 
-    def grade(self, question: Question, attempted_answer: AttemptedAnswer) -> bool:
+    def grade(self, question: Question, attempted_answer: StudentAnswer) -> bool:
         """
         Grade a multiple-choice question by comparing selected options to correct options.
 

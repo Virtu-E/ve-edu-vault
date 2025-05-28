@@ -1,7 +1,4 @@
-class QuestionAttemptError(Exception):
-    """Base exception for question attempt operations"""
-
-    pass
+from src.repository.question_repository.exceptions import QuestionAttemptError
 
 
 class GradingError(QuestionAttemptError):
@@ -12,12 +9,6 @@ class GradingError(QuestionAttemptError):
 
 class MaximumAttemptsError(GradingError):
     """Raised when the user has exceeded the maximum number of attempts"""
-
-    pass
-
-
-class QuestionNotFoundError(QuestionAttemptError):
-    """Raised when question is not found"""
 
     pass
 

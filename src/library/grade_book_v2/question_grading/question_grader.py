@@ -1,16 +1,15 @@
 import logging
+from datetime import datetime
 from typing import Optional, Type
 
-from src.repository.grading_repository.base_grading_repository import (
-    AbstractGradingRepository,
+from src.repository.graded_responses.data_types import (
+    GradedFeedback,
+    GradedResponse,
+    StudentAnswer,
 )
-from src.repository.grading_repository.grading_data_types import StudentQuestionAttempt
-from src.repository.grading_repository.mongo_grading_repository import (
-    MongoGradingRepository,
-)
-from src.repository.question_repository.qn_repository_data_types import Question
+from src.repository.question_repository.data_types import Question
+from src.repository.student_attempts.data_types import StudentQuestionAttempt
 
-from .data_types import AttemptedAnswer, Feedback, GradingResponse
 from .grader_factory import GraderFactory
 
 logger = logging.getLogger(__name__)
@@ -18,303 +17,293 @@ logger = logging.getLogger(__name__)
 
 class SingleQuestionGrader:
     """
-    Service for handling the grading of student question attempts.
+    Grades individual student question attempts with feedback and attempt tracking.
 
-    This service manages the grading process for various question types,
-    tracks student attempts, provides appropriate feedback based on performance,
-    and handles the persistence of attempt data.
-
-    Attributes:
-        repository: Repository interface for storing and retrieving grading data
-        grader: Factory for creating question-type specific graders
-        max_attempts: Maximum number of attempts allowed per question
+    Manages the complete grading workflow including attempt validation,
+    scoring, feedback generation, and mastery tracking.
     """
 
-    MASTERY_THRESHOLD = 1.0
-    DEFAULT_MAX_ATTEMPTS = 3
+    MASTERY_SCORE_THRESHOLD = 1.0
+    DEFAULT_MAXIMUM_ATTEMPTS_ALLOWED = 3
 
     def __init__(
         self,
-        grading_repository: AbstractGradingRepository,
-        collection_name: str,
-        max_attempts: int = DEFAULT_MAX_ATTEMPTS,
-        grading_factory: Type[GraderFactory] = GraderFactory,
+        maximum_attempts_per_question: int = DEFAULT_MAXIMUM_ATTEMPTS_ALLOWED,
+        question_grader_factory: Type[GraderFactory] = GraderFactory,
     ) -> None:
         """
-        Initialize the GradingService with repository and configuration.
+        Initialize grading engine with attempt limits and grader factory.
 
         Args:
-            grading_repository: The grading repository for data access
-            collection_name: Name of the collection to use
-            max_attempts: Maximum number of attempts allowed per question (default: 3)
-            grading_factory: Factory class for creating appropriate graders (default: GraderFactory)
+            maximum_attempts_per_question: Max attempts allowed per question
+            question_grader_factory: Factory for creating question-type specific graders
         """
-        self.grading_repository = grading_repository
-        self.grader = grading_factory
-        self.max_attempts = max_attempts
-        self.collection_name = collection_name
+        self.question_grader_factory = question_grader_factory
+        self.maximum_attempts_per_question = maximum_attempts_per_question
         logger.info(
-            f"SingleQuestionGrader initialized with collection: {collection_name}, max_attempts: {max_attempts}"
+            f"SingleQuestionGrader initialized with max_attempts: {maximum_attempts_per_question}"
         )
 
     def grade(
         self,
-        user_id: str,
-        attempted_answer: AttemptedAnswer,
-        question: Question,
-        question_attempt: Optional[StudentQuestionAttempt],
-    ) -> GradingResponse:
+        student_user_id: str,
+        submitted_answer: StudentAnswer,
+        target_question: Question,
+        previous_attempt_history: Optional[StudentQuestionAttempt],
+    ) -> GradedResponse:
         """
-        Process the grading for a question attempt without saving to the database.
+        Grade a student's answer attempt and generate comprehensive feedback.
 
         Args:
-            user_id: Unique identifier for the student
-            attempted_answer: The student's answer
-            question: The question being attempted
-            question_attempt: Previous attempt data if exists
+            student_user_id: Student's unique identifier
+            submitted_answer: The student's submitted answer
+            target_question: Question being attempted
+            previous_attempt_history: Prior attempt data if exists
 
         Returns:
-            GradingResponse with the results
+            Complete grading response with score, feedback, and attempt tracking
         """
-        # Calculate attempt count based on question_attempt
-        attempt_count = self._get_attempt_count(question_attempt)
+        current_attempt_number = self._calculate_current_attempt_number(
+            previous_attempt_history
+        )
         logger.debug(
-            f"Grading attempt #{attempt_count} for user: {user_id}, question: {question.id}"
+            f"Evaluating attempt #{current_attempt_number} for user: {student_user_id}, question: {target_question.id}"
         )
 
-        # Check for special cases
-        special_response = self._check_special_cases(
-            question,
-            question_attempt,
-            attempted_answer,
+        # Handle special cases first
+        special_case_response = self._handle_special_grading_cases(
+            target_question,
+            previous_attempt_history,
+            submitted_answer,
+            student_user_id,
         )
-        if special_response:
-            return special_response
+        if special_case_response:
+            return special_case_response
 
-        # Perform grading
-        grader = self.grader.get_grader(question.question_type)
-        is_correct = grader.grade(question, attempted_answer)
-        score = grader.calculate_score(is_correct)
+        # Perform actual grading
+        question_type_grader = self.question_grader_factory.get_grader(
+            target_question.question_type
+        )
+        answer_is_correct = question_type_grader.grade(
+            target_question, submitted_answer
+        )
+        calculated_score = question_type_grader.calculate_score(answer_is_correct)
 
-        attempts_remaining = max(0, self.max_attempts - attempt_count)
+        remaining_attempts_count = max(
+            0, self.maximum_attempts_per_question - current_attempt_number
+        )
 
-        grading_feedback = self._get_grading_feedback(
-            attempts_remaining=attempts_remaining,
-            question=question,
-            is_correct=is_correct,
+        comprehensive_feedback = self._generate_contextual_feedback(
+            remaining_attempts=remaining_attempts_count,
+            question=target_question,
+            answer_is_correct=answer_is_correct,
         )
 
         logger.info(
-            f"Graded question {question.id} for user {user_id}: "
-            f"correct={is_correct}, score={score}, attempts_remaining={attempts_remaining}"
+            f"Graded question {target_question.id} for user {student_user_id}: "
+            f"correct={answer_is_correct}, score={calculated_score}, attempts_remaining={remaining_attempts_count}"
         )
 
-        return GradingResponse(
-            success=True,
-            is_correct=is_correct,
-            score=score,
-            feedback=grading_feedback,
-            attempts_remaining=attempts_remaining,
-            question_metadata=attempted_answer.question_metadata,
-            question_type=question.question_type,
+        return GradedResponse(
+            is_correct=answer_is_correct,
+            question_id=target_question.id,
+            user_id=int(student_user_id),
+            grading_version="1.0",
+            created_at=datetime.now(),
+            score=calculated_score,
+            feedback=comprehensive_feedback,
+            attempts_remaining=remaining_attempts_count,
+            question_metadata=submitted_answer.question_metadata,
+            question_type=target_question.question_type,
         )
 
-    def _get_grading_feedback(
+    def _generate_contextual_feedback(
         self,
-        attempts_remaining: int,
+        remaining_attempts: int,
         question: Question,
-        is_correct: bool,
-    ) -> Feedback:
+        answer_is_correct: bool,
+    ) -> GradedFeedback:
         """
-        Generate comprehensive feedback based on the student's performance and attempt history.
+        Create appropriate feedback based on correctness and attempt history.
 
         Args:
-            attempts_remaining: Number of attempts remaining
-            question: The question being attempted
-            is_correct: Whether the current answer is correct
+            remaining_attempts: Number of attempts left
+            question: Question being attempted
+            answer_is_correct: Whether current answer is correct
 
         Returns:
-            Feedback object with structured feedback that can be used flexibly in responses
+            Structured feedback with messages, hints, and solution details
         """
-        attempts_made = self.max_attempts - attempts_remaining
+        attempts_used = self.maximum_attempts_per_question - remaining_attempts
 
-        if is_correct:
-            feedback = Feedback(
-                message=self._get_success_message(attempts_made),
+        if answer_is_correct:
+            success_feedback = GradedFeedback(
+                message=self._create_success_message_for_attempt(attempts_used),
                 explanation=question.solution.explanation,
                 steps=question.solution.steps,
                 show_solution=True,
             )
-            return feedback
+            return success_feedback
 
-        # When no attempts remaining
-        if attempts_remaining <= 0:
-            feedback = Feedback(
+        # No attempts remaining - show full solution
+        if remaining_attempts <= 0:
+            final_attempt_feedback = GradedFeedback(
                 message="You've used all your attempts. Here's the complete solution:",
                 explanation=question.solution.explanation,
                 steps=question.solution.steps,
                 show_solution=True,
             )
 
-            # Safely check for misconception
+            # Add misconception info if available
             if (
                 hasattr(question, "possible_misconception")
                 and question.possible_misconception
             ):
-                feedback.misconception = question.possible_misconception
+                final_attempt_feedback.misconception = question.possible_misconception
 
-            return feedback
+            return final_attempt_feedback
 
-        # Progressive hints based on attempts
-        feedback = Feedback(message="")
-        if attempts_made == 1:
-            feedback.message = "Not quite right. Let's try again!"
+        # Progressive hints for incorrect answers with attempts remaining
+        progressive_feedback = GradedFeedback(message="", show_solution=False)
+        if attempts_used == 1:
+            progressive_feedback.message = "Not quite right. Let's try again!"
 
-        elif attempts_made == 2:
-            feedback.message = "Getting closer! Here's a hint:"
+        elif attempts_used == 2:
+            progressive_feedback.message = "Getting closer! Here's a hint:"
 
             if hasattr(question, "hint") and question.hint:
-                feedback.hint = f"{question.hint}"
+                progressive_feedback.hint = f"{question.hint}"
             else:
-                feedback.hint = (
+                progressive_feedback.hint = (
                     "Review the question carefully and consider all options."
                 )
 
-        return feedback
+        return progressive_feedback
 
     @staticmethod
-    def _get_success_message(attempts_made: int) -> str:
+    def _create_success_message_for_attempt(attempts_used_count: int) -> str:
         """
-        Generate a contextual success message based on attempt count.
+        Generate encouraging success message based on attempt count.
 
         Args:
-            attempts_made: Number of attempts the student has made
+            attempts_used_count: Number of attempts student has made
 
         Returns:
-            A congratulatory message customized to the number of attempts
+            Contextual congratulatory message
         """
-        if attempts_made == 1:
+        if attempts_used_count == 1:
             return "Excellent! You got it right on your first try!"
-        elif attempts_made == 2:
+        elif attempts_used_count == 2:
             return "Great job! You figured it out on your second attempt."
         else:
             return "Well done! You've mastered this question."
 
     @staticmethod
-    def _get_attempt_count(question_attempt: Optional[StudentQuestionAttempt]) -> int:
+    def _calculate_current_attempt_number(
+        attempt_history: Optional[StudentQuestionAttempt],
+    ) -> int:
         """
-        Get the current attempt number for the student on this question.
+        Determine the current attempt number for this question.
 
         Args:
-            question_attempt: Previous attempt data if exists
+            attempt_history: Previous attempt data if exists
 
         Returns:
-            Integer representing the current attempt number (1-based)
+            Current attempt number (1-based indexing)
         """
-        if not question_attempt:
+        if not attempt_history:
             return 1
-        return question_attempt.total_attempts + 1
+        return attempt_history.total_attempts + 1
 
-    def _has_exceeded_max_attempts(
-        self, question_attempt: Optional[StudentQuestionAttempt]
+    def _student_has_exceeded_attempt_limit(
+        self, attempt_history: Optional[StudentQuestionAttempt]
     ) -> bool:
         """
-        Check if user has exceeded maximum attempts for this question.
+        Check if student has reached maximum allowed attempts.
 
         Args:
-            question_attempt: Previous attempt data if exists
+            attempt_history: Previous attempt data if exists
 
         Returns:
-            True if the user has reached or exceeded the maximum allowed attempts,
-            False otherwise or if no previous attempts exist
+            True if maximum attempts reached or exceeded, False otherwise
         """
         return (
-            question_attempt is not None
-            and question_attempt.total_attempts >= self.max_attempts
+            attempt_history is not None
+            and attempt_history.total_attempts >= self.maximum_attempts_per_question
         )
 
-    def _check_special_cases(
+    def _handle_special_grading_cases(
         self,
-        question: Question,
-        question_attempt: Optional[StudentQuestionAttempt],
-        attempted_answer: AttemptedAnswer,
-    ) -> Optional[GradingResponse]:
+        target_question: Question,
+        attempt_history: Optional[StudentQuestionAttempt],
+        submitted_answer: StudentAnswer,
+        student_user_id: str,
+    ) -> Optional[GradedResponse]:
         """
-        Check for special cases that might short-circuit the normal grading flow.
+        Handle edge cases that bypass normal grading flow.
 
         Args:
-            question: The question being attempted
-            question_attempt: Previous attempt data if exists
+            target_question: Question being attempted
+            attempt_history: Previous attempt data if exists
+            submitted_answer: Student's submitted answer
+            student_user_id: Student's unique identifier
 
         Returns:
-            GradingResponse if a special case applies, None otherwise
+            GradedResponse for special cases, None for normal flow
         """
-        # Check if question is already mastered
-        if question_attempt and getattr(question_attempt, "mastered", False):
+        # Already mastered question
+        if attempt_history and getattr(attempt_history, "mastered", False):
             logger.info(
-                f"Question {question.id} already mastered by student, returning preemptive response"
+                f"Question {target_question.id} already mastered by student, returning mastery response"
             )
 
-            feedback = Feedback(
+            mastery_feedback = GradedFeedback(
                 message="You've already mastered this question!",
-                explanation=question.solution.explanation,
-                steps=question.solution.steps,
+                explanation=target_question.solution.explanation,
+                steps=target_question.solution.steps,
                 show_solution=True,
             )
 
-            attempts_remaining = max(
-                0, self.max_attempts - question_attempt.total_attempts
+            remaining_attempts = max(
+                0, self.maximum_attempts_per_question - attempt_history.total_attempts
             )
 
-            return GradingResponse(
-                success=False,  # already mastered, grading did not happen again
-                is_correct=True,  # Always true since it's mastered
-                score=getattr(question_attempt, "best_score", 1.0),
-                feedback=feedback,
-                attempts_remaining=attempts_remaining,
-                question_metadata=attempted_answer.question_metadata,
-                question_type=question.question_type,
+            return GradedResponse(
+                question_id=target_question.id,
+                user_id=int(student_user_id),
+                grading_version="1.0",
+                created_at=datetime.now(),
+                is_correct=True,
+                score=getattr(attempt_history, "best_score", 1.0),
+                feedback=mastery_feedback,
+                attempts_remaining=remaining_attempts,
+                question_metadata=submitted_answer.question_metadata,
+                question_type=target_question.question_type,
             )
 
-        # Check if max attempts exceeded BEFORE grading
-        if self._has_exceeded_max_attempts(question_attempt):
+        # Maximum attempts exceeded
+        if self._student_has_exceeded_attempt_limit(attempt_history):
             logger.warning(
-                f"Maximum attempts exceeded for question {question.id}, attempts: {question_attempt.total_attempts}"
+                f"Maximum attempts exceeded for question {target_question.id}, attempts: {attempt_history.total_attempts}"
             )
 
-            grading_feedback = self._get_grading_feedback(
-                attempts_remaining=0,
-                question=question,
-                is_correct=False,  # We assume incorrect since we're out of attempts
+            exceeded_attempts_feedback = self._generate_contextual_feedback(
+                remaining_attempts=0,
+                question=target_question,
+                answer_is_correct=False,
             )
 
-            return GradingResponse(
-                success=False,  # maximum attempt reached, grading did not happen
+            return GradedResponse(
+                question_id=target_question.id,
+                user_id=int(student_user_id),
+                grading_version="1.0",
+                created_at=datetime.now(),
                 is_correct=False,
                 score=0,
-                feedback=grading_feedback,
+                feedback=exceeded_attempts_feedback,
                 attempts_remaining=0,
-                question_metadata=attempted_answer.question_metadata,
-                question_type=question.question_type,
+                question_metadata=submitted_answer.question_metadata,
+                question_type=target_question.question_type,
             )
 
         return None
-
-    @classmethod
-    def get_grader(cls, collection_name: str) -> "SingleQuestionGrader":
-        """
-        Factory method to create a SingleQuestionGrader instance.
-
-        Args:
-            collection_name: Name of the collection to use
-
-        Returns:
-            SingleQuestionGrader instance
-        """
-        logger.info(
-            f"Creating new SingleQuestionGrader with collection: {collection_name}"
-        )
-        return cls(
-            grading_repository=MongoGradingRepository.get_repo(),
-            collection_name=collection_name,
-        )

@@ -1,9 +1,9 @@
 from django.urls import path
 
 from .views import (
-    QuestionAttemptsCreateView,
     QuestionAttemptListView,
-    QuestionsListView,
+    QuestionAttemptsCreateView,
+    StudentQuestionSetView,
 )
 
 app_name = "questions"
@@ -21,7 +21,7 @@ urlpatterns = [
     ),
     path(
         "objectives/<str:block_id>/questions/",
-        QuestionsListView.as_view(),
+        StudentQuestionSetView.as_view(),
         name="questions-list",
     ),
 ]

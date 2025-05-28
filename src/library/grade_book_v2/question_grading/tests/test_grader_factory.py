@@ -2,9 +2,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.repository.question_repository.qn_repository_data_types import Question
+from src.repository.graded_responses.data_types import StudentAnswer
+from src.repository.question_repository.data_types import Question
 
-from ..data_types import AttemptedAnswer
 from ..grader_factory import GraderFactory
 from ..grader_types import AbstractQuestionGrader, MultipleChoiceGrader
 
@@ -101,7 +101,7 @@ class TestGraderFactory:
 
         # Create mock question and attempted answer
         mock_question = Mock(spec=Question)
-        mock_answer = Mock(spec=AttemptedAnswer)
+        mock_answer = Mock(spec=StudentAnswer)
 
         # Assert
         assert isinstance(grader1, CustomGrader1)
@@ -124,7 +124,7 @@ class TestGraderFactory:
 
         # Create mock question and attempted answer
         mock_question = Mock(spec=Question)
-        mock_answer = Mock(spec=AttemptedAnswer)
+        mock_answer = Mock(spec=StudentAnswer)
 
         # Act
         GraderFactory.register_grader("multiple-choice", NewMultipleChoiceGrader)

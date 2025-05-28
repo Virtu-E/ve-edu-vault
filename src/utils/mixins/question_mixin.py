@@ -24,7 +24,7 @@ class QuestionSetMixin:
     """
 
     @staticmethod
-    def get_validated_question_set_resources(serializer):
+    def get_validated_question_set_resources(serializer) -> QuestionSetResources:
         """
         Synchronous method to validate data and get question set resources.
 
@@ -40,7 +40,9 @@ class QuestionSetMixin:
         return QuestionSetResources(validated_data=validated_data, resources=resources)
 
     @staticmethod
-    async def get_validated_question_set_resources_async(serializer):
+    async def get_validated_question_set_resources_async(
+        serializer,
+    ) -> QuestionSetResources:
         """
         Asynchronous method to validate data and get question set resources.
 

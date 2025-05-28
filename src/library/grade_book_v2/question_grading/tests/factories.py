@@ -3,12 +3,17 @@ import uuid
 import factory
 import factory.fuzzy
 
-from ..data_types import AttemptedAnswer, Feedback, GradingRequest, GradingResponse
+from src.repository.graded_responses.data_types import (
+    GradedFeedback,
+    GradedResponse,
+    GradingRequest,
+    StudentAnswer,
+)
 
 
-class AttemptedAnswerFactory(factory.Factory):
+class StudentAnswerFactory(factory.Factory):
     class Meta:
-        model = AttemptedAnswer
+        model = StudentAnswer
 
     question_type = factory.fuzzy.FuzzyChoice(
         ["multiple_choice", "free_response", "numeric", "matching"]
@@ -22,7 +27,7 @@ class AttemptedAnswerFactory(factory.Factory):
     )
 
 
-class MultipleChoiceAnswerFactory(AttemptedAnswerFactory):
+class MultipleChoiceAnswerFactory(StudentAnswerFactory):
     question_type = "multiple_choice"
     question_metadata = factory.Dict(
         {
@@ -37,7 +42,7 @@ class MultipleChoiceAnswerFactory(AttemptedAnswerFactory):
     )
 
 
-class FreeResponseAnswerFactory(AttemptedAnswerFactory):
+class FreeResponseAnswerFactory(StudentAnswerFactory):
     question_type = "free_response"
     question_metadata = factory.Dict(
         {
@@ -47,7 +52,7 @@ class FreeResponseAnswerFactory(AttemptedAnswerFactory):
     )
 
 
-class NumericAnswerFactory(AttemptedAnswerFactory):
+class NumericAnswerFactory(StudentAnswerFactory):
     question_type = "numeric"
     question_metadata = factory.Dict(
         {
@@ -58,9 +63,9 @@ class NumericAnswerFactory(AttemptedAnswerFactory):
     )
 
 
-class FeedbackFactory(factory.Factory):
+class GradedFeedbackFactory(factory.Factory):
     class Meta:
-        model = Feedback
+        model = GradedFeedback
 
     message = factory.Faker("sentence")
     explanation = factory.Maybe(
@@ -86,14 +91,14 @@ class FeedbackFactory(factory.Factory):
     )
 
 
-class CorrectFeedbackFactory(FeedbackFactory):
+class CorrectFeedbackFactory(GradedFeedbackFactory):
     message = factory.fuzzy.FuzzyChoice(
         ["Correct!", "Great job!", "Well done!", "That's right!", "Perfect!"]
     )
     show_solution = False
 
 
-class IncorrectFeedbackFactory(FeedbackFactory):
+class IncorrectFeedbackFactory(GradedFeedbackFactory):
     message = factory.fuzzy.FuzzyChoice(
         [
             "Incorrect. Try again.",
@@ -104,15 +109,15 @@ class IncorrectFeedbackFactory(FeedbackFactory):
     )
 
 
-class FeedbackWithStepsFactory(FeedbackFactory):
+class FeedbackWithStepsFactory(GradedFeedbackFactory):
     message = "Here's how to solve this problem:"
     steps = factory.List([factory.Faker("sentence") for _ in range(3)])
     show_solution = True
 
 
-class GradingResponseFactory(factory.Factory):
+class GradedResponseFactory(factory.Factory):
     class Meta:
-        model = GradingResponse
+        model = GradedResponse
 
     question_metadata = factory.Dict(
         {
@@ -121,31 +126,15 @@ class GradingResponseFactory(factory.Factory):
             "topic": factory.Faker("word"),
         }
     )
-    success = True
     is_correct = factory.fuzzy.FuzzyChoice([True, False])
     score = factory.LazyAttribute(
         lambda o: 1.0 if o.is_correct else factory.fuzzy.FuzzyFloat(0, 0.9).fuzz()
     )
-    feedback = factory.SubFactory(FeedbackFactory)
+    feedback = factory.SubFactory(GradedFeedbackFactory)
     attempts_remaining = factory.fuzzy.FuzzyInteger(0, 3)
     question_type = factory.fuzzy.FuzzyChoice(
         ["multiple_choice", "free_response", "numeric", "matching"]
     )
-
-
-class CorrectGradingResponseFactory(GradingResponseFactory):
-    success = True
-    is_correct = True
-    score = 1.0
-    feedback = factory.SubFactory(CorrectFeedbackFactory)
-
-
-class IncorrectGradingResponseFactory(GradingResponseFactory):
-    success = True
-    is_correct = False
-    score = factory.fuzzy.FuzzyFloat(0, 0.9)
-    feedback = factory.SubFactory(IncorrectFeedbackFactory)
-    attempts_remaining = factory.fuzzy.FuzzyInteger(0, 2)
 
 
 class GradingRequestFactory(factory.Factory):
@@ -154,4 +143,4 @@ class GradingRequestFactory(factory.Factory):
 
     question_id = factory.LazyFunction(lambda: str(uuid.uuid4()))
     user_id = factory.LazyFunction(lambda: str(uuid.uuid4()))
-    attempted_answer = factory.SubFactory(AttemptedAnswerFactory)
+    attempted_answer = factory.SubFactory(StudentAnswerFactory)
