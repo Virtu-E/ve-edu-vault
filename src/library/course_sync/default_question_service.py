@@ -9,9 +9,7 @@ from src.apps.learning_tools.questions.models import (
     DefaultQuestionSet,
     QuestionCategory,
 )
-from src.repository.question_repository.mongo_qn_repository import (
-    MongoQuestionRepository,
-)
+from src.repository.question_repository.mongo.qn_repo import MongoQuestionRepository
 
 logger = logging.getLogger(__name__)
 
