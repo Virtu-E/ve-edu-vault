@@ -3,7 +3,12 @@ from datetime import datetime
 
 import factory.fuzzy
 
-from ..qn_repository_data_types import Content, Option, Question, Solution
+from src.repository.question_repository.data_types import (
+    Content,
+    Option,
+    Question,
+    Solution,
+)
 
 
 class OptionFactory(factory.Factory):

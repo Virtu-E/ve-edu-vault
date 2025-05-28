@@ -4,14 +4,12 @@ from typing import Any, Dict, Iterable, List
 from bson import ObjectId, errors
 
 from src.config.django import base
-from src.repository.databases.no_sql_database.mongodb import (
+from src.repository.databases.no_sql_database.mongo.mongodb import (
     AsyncMongoDatabaseEngine,
     mongo_database,
 )
-from src.repository.question_repository.base_qn_repository import (
-    AbstractQuestionRepository,
-)
-from src.repository.question_repository.qn_repository_data_types import Question
+from src.repository.question_repository.base_repo import AbstractQuestionRepository
+from src.repository.question_repository.data_types import Question
 
 log = logging.getLogger(__name__)
 

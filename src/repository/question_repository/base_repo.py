@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
-from src.repository.question_repository.qn_repository_data_types import Question
+from src.repository.question_repository.data_types import Question
 
 
 class AbstractQuestionRepository(ABC):
