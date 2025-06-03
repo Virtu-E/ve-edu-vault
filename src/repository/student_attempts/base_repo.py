@@ -53,6 +53,23 @@ class AbstractAttemptRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_question_attempt_by_custom_query(
+        self, collection_name: str, query: dict[Any, Any]
+    ) -> List[StudentQuestionAttempt]:
+        """
+        Retrieve questions attempts by a custom query.
+        Args:
+            collection_name: Name of the question collection/category
+            query: Dictionary of question attempts query parameters
+        Returns:
+            List of StudentQuestionAttempt objects
+
+        """
+        raise NotImplementedError(
+            "get_question_attempt_by_custom_query is not implemented"
+        )
+
+    @abstractmethod
     async def get_question_attempts_by_aggregation(
         self, collection_name: str, pipeline: Any
     ) -> List[StudentQuestionAttempt]:

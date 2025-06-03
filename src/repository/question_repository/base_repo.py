@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, List
 
+from src.apps.learning_tools.questions.models import QuestionSet
 from src.repository.question_repository.data_types import Question
 
 
@@ -14,7 +15,7 @@ class AbstractQuestionRepository(ABC):
 
     @abstractmethod
     async def get_questions_by_ids(
-        self, question_ids: List[Dict[str, str]], collection_name: str
+        self, question_ids: List[QuestionSet], collection_name: str
     ) -> List[Question]:
         """
         Retrieve multiple questions by their unique identifiers.
