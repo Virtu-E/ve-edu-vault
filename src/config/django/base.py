@@ -14,6 +14,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from decouple import config
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,8 +24,12 @@ MONGO_URL = config("MONGO_URL")
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-$%pf&(zm7psez39!gruk&7^_ao%@&6xhwtsg7=_bctml77s4gw"
+
 DEBUG = config("DEBUG", default=False, cast=bool)
+SECRET_KEY = config("SECRET_KEY", default="dev-key-only-for-local")
+if not SECRET_KEY or SECRET_KEY == "dev-key-only-for-local":
+    if not DEBUG:
+        raise ImproperlyConfigured("SECRET_KEY must be set in production")
 
 EDX_AUTH_MODEL = "users.EdxUser"
 
