@@ -23,6 +23,8 @@ class GradingResponseProvider:
         collection_name: Name of the collection to store grading responses
     """
 
+    __slots__ = ("repository", "collection_name")
+
     def __init__(
         self,
         repository: AbstractGradingResponseRepository,

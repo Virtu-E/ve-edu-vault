@@ -40,6 +40,8 @@ class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
     Async MongoDB engine with connection management and error handling.
     """
 
+    __slots__ = ("_url", "_client")
+
     def __init__(
         self, mongo_url: Optional[str] = None, client: Optional[AsyncMongoClient] = None
     ):
