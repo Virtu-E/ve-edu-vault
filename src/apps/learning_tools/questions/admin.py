@@ -1,13 +1,9 @@
 from django.contrib import admin
 from django.db import transaction
-from django_json_widget.widgets import JSONEditorWidget
 from django.db.models import JSONField
+from django_json_widget.widgets import JSONEditorWidget
 
-from .models import (
-    UserQuestionSet,
-    DefaultQuestionSet,
-    QuestionCategory,
-)
+from .models import DefaultQuestionSet, QuestionCategory, UserQuestionSet
 
 
 class JsonWidgetModelAdmin(admin.ModelAdmin):
@@ -20,12 +16,26 @@ class UserQuestionSetAdmin(JsonWidgetModelAdmin):
     search_fields = ["user__username", "learning_objective__name"]
     raw_id_fields = ["user", "learning_objective"]
 
+    list_select_related = ["user", "learning_objective"]
+
+    def get_queryset(self, request):
+        """Optimize queries by selecting related objects"""
+        qs = super().get_queryset(request)
+        return qs.select_related("user", "learning_objective")
+
 
 @admin.register(DefaultQuestionSet)
 class DefaultQuestionSetAdmin(JsonWidgetModelAdmin):
     list_display = ["learning_objective"]
     search_fields = ["learning_objective__name"]
     raw_id_fields = ["learning_objective"]
+
+    list_select_related = ["learning_objective"]
+
+    def get_queryset(self, request):
+        """Optimize queries by selecting related objects"""
+        qs = super().get_queryset(request)
+        return qs.select_related("learning_objective")
 
 
 @admin.register(QuestionCategory)
@@ -39,17 +49,28 @@ class QuestionCategoryAdmin(admin.ModelAdmin):
     search_fields = ("category_id", "learning_objective__name")
     raw_id_fields = ("learning_objective",)
 
-    # Nesting fields for better organization in the add/edit form
     fieldsets = (
         ("Category Information", {"fields": ("category_id",)}),
         ("Relationships", {"fields": ("learning_objective",)}),
     )
 
-    # For performance with many records
+    # Enhanced performance optimization - select deeper relationships
     list_select_related = (
         "learning_objective",
         "learning_objective__sub_topic",
+        "learning_objective__sub_topic__topic",
+        "learning_objective__sub_topic__topic__course",  # Add course if accessed
     )
+
+    def get_queryset(self, request):
+        """Optimize queries by selecting all related objects used in display"""
+        qs = super().get_queryset(request)
+        return qs.select_related(
+            "learning_objective",
+            "learning_objective__sub_topic",
+            "learning_objective__sub_topic__topic",
+            "learning_objective__sub_topic__topic__course",
+        )
 
     def get_subtopic(self, obj):
         """Get the subtopic name for display in the admin list"""

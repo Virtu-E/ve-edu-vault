@@ -3,7 +3,7 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.html import format_html
 
-from .models import Topic, SubTopic, LearningObjective
+from .models import LearningObjective, SubTopic, Topic
 
 
 # Register your models here.
@@ -20,6 +20,13 @@ class TopicAdmin(admin.ModelAdmin):
     list_filter = ["course", "examination_level", "academic_class"]
     search_fields = ["name", "course__name"]
     search_help_text = "Search by topic name, academic class, or course key"
+
+    list_select_related = ["course"]
+
+    def get_queryset(self, request):
+        """Optimize queries by prefetching related objects"""
+        qs = super().get_queryset(request)
+        return qs.select_related("course").prefetch_related("extension")
 
     def view_subtopics(self, obj):
         url = reverse("admin:content_subtopic_changelist") + f"?topic__id={obj.id}"
@@ -54,11 +61,20 @@ class SubTopicAdmin(admin.ModelAdmin):
         "topic",
         "topic_course",
         "subtopic_augments",
-        "view_objectives",  # Add this new field to list_display
+        "view_objectives",
     ]
     list_filter = ["topic", "topic__course"]
     search_fields = ["name", "topic__name", "topic__course__name"]
     search_help_text = "Search by subtopic name, topic name or course name"
+
+    list_select_related = ["topic", "topic__course"]
+
+    def get_queryset(self, request):
+        """Optimize queries by prefetching related objects"""
+        qs = super().get_queryset(request)
+        return qs.select_related("topic", "topic__course").prefetch_related(
+            "extension", "objective"
+        )
 
     def topic_course(self, obj):
         return obj.topic.course
@@ -87,9 +103,9 @@ class SubTopicAdmin(admin.ModelAdmin):
 
     def view_objectives(self, obj):
         """Display a button to view learning objectives for this subtopic"""
+        # Since we prefetched 'objective', this won't cause additional queries
         objectives_count = obj.objective.count()
         if objectives_count > 0:
-            # Assuming you have a change list view for LearningObjective
             url = (
                 reverse("admin:content_learningobjective_changelist")
                 + f"?sub_topic__id__exact={obj.id}"
@@ -101,7 +117,6 @@ class SubTopicAdmin(admin.ModelAdmin):
                 "s" if objectives_count > 1 else "",
             )
         else:
-
             return format_html("No Objectives")
 
     view_objectives.short_description = "Learning Objectives"
@@ -132,7 +147,10 @@ class LearningObjectiveAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """Optimize queries by prefetching related objects"""
         qs = super().get_queryset(request)
-        return qs.select_related("sub_topic")
+        # Select related objects that are accessed in list_display methods
+        return qs.select_related(
+            "sub_topic", "sub_topic__topic", "sub_topic__topic__course"
+        )
 
     # Custom action to view related question categories
     actions = ["view_related_question_categories"]
