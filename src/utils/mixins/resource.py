@@ -64,7 +64,7 @@ class UserResourceContextMixin:
         user_question_set, created = UserQuestionSet.objects.get_or_create(
             user=user,
             learning_objective=objective,
-            defaults={"question_list_ids": default_question_set.question_list_ids},
+            defaults={"question_list_ids": default_question_set.questions},
         )
         return user_question_set.question_list_ids
 

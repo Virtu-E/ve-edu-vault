@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from bson import ObjectId
+from bson.binary import UUID_SUBTYPE, Binary
 
 from .data_types import AttemptBuildContext, BulkAttemptBuildContext
 
@@ -44,11 +45,10 @@ class BulkUnansweredAttemptBuilder(BulkAttemptDataBuilder):
                 "score": context.default_score,
                 "timestamp": current_time,
             }
-
             document = {
                 "user_id": context.user_id,
                 "question_id": ObjectId(question.id),
-                "assessment_id": context.assessment_id,
+                "assessment_id": Binary(context.assessment_id.bytes, UUID_SUBTYPE),
                 "created_at": current_time,
                 "question_type": question.question_type,
                 "topic": question.topic,

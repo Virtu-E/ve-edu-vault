@@ -3,6 +3,7 @@ from typing import Any, Dict, Iterable, List
 
 from bson import ObjectId, errors
 
+from src.apps.learning_tools.questions.models import QuestionSet
 from src.config.django import base
 from src.repository.databases.no_sql_database.mongo.mongodb import (
     AsyncMongoDatabaseEngine,
@@ -44,7 +45,7 @@ class MongoQuestionRepository(AbstractQuestionRepository):
         )
 
     async def get_questions_by_ids(
-        self, question_ids: List[Dict[str, str]], collection_name: str
+        self, question_ids: List[QuestionSet], collection_name: str
     ) -> List[Question]:
         """
         Retrieve multiple questions by their IDs from the specified collection.
@@ -172,7 +173,7 @@ class MongoQuestionRepository(AbstractQuestionRepository):
         return result
 
     @staticmethod
-    def _validate_question_ids(question_ids: List[Dict[str, str]]) -> List[ObjectId]:
+    def _validate_question_ids(question_ids: List[QuestionSet]) -> List[ObjectId]:
         """
         Validate and convert string IDs to MongoDB ObjectId instances.
 

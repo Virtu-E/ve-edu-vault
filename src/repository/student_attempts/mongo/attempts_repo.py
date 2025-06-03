@@ -162,6 +162,30 @@ class MongoAttemptRepository(AbstractAttemptRepository):
         log.debug("Found question attempt with ID: %s", result.get("_id", "unknown"))
         return StudentQuestionAttempt(**result)
 
+    async def get_question_attempt_by_custom_query(
+        self, collection_name: str, query: dict[Any, Any]
+    ) -> List[StudentQuestionAttempt]:
+        """
+        Retrieve question attempts by a custom query.
+        Args:
+            collection_name: Name of the question collection/category
+            query: Dictionary of question attempts query parameters
+        Returns:
+            List[StudentQuestionAttempt]: List of StudentQuestionAttempt objects
+
+        """
+
+        question_attempts = []
+
+        async for batch in await self.database_engine.fetch_from_db(
+            collection_name, self.database_name, query
+        ):
+            question_attempts.extend(batch)
+
+        result = [StudentQuestionAttempt(**attempt) for attempt in question_attempts]
+
+        return result
+
     async def get_question_attempts_by_aggregation(
         self, collection_name: str, pipeline: Any
     ) -> List[StudentQuestionAttempt]:

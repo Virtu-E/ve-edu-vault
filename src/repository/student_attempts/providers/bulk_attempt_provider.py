@@ -2,8 +2,11 @@ import logging
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
+from bson.binary import UUID_SUBTYPE, Binary
+
 from src.repository.question_repository.data_types import Question
 from src.repository.question_repository.exceptions import QuestionAttemptError
+from src.repository.student_attempts.data_types import StudentQuestionAttempt
 from src.repository.student_attempts.mongo.attempts_repo import MongoAttemptRepository
 from src.repository.student_attempts.providers.data_types import (
     BulkAttemptBuildContext,
@@ -132,3 +135,16 @@ class BulkAttemptProvider:
             raise QuestionAttemptError(
                 f"Database error bulk creating unanswered attempts for user {student_user_id}"
             ) from e
+
+    async def get_bulk_qn_attempts(
+        self, user_id: int, assessment_id: UUID
+    ) -> List[StudentQuestionAttempt]:
+        """Retrieves 1 to many student question attempts."""
+        query = {
+            "user_id": user_id,
+            "assessment_id": Binary(assessment_id.bytes, UUID_SUBTYPE),
+        }
+
+        return await self.attempt_repository.get_question_attempt_by_custom_query(
+            self.collection_name, query
+        )
