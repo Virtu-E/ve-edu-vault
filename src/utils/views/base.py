@@ -1,33 +1,31 @@
-from rest_framework.generics import RetrieveAPIView, UpdateAPIView
+from typing import Any, Dict, Optional
+
+from adrf.views import APIView
 
 
-class CustomRetrieveAPIView(RetrieveAPIView):
+class CustomAPIView(APIView):
     """
-    Custom RetrieveAPIView that overrides the get_object method.
-
-    This view is designed for cases where standard object retrieval
-    logic is not needed, allowing for custom response generation without
-    relying on a database object.
+    Base API view with serializer support for both sync and async views.
     """
 
-    def get_object(self):
+    serializer_class: Optional[Any] = None
+
+    def get_serializer_class(self):
+        """Return the serializer class to use."""
+        assert self.serializer_class is not None, (
+            f"'{self.__class__.__name__}' should either include a `serializer_class` "
+            "attribute, or override the `get_serializer_class()` method."
+        )
+        return self.serializer_class
+
+    def get_serializer(self, *args, **kwargs):
+        """Return a serializer instance."""
+        serializer_class = self.get_serializer_class()
+        kwargs.setdefault("context", self.get_serializer_context())
+        return serializer_class(*args, **kwargs)
+
+    def get_serializer_context(self) -> Dict[str, Any]:
         """
-        Override the default get_object method.
-
-        Returns:
-            None: No object retrieval is performed.
+        Extra context provided to the serializer class.
         """
-        return None
-
-
-class CustomUpdateAPIView(UpdateAPIView):
-    """Custom UpdateAPIView that overrides the get_object method."""
-
-    def get_object(self):
-        """
-        Override the default get_object method.
-
-        Returns:
-            None: No object retrieval is performed.
-        """
-        return None
+        return {"request": self.request, "format": self.format_kwarg, "view": self}

@@ -8,6 +8,7 @@ dependencies = []
 
 [dependency-groups]
 add-ons = [
+    "adrf>=0.1.9",
     "django-cors-headers>=4.6.0",
     "django-extensions>=4.1",
     "django-json-widget>=2.0.1",
