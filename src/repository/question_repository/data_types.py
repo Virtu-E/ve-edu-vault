@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -19,15 +19,36 @@ class Option(BaseModel):
     is_correct: bool = Field(exclude=True)
 
 
-class Content(BaseModel):
+class Blank(BaseModel):
     """
-    Contains the options for a multiple-choice question.
+    Represents a single blank in a fill-in-the-blank question.
 
     Attributes:
-        options (List[Option]): Available answer options for the question.
+        id (int): The identifier for the blank (e.g., 1, 2, 3).
+        position (int): The position of the blank in the question text.
+        accepted_answers (List[str]): List of acceptable answers for this blank.
+        case_sensitive (bool): Whether the answer matching should be case sensitive.
+        exact_match (bool): Whether the answer must match exactly or allow partial matching.
     """
 
-    options: List[Option]
+    id: int
+    position: int
+    accepted_answers: List[str] = Field(exclude=True)
+    case_sensitive: bool = Field(default=False, exclude=True)
+    exact_match: bool = Field(default=True, exclude=True)
+
+
+class Content(BaseModel):
+    """
+    Contains the content for different question types.
+
+    Attributes:
+        options (Optional[List[Option]]): Available answer options for multiple-choice questions.
+        blanks (Optional[List[Blank]]): Blank configurations for fill-in-the-blank questions.
+    """
+
+    options: Optional[List[Option]] = None
+    blanks: Optional[List[Blank]] = None
 
 
 class Solution(BaseModel):
@@ -58,8 +79,8 @@ class Question(BaseModel):
         examination_level (str): Level of examination (e.g., JCE).
         difficulty (str): Difficulty rating of the question.
         tags (List[str]): List of tags for categorization and searching.
-        question_type (str): Type of question (e.g., "multiple-choice").
-        content (Content): The content of the question including options.
+        question_type (str): Type of question (e.g., "multiple-choice", "fill-in-the-blank").
+        content (Content): The content of the question including options or blanks.
         solution (Solution): Detailed solution information.
         hint (str): A hint to help answer the question.
         possible_misconception (str): Common misconceptions related to the question.
