@@ -1,4 +1,4 @@
-from src.exceptions.base import VirtuEducateSystemError
+from src.exceptions import VirtuEducateSystemError
 
 
 class DatabaseError(VirtuEducateSystemError):

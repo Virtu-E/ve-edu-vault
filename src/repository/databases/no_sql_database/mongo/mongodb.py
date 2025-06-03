@@ -22,7 +22,7 @@ from pymongo.errors import (
     WTimeoutError,
 )
 
-from src.exceptions.database.mongo import (
+from src.exceptions import (
     MongoDbConfigurationError,
     MongoDbConnectionError,
     MongoDbOperationError,
@@ -139,6 +139,9 @@ class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
             )
             raise MongoDbTemporaryConnectionError(
                 "Connection timeout",
+                host=self.host,
+                port=self.port,
+                database_name=database_name,
                 max_retries=3,
             ) from e
 
