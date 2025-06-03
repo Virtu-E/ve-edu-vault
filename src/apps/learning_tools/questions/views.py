@@ -1,12 +1,11 @@
 import logging
 
-from asgiref.sync import async_to_sync
 from rest_framework import status
 from rest_framework.response import Response
 
 from src.exceptions import QuestionNotFoundError
 from src.utils.mixins.question_mixin import QuestionSetMixin
-from src.utils.views.base import CustomRetrieveAPIView, CustomUpdateAPIView
+from src.utils.views.base import CustomAPIView
 
 from .exceptions import GradingError, MaximumAttemptsError, QuestionAttemptError
 from .serializers import QuestionSerializer, UserQuestionAttemptSerializer
@@ -18,12 +17,12 @@ logger = logging.getLogger(__name__)
 
 
 # TODO : catch question not found error
-class StudentQuestionSetView(QuestionSetMixin, CustomRetrieveAPIView):
+class StudentQuestionSetView(QuestionSetMixin, CustomAPIView):
     """API view to retrieve questions for a specific student and learning_objective."""
 
     serializer_class = QuestionSerializer
 
-    def retrieve(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         """
         Override the retrieve method to implement our custom logic.
         """
@@ -68,7 +67,7 @@ class StudentQuestionSetView(QuestionSetMixin, CustomRetrieveAPIView):
         )
 
 
-class QuestionAttemptListView(QuestionSetMixin, CustomRetrieveAPIView):
+class QuestionAttemptListView(QuestionSetMixin, CustomAPIView):
     """
     API view to retrieve all question attempts for a user and learning_objective.
 
@@ -78,11 +77,9 @@ class QuestionAttemptListView(QuestionSetMixin, CustomRetrieveAPIView):
 
     serializer_class = QuestionSerializer
 
-    def retrieve(self, request, *args, **kwargs):
+    async def get(self, request, *args, **kwargs):
         logger.info("Retrieving question attempts with params: %s", kwargs)
-        return async_to_sync(self._async_retrieve)(request, *args, **kwargs)
 
-    async def _async_retrieve(self, request, *args, **kwargs):
         serializer = self.get_serializer(
             data={**kwargs, "username": request.user.username}
         )
@@ -99,27 +96,15 @@ class QuestionAttemptListView(QuestionSetMixin, CustomRetrieveAPIView):
         )
 
 
-class QuestionAttemptsCreateView(QuestionSetMixin, CustomUpdateAPIView):
+class QuestionAttemptsCreateView(QuestionSetMixin, CustomAPIView):
     """View that handles a question attempt submission."""
 
     serializer_class = UserQuestionAttemptSerializer
 
-    def post(self, request, **kwargs):
-        """
-        Handle POST requests by delegating to the async implementation.
-
-        Args:
-            request: The HTTP request object
-            **kwargs: Additional keyword arguments passed to the view
-
-        Returns:
-            Response: The HTTP response containing grading results
-        """
-        logger.info("Received question attempt submission")
-        return async_to_sync(self._async_post)(request, **kwargs)
-
-    async def _async_post(self, request, **kwargs):
+    async def post(self, request, **kwargs):
         """Asynchronous implementation of the POST request handler."""
+        logger.info("Received question attempt submission")
+
         try:
             serializer = self.get_serializer(
                 data={**request.data, "username": request.user.username}

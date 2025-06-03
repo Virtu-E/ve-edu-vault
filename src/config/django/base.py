@@ -47,6 +47,7 @@ EXTERNAL_APPS = [
     "django_extensions",
     "oauth2_provider",
     "knox",
+    "adrf",
     # "silk",
 ]
 
