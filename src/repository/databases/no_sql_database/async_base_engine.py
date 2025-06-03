@@ -1,17 +1,16 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, AsyncGenerator, Dict, List, Union
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
 log = logging.getLogger(__name__)
 
 
 class AsyncAbstractNoSqLDatabaseEngine(ABC):
     """
-    Base interface for all asynchronous NoSQL database engines.
+    Base interface for asynchronous NoSQL database engines.
 
-    This abstract class defines a standard interface for interacting with NoSQL databases
-    in an asynchronous manner. Concrete implementations should handle database-specific
-    connection management and operation execution while adhering to this interface.
+    Defines standard interface for NoSQL database operations with
+    connection management and error handling.
     """
 
     @abstractmethod
@@ -27,20 +26,20 @@ class AsyncAbstractNoSqLDatabaseEngine(ABC):
         sort: List[tuple] | None = None,
     ) -> AsyncGenerator[List[Dict], None]:
         """
-        Fetch multiple documents from the database that match the given query.
+        Fetch documents in batches from database collection.
 
         Args:
-            collection_name: Name of the collection to query.
-            database_name: Name of the database to connect to.
-            query: Filter to apply when querying documents.
-            projection: Fields to include or exclude in the returned documents.
-            batch_size: Number of documents to yield per batch.
-            limit: Maximum number of documents to return.
-            skip: Number of documents to skip from the beginning.
-            sort: List of sort conditions as (field, direction) tuples.
+            collection_name: Collection name
+            database_name: Database name
+            query: Query filter
+            projection: Fields to include/exclude
+            batch_size: Documents per batch
+            limit: Max documents to fetch (0 for no limit)
+            skip: Documents to skip
+            sort: Sort criteria as (field, direction) tuples
 
         Returns:
-            An asynchronous generator yielding lists of matching documents.
+            AsyncGenerator yielding document batches
         """
         raise NotImplementedError("Must implement fetch_from_db")
 
@@ -51,18 +50,18 @@ class AsyncAbstractNoSqLDatabaseEngine(ABC):
         database_name: str,
         query: Dict | None = None,
         projection: Dict | None = None,
-    ) -> Any:
+    ) -> Optional[Dict | List]:
         """
-        Fetch a single document from the database matching the given query.
+        Fetch single document from database collection.
 
         Args:
-            collection_name: Name of the collection to query.
-            database_name: Name of the database to connect to.
-            query: Filter to identify the document.
-            projection: Fields to include or exclude in the returned document.
+            collection_name: Collection name
+            database_name: Database name
+            query: Query filter
+            projection: Fields to include/exclude
 
         Returns:
-            The first document matching the query, or None if no match is found.
+            Single document or None if not found
         """
         raise NotImplementedError("Must implement fetch_one_from_db")
 
@@ -75,16 +74,16 @@ class AsyncAbstractNoSqLDatabaseEngine(ABC):
         timestamp: bool = True,
     ) -> bool:
         """
-        Insert one or more documents into the database.
+        Write document(s) to database collection.
 
         Args:
-            data: A single document or a list of documents to insert.
-            collection_name: Name of the collection to write to.
-            database_name: Name of the database to connect to.
-            timestamp: Whether to automatically add timestamps to the documents.
+            data: Document or list of documents to insert
+            collection_name: Collection name
+            database_name: Database name
+            timestamp: Add timestamp to documents
 
         Returns:
-            bool: True if operation was acknowledged, False otherwise.
+            True if operation acknowledged
         """
         raise NotImplementedError("Must implement write_to_db")
 
@@ -98,37 +97,37 @@ class AsyncAbstractNoSqLDatabaseEngine(ABC):
         upsert: bool = False,
     ) -> bool:
         """
-        Update a single document in the database matching the given query.
+        Update single document in database collection.
 
         Args:
-            collection_name: Name of the collection.
-            database_name: Name of the database.
-            query: MongoDB query filter to identify the document.
-            update: Update operations to apply to the document.
-            upsert: If True, create a new document when no document matches the query.
+            collection_name: Collection name
+            database_name: Database name
+            query: Query filter to identify document
+            update: Update operations
+            upsert: Create document if not found
 
         Returns:
-            bool: True if operation was acknowledged, False otherwise.
+            True if operation acknowledged
         """
-        raise NotImplementedError("Must implement update_one")
+        raise NotImplementedError("Must implement update_one_to_db")
 
     @abstractmethod
     async def run_aggregation(
         self,
         collection_name: str,
         database_name: str,
-        pipeline: List[Dict],
-    ) -> Any:
+        pipeline: List[Any],
+    ) -> List[Dict[str, List[Any]]]:
         """
-        Run an aggregation pipeline on the specified collection.
+        Execute aggregation pipeline on database collection.
 
         Args:
-            collection_name: Name of the collection to aggregate.
-            database_name: Name of the database to connect to.
-            pipeline: List of aggregation stages to execute.
+            collection_name: Collection name
+            database_name: Database name
+            pipeline: Aggregation pipeline stages
 
         Returns:
-            The result of the aggregation operation.
+            List of aggregation results
         """
         raise NotImplementedError("Must implement run_aggregation")
 

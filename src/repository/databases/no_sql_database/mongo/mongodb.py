@@ -1,108 +1,146 @@
-import asyncio
-import gc
 import logging
 from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Dict, List, Optional, Union
+from urllib.parse import ParseResult, urlparse
 
 import certifi
-import pymongo.errors
 from django.conf import settings
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
+from pymongo.errors import (
+    AutoReconnect,
+    ConfigurationError,
+    ConnectionFailure,
+    CursorNotFound,
+    DocumentTooLarge,
+    DuplicateKeyError,
+    ExecutionTimeout,
+    NetworkTimeout,
+    NotPrimaryError,
+    OperationFailure,
+    PyMongoError,
+    ServerSelectionTimeoutError,
+    WTimeoutError,
+)
 
-from ..async_base_engine import AsyncAbstractNoSqLDatabaseEngine
-from .exceptions import (
+from src.exceptions.database.mongo import (
     MongoDbConfigurationError,
     MongoDbConnectionError,
     MongoDbOperationError,
+    MongoDbTemporaryConnectionError,
+    MongoDbTemporaryOperationError,
 )
 
-log = logging.getLogger(__name__)
+from ..async_base_engine import AsyncAbstractNoSqLDatabaseEngine
+
+logger = logging.getLogger(__name__)
 
 
-# TODO : dont catch all exceptions. Only catch specific ones
 class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
     """
-    Asynchronous MongoDB database engine implementation
-
-    This class provides an async interface to MongoDB operations with proper
-    connection management, error handling, and connection pooling.
+    Async MongoDB engine with connection management and error handling.
     """
 
-    def __init__(self, mongo_url: Optional[str] = None) -> None:
+    def __init__(
+        self, mongo_url: Optional[str] = None, client: Optional[AsyncMongoClient] = None
+    ):
         """
-        Initialize the Async MongoDB engine.
+        Initialize MongoDB engine.
 
         Args:
-            mongo_url: MongoDB connection URL. Required for initialization.
+            mongo_url: MongoDB connection URL
+            client: Optional AsyncMongoClient class for dependency injection
 
         Raises:
-            MongoDbConfigurationError: If mongo_url is missing during initialization.
+            MongoDbConfigurationError: If mongo_url is missing
         """
-        self._logger = log
-
         if mongo_url is None:
-            raise MongoDbConfigurationError("MongoDB connection URL is required")
+            logger.error("MongoDB URL not provided during initialization")
+            raise MongoDbConfigurationError(
+                message="MongoDB connection URL is required but not provided",
+                missing_config="MONGO_URL",
+                config_file="config.django.base.py",
+                expected_format="mongodb://username:password@host:port/database",
+            )
 
         self._url = mongo_url
-        self._client: AsyncIOMotorClient | None = None
-        self._connection_lock = asyncio.Lock()
+        self._client: Optional[AsyncMongoClient] = client
+        logger.debug("MongoDB engine initialized with URL: %s", self.host)
 
-    async def _get_client(self) -> AsyncIOMotorClient:
+    async def _get_client(self) -> AsyncMongoClient:
         """
-        Get or create a MongoDB client with connection pooling.
+        Get or create MongoDB client with connection pooling.
 
         Returns:
-            AsyncIOMotorClient: MongoDB async client
+            AsyncMongoClient: Connected MongoDB client
 
         Raises:
             MongoDbConnectionError: If connection fails
         """
-        async with self._connection_lock:
-            if self._client is None:
-                try:
-                    # Create client with connection pooling configuration
-                    # TODO : make this configurable in settings
-                    self._client = AsyncIOMotorClient(
-                        self._url,
-                        tlsCAFile=certifi.where(),
-                        serverSelectionTimeoutMS=5000,  # Reduced from 10000
-                        maxPoolSize=10,  # Reduced from 100
-                        minPoolSize=0,  # Reduced from 10
-                        waitQueueTimeoutMS=1000,  # Reduced from 2500
-                        retryWrites=True,
-                        connectTimeoutMS=2000,  # Reduced from 5000
-                        socketTimeoutMS=5000,  # Reduced from 10000
-                    )
-                    await self._client.admin.command("ping")
-                    self._logger.info("Successfully connected to MongoDB")
-                except Exception as e:
-                    self._logger.error("Failed to connect to MongoDB: %s", e)
-                    raise MongoDbConnectionError(
-                        message=f"Could not connect to MongoDB: {str(e)}",
-                        details=str(e),
-                        operation="connect",
-                    ) from e
+        if self._client is None:
+            try:
+                logger.debug(
+                    "Establishing MongoDB connection to %s:%s", self.host, self.port
+                )
+                # This has connection pooling built in
+                self._client = AsyncMongoClient(
+                    self._url,
+                    tlsCAFile=certifi.where(),
+                )
+                await self._client.admin.command("ping")  # Test connection
+                logger.info(
+                    "Successfully connected to MongoDB at %s:%s", self.host, self.port
+                )
+            except (
+                ConnectionFailure,
+                ServerSelectionTimeoutError,
+                ConfigurationError,
+            ) as e:
+                logger.error(
+                    "Failed to connect to MongoDB at %s:%s - %s",
+                    self.host,
+                    self.port,
+                    e,
+                )
+                raise MongoDbConnectionError(
+                    message=f"Could not connect to MongoDB: {self._url}.",
+                    host=self.host,
+                    port=self.port,
+                ) from e
 
-            return self._client
+        return self._client
 
     async def _get_collection(self, collection_name: str, database_name: str):
         """
-        Get a MongoDB collection with automatic connection management.
+        Get MongoDB collection with connection management.
 
         Args:
-            collection_name (str): Name of the collection
-            database_name (str): Name of the database
+            collection_name: Collection name
+            database_name: Database name
 
         Returns:
-            AsyncIOMotorCollection: MongoDB collection object
+            MongoDB collection object
 
         Raises:
-            MongoDbConnectionError: If connection is lost or invalid
+            MongoDbTemporaryConnectionError: If connection issues occur
         """
-        client = await self._get_client()
-        db = client[database_name]
-        collection = db[collection_name]
-        return collection
+        try:
+            client = await self._get_client()
+            db = client[database_name]
+            collection = db[collection_name]
+            logger.debug("Retrieved collection %s.%s", database_name, collection_name)
+            return collection
+
+        except (AutoReconnect, NetworkTimeout, NotPrimaryError) as e:
+            logger.warning(
+                "Temporary connection issue accessing %s.%s: %s",
+                database_name,
+                collection_name,
+                e,
+            )
+            raise MongoDbTemporaryConnectionError(
+                "Connection timeout",
+                max_retries=3,
+            ) from e
 
     async def fetch_from_db(
         self,
@@ -116,29 +154,38 @@ class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
         sort: List[tuple] | None = None,
     ) -> AsyncGenerator[List[Dict], None]:
         """
-        Fetch documents from MongoDB collection asynchronously in batches.
+        Fetch documents in batches from MongoDB collection.
 
         Args:
-            collection_name: Name of the collection
-            database_name: Name of the database
-            query: MongoDB query filter
-            projection: Fields to include/exclude in the result
-            batch_size: Number of documents to fetch in each batch
-            limit: Maximum number of documents to fetch (0 for no limit)
-            skip: Number of documents to skip
-            sort: Fields to sort by
+            collection_name: Collection name
+            database_name: Database name
+            query: Query filter
+            projection: Fields to include/exclude
+            batch_size: Documents per batch
+            limit: Max documents to fetch (0 for no limit)
+            skip: Documents to skip
+            sort: Sort criteria
 
         Returns:
-            AsyncGenerator[List[Dict], None]: A coroutine that returns a generator yielding batches of documents
+            AsyncGenerator yielding document batches
 
         Raises:
-            MongoDbOperationError: If the fetch operation fails
+            MongoDbOperationError: If fetch fails
+            MongoDbTemporaryOperationError: If temporary issues occur
         """
 
         async def generator() -> AsyncGenerator[List[Dict], None]:
             query_dict = query or {}
             projection_dict = projection or {}
             total_fetched = 0
+
+            logger.debug(
+                "Starting fetch from %s.%s with limit=%d, batch_size=%d",
+                database_name,
+                collection_name,
+                limit,
+                batch_size,
+            )
 
             try:
                 collection = await self._get_collection(collection_name, database_name)
@@ -171,8 +218,17 @@ class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
                 finally:
                     await cursor.close()
 
-            except Exception as e:
-                self._logger.error("Error fetching from %s: %s", collection_name, e)
+                logger.debug(
+                    "Completed fetch from %s.%s - %d documents retrieved",
+                    database_name,
+                    collection_name,
+                    total_fetched,
+                )
+
+            except CursorNotFound as e:
+                logger.error(
+                    "Cursor not found for %s.%s: %s", database_name, collection_name, e
+                )
                 raise MongoDbOperationError(
                     message=f"Failed to fetch data: {str(e)}",
                     operation="fetch",
@@ -181,7 +237,22 @@ class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
                     details=str(e),
                 ) from e
 
-        return generator()  # Return the generator
+            except (OperationFailure, ExecutionTimeout, AutoReconnect) as e:
+                logger.warning(
+                    "Temporary fetch failure from %s.%s: %s",
+                    database_name,
+                    collection_name,
+                    e,
+                )
+                raise MongoDbTemporaryOperationError(
+                    message="Operation failed",
+                    operation="fetch_from_db",
+                    collection=collection_name,
+                    query=query_dict,
+                    max_retries=3,
+                ) from e
+
+        return generator()
 
     async def fetch_one_from_db(
         self,
@@ -191,35 +262,55 @@ class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
         projection: Dict | None = None,
     ) -> Optional[Dict | List]:
         """
-        Fetch a single document from MongoDB collection asynchronously.
+        Fetch single document from MongoDB collection.
 
         Args:
-            collection_name: Name of the collection
-            database_name: Name of the database
-            query: MongoDB query filter
-            projection: Fields to include/exclude in the result
+            collection_name: Collection name
+            database_name: Database name
+            query: Query filter
+            projection: Fields to include/exclude
 
         Returns:
-            Dict: Single document matching the query or None if no match found
+            Single document or None if not found
 
         Raises:
-            MongoDbOperationError: If the fetch operation fails
+            MongoDbTemporaryOperationError: If operation fails
         """
         query = query or {}
         projection = projection or {}
 
+        logger.debug(
+            "Fetching single document from %s.%s", database_name, collection_name
+        )
+
         try:
             collection = await self._get_collection(collection_name, database_name)
             result = await collection.find_one(query, projection)
+
+            if result:
+                logger.debug("Document found in %s.%s", database_name, collection_name)
+            else:
+                logger.debug(
+                    "No document found in %s.%s matching query",
+                    database_name,
+                    collection_name,
+                )
+
             return result
-        except Exception as e:
-            self._logger.error("Error fetching one from %s: %s", collection_name, e)
-            raise MongoDbOperationError(
-                message=f"Failed to fetch single document: {str(e)}",
-                operation="fetch_one",
+
+        except (OperationFailure, ExecutionTimeout, AutoReconnect) as e:
+            logger.warning(
+                "Temporary failure fetching from %s.%s: %s",
+                database_name,
+                collection_name,
+                e,
+            )
+            raise MongoDbTemporaryOperationError(
+                message="Operation failed",
+                operation="fetch_one_from_db",
                 collection=collection_name,
                 query=query,
-                details=str(e),
+                max_retries=3,
             ) from e
 
     async def write_to_db(
@@ -230,20 +321,26 @@ class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
         timestamp: bool = True,
     ) -> bool:
         """
-        Write data to MongoDB collection asynchronously.
+        Write document(s) to MongoDB collection.
 
         Args:
             data: Document or list of documents to insert
-            collection_name: Name of the collection
-            database_name: Name of the database
-            timestamp: Whether to add timestamp to documents
+            collection_name: Collection name
+            database_name: Database name
+            timestamp: Add created_at timestamp
 
         Returns:
-            bool: True if operation was acknowledged, False otherwise
+            True if operation acknowledged
 
         Raises:
-            MongoDbOperationError: If the write operation fails
+            MongoDbOperationError: If write fails permanently
+            MongoDbTemporaryOperationError: If temporary issues occur
         """
+        doc_count = len(data) if isinstance(data, list) else 1
+        logger.debug(
+            "Writing %d document(s) to %s.%s", doc_count, database_name, collection_name
+        )
+
         try:
             collection = await self._get_collection(collection_name, database_name)
 
@@ -254,22 +351,45 @@ class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
                         for doc in data
                     ]
                 result = await collection.insert_many(data)
-                self._logger.debug("Successfully wrote data to %s", collection_name)
+                logger.info(
+                    "Successfully wrote %d documents to %s.%s",
+                    doc_count,
+                    database_name,
+                    collection_name,
+                )
                 return result.acknowledged
 
             if timestamp:
                 data["created_at"] = datetime.now(timezone.utc)
             result = await collection.insert_one(data)
-            self._logger.debug("Successfully wrote data to %s", collection_name)
+            logger.info(
+                "Successfully wrote document to %s.%s", database_name, collection_name
+            )
             return result.acknowledged
 
-        except Exception as e:
-            self._logger.error("Error writing to %s: %s", collection_name, e)
+        except (DuplicateKeyError, DocumentTooLarge) as e:
+            logger.error(
+                "Write failed for %s.%s - %s", database_name, collection_name, e
+            )
             raise MongoDbOperationError(
                 message=f"Failed to write data: {str(e)}",
-                operation="write",
+                operation="write_to_db",
                 collection=collection_name,
                 details=str(e),
+            ) from e
+
+        except (OperationFailure, AutoReconnect, WTimeoutError) as e:
+            logger.warning(
+                "Temporary write failure to %s.%s: %s",
+                database_name,
+                collection_name,
+                e,
+            )
+            raise MongoDbTemporaryOperationError(
+                message="Operation failed",
+                operation="write_to_db",
+                collection=collection_name,
+                max_retries=3,
             ) from e
 
     async def update_one_to_db(
@@ -281,27 +401,36 @@ class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
         upsert: bool = False,
     ) -> bool:
         """
-        Update a single document in a MongoDB collection asynchronously.
+        Update single document in MongoDB collection.
 
         Args:
-            collection_name: Name of the collection
-            database_name: Name of the database
-            query: MongoDB query filter to identify the document
-            update: Update operations to apply to the document
-            upsert: If True, create a new document when no document matches the query
+            collection_name: Collection name
+            database_name: Database name
+            query: Query filter to identify document
+            update: Update operations
+            upsert: Create document if not found
 
         Returns:
-            bool: True if operation was acknowledged, False otherwise
+            True if operation acknowledged
 
         Raises:
-            MongoDbOperationError: If the update operation fails
+            MongoDbOperationError: If update fails permanently
+            MongoDbTemporaryOperationError: If temporary issues occur
         """
+        logger.debug(
+            "Updating document in %s.%s (upsert=%s)",
+            database_name,
+            collection_name,
+            upsert,
+        )
+
         try:
             collection = await self._get_collection(collection_name, database_name)
             result = await collection.update_one(query, update, upsert=upsert)
 
-            self._logger.debug(
-                "Successfully updated document in %s. Matched: %d, Modified: %d",
+            logger.info(
+                "Update completed in %s.%s - matched: %d, modified: %d",
+                database_name,
                 collection_name,
                 result.matched_count,
                 result.modified_count,
@@ -309,14 +438,29 @@ class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
 
             return result.acknowledged
 
-        except Exception as e:
-            self._logger.error("Error updating document in %s: %s", collection_name, e)
+        except (DuplicateKeyError, DocumentTooLarge) as e:
+            logger.error(
+                "Update failed for %s.%s - %s", database_name, collection_name, e
+            )
             raise MongoDbOperationError(
-                message=f"Failed to update document: {str(e)}",
-                operation="update_one",
+                message=f"Failed to write data: {str(e)}",
+                operation="update_one_to_db",
                 collection=collection_name,
-                query=query,
                 details=str(e),
+            ) from e
+
+        except (OperationFailure, AutoReconnect, WTimeoutError) as e:
+            logger.warning(
+                "Temporary update failure for %s.%s: %s",
+                database_name,
+                collection_name,
+                e,
+            )
+            raise MongoDbTemporaryOperationError(
+                message="Operation failed",
+                operation="update_one_to_db",
+                collection=collection_name,
+                max_retries=3,
             ) from e
 
     async def run_aggregation(
@@ -326,75 +470,81 @@ class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
         pipeline: List[Any],
     ) -> List[Dict[str, List[Any]]]:
         """
-        Execute an aggregation pipeline on a MongoDB collection asynchronously.
+        Execute aggregation pipeline on MongoDB collection.
 
         Args:
-            collection_name: Name of the collection
-            database_name: Name of the database
-            pipeline: Aggregation pipeline as a list of stages
+            collection_name: Collection name
+            database_name: Database name
+            pipeline: Aggregation pipeline stages
 
         Returns:
-            list: List of documents resulting from the aggregation pipeline
+            List of aggregation results
 
         Raises:
-            MongoDbOperationError: If the aggregation operation fails
+            MongoDbTemporaryOperationError: If aggregation fails
         """
+        logger.debug(
+            "Running aggregation on %s.%s with %d pipeline stages",
+            database_name,
+            collection_name,
+            len(pipeline),
+        )
+
         try:
             collection = await self._get_collection(collection_name, database_name)
             cursor = collection.aggregate(pipeline)
-            results = await cursor.to_list(length=None)  # Fetch all results
+            results = await cursor.to_list(length=None)
 
-            self._logger.info(
-                "Successfully executed aggregation pipeline. "
-                "Aggregation query executed on %s: %s",
+            logger.info(
+                "Aggregation completed on %s.%s - %d results returned",
+                database_name,
                 collection_name,
-                pipeline,
+                len(results),
             )
             return results
-        # TODO : dont catch generic exceptions
-        except Exception as e:
-            self._logger.error(
-                "Error running aggregation on %s: %s", collection_name, e
+
+        except (OperationFailure, ExecutionTimeout, AutoReconnect) as e:
+            logger.warning(
+                "Aggregation failed on %s.%s: %s", database_name, collection_name, e
             )
-            raise MongoDbOperationError(
-                message=f"Failed to execute aggregation: {str(e)}",
-                operation="aggregation",
+            raise MongoDbTemporaryOperationError(
+                message="Operation failed",
+                operation="run_aggregation",
                 collection=collection_name,
-                query=pipeline,
-                details=str(e),
+                max_retries=3,
             ) from e
 
-    # TODO : make sure this is called when the SIGTERM or django shutdown process
+    @property
+    def parsed_url(self) -> ParseResult:
+        """Parse MongoDB connection URL."""
+        return urlparse(self._url)
+
+    @property
+    def host(self):
+        """Get MongoDB host from URL."""
+        return self.parsed_url.hostname
+
+    @property
+    def port(self):
+        """Get MongoDB port from URL."""
+        return self.parsed_url.port
+
     async def disconnect(self) -> None:
         """
         Safely close MongoDB connection asynchronously.
         """
         if self._client:
             try:
-                self._client.close()
-                self._logger.info("Disconnected from MongoDB")
-            except pymongo.errors.NetworkTimeout as e:
-                self._logger.error("Timeout during MongoDB disconnect: %s", e)
-            except pymongo.errors.ConnectionFailure as e:
-                self._logger.error(
-                    "Connection failure during MongoDB disconnect: %s", e
-                )
-            except pymongo.errors.PyMongoError as e:
-                self._logger.error("PyMongo error during MongoDB disconnect: %s", e)
-            except Exception as e:
-                self._logger.error("Unexpected error during MongoDB disconnect: %s", e)
-
+                await self._client.close()
+                logger.info("Disconnected from MongoDB")
+            except NetworkTimeout as e:
+                logger.error("Timeout during MongoDB disconnect: %s", e)
+            except ConnectionFailure as e:
+                logger.error("Connection failure during MongoDB disconnect: %s", e)
+            except PyMongoError as e:
+                logger.error("PyMongo error during MongoDB disconnect: %s", e)
             finally:
                 self._client = None
-
-        # Ensure client reference is cleared and initiate garbage collection if needed
-        if self._client is not None:
-            self._logger.warning(
-                "MongoDB connection might still be active. "
-                "Initiating python garbage collection manually"
-            )
-            self._client = None
-            gc.collect()
 
 
 mongo_database = AsyncMongoDatabaseEngine(getattr(settings, "MONGO_URL", None))
