@@ -1,39 +1,52 @@
 import logging
+import uuid
 
 from rest_framework import status
 from rest_framework.response import Response
 
 from src.utils.mixins.question_mixin import QuestionSetMixin
-from src.utils.views.base import CustomRetrieveAPIView, CustomUpdateAPIView
+from src.utils.views.base import CustomAPIView
 
 from .exceptions import SchedulingError, UserQuestionSetNotFoundError
-from .serializers import AssessmentSerializer
+from .serializers import AssessmentGradingSerializer, AssessmentSerializer
+from .services.assessment_grading.assessment_completion import grade_assessment
 from .services.assessment_start_service import start_assessment
 from .services.assessment_view_service import get_current_ongoing_assessment
 
 logger = logging.getLogger(__name__)
 
 
-class AssessmentCompletionView(CustomUpdateAPIView):
-    """
-    View to handle the completion of a quiz/challenge.
-    """
+class AssessmentCompletionView(QuestionSetMixin, CustomAPIView):
+    serializer_class = AssessmentGradingSerializer
 
-    serializer_class = AssessmentSerializer
+    async def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(
+            data={**request.data, "username": request.user.username}
+        )
+        resource_context = await self.get_validated_question_set_resources_async(
+            serializer
+        )
+        try:
+            grading_result = await grade_assessment(
+                assessment_id=uuid.UUID(request.data["assessment_id"]),
+                resources_context=resource_context,
+            )
 
-    def retrieve(self, request, *args, **kwargs):
-        """Main entry point for the assessment view."""
-        pass
+            return Response(grading_result.model_dump(), status=status.HTTP_200_OK)
+        except UserQuestionSetNotFoundError:
+            pass
+
+        return Response(status=status.HTTP_200_OK)
 
 
-class AssessmentStartView(QuestionSetMixin, CustomRetrieveAPIView):
+class AssessmentStartView(QuestionSetMixin, CustomAPIView):
     """
     View to handle the start of an assessment.
     """
 
     serializer_class = AssessmentSerializer
 
-    def retrieve(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         """
         Main entry point for this view.
         """
@@ -56,12 +69,12 @@ class AssessmentStartView(QuestionSetMixin, CustomRetrieveAPIView):
             )
 
 
-class ActiveAssessmentView(QuestionSetMixin, CustomRetrieveAPIView):
+class ActiveAssessmentView(QuestionSetMixin, CustomAPIView):
     """View that checks if the user has an active assessment."""
 
     serializer_class = AssessmentSerializer
 
-    def retrieve(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         """
         Main entry point for this view.
         """
