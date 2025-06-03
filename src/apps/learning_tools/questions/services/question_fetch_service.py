@@ -49,7 +49,7 @@ def fetch_student_questions(*, resource_context: QuestionSetResources) -> List[D
             user_id,
         )
 
-        return question_data
+        return [question.model_dump() for question in question_data]
 
     except Exception as e:
         logger.error("Failed to fetch questions for user_id=%s: %s", user_id, str(e))
