@@ -45,8 +45,8 @@ class StudentQuestionAttempt(BaseModel):
     best_score: float
     latest_score: float
     mastered: bool
-    first_attempt_at: datetime
-    last_attempt_at: datetime
+    first_attempt_at: Optional[datetime] = None
+    last_attempt_at: Optional[datetime] = None
 
     # Array of all attempts
     attempts: List[Attempt]

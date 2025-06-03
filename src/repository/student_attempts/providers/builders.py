@@ -41,7 +41,7 @@ class BulkUnansweredAttemptBuilder(BulkAttemptDataBuilder):
 
         for question in context.unanswered_questions:
             attempt = {
-                "is_correct": context.is_correct,
+                "is_correct": False,
                 "score": context.default_score,
                 "timestamp": current_time,
             }
@@ -54,14 +54,14 @@ class BulkUnansweredAttemptBuilder(BulkAttemptDataBuilder):
                 "topic": question.topic,
                 "sub_topic": question.sub_topic,
                 "learning_objective": question.learning_objective,
-                "first_attempt_at": current_time,
-                "last_attempt_at": current_time,
+                "first_attempt_at": None,
+                "last_attempt_at": None,
                 "question_metadata": question.model_dump(),
                 "attempts": [attempt],
-                "total_attempts": 1,
+                "total_attempts": 0,
                 "best_score": context.default_score,
                 "latest_score": context.default_score,
-                "mastered": context.is_correct
+                "mastered": False
                 and context.default_score >= context.config.mastery_threshold,
             }
 
