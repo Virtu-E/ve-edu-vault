@@ -12,6 +12,11 @@ from .database.mongo import (
     MongoDbTemporaryConnectionError,
     MongoDbTemporaryOperationError,
 )
+from .repository.attempts import (
+    InvalidAttemptInputError,
+    InvalidScoreError,
+    MaximumAttemptsExceededError,
+)
 
 __all__ = [
     # Base
@@ -26,4 +31,8 @@ __all__ = [
     "MongoDbTemporaryConnectionError",
     "MongoDbOperationError",
     "MongoDbTemporaryOperationError",
+    # Attempts
+    "MaximumAttemptsExceededError",
+    "InvalidAttemptInputError",
+    "InvalidScoreError",
 ]
