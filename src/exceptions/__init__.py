@@ -17,6 +17,7 @@ from .repository.attempts import (
     InvalidScoreError,
     MaximumAttemptsExceededError,
 )
+from .repository.questions import QuestionNotFoundError
 
 __all__ = [
     # Base
@@ -35,4 +36,6 @@ __all__ = [
     "MaximumAttemptsExceededError",
     "InvalidAttemptInputError",
     "InvalidScoreError",
+    # Question
+    "QuestionNotFoundError",
 ]

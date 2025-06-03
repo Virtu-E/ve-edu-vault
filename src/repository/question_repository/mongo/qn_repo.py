@@ -2,6 +2,7 @@ import logging
 from typing import Any, Dict, Iterable, List
 
 from bson import ObjectId, errors
+from pydantic_core._pydantic_core import ValidationError
 
 from src.apps.learning_tools.questions.models import QuestionSet
 from src.config.django import base
@@ -12,7 +13,7 @@ from src.repository.databases.no_sql_database.mongo.mongodb import (
 from src.repository.question_repository.base_repo import AbstractQuestionRepository
 from src.repository.question_repository.data_types import Question
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class MongoQuestionRepository(AbstractQuestionRepository):
@@ -40,7 +41,7 @@ class MongoQuestionRepository(AbstractQuestionRepository):
         """
         self.database_engine = database_engine
         self.database_name = database_name
-        log.info(
+        logger.info(
             "Initialized MongoQuestionRepository with database '%s'", database_name
         )
 
@@ -63,11 +64,11 @@ class MongoQuestionRepository(AbstractQuestionRepository):
         """
         # TODO : write a decorator function for this validation
         if not collection_name:
-            log.error("Empty collection name provided")
+            logger.error("Empty collection name provided")
             raise ValueError("Collection name cannot be empty")
 
         if not question_ids:
-            log.warning("No question IDs provided to retrieve")
+            logger.warning("No question IDs provided to retrieve")
             return []
 
         object_ids = self._validate_question_ids(question_ids)
@@ -76,7 +77,7 @@ class MongoQuestionRepository(AbstractQuestionRepository):
             return []
 
         query = {"_id": {"$in": object_ids}}
-        log.debug("Querying collection '%s' with filter: %s", collection_name, query)
+        logger.debug("Querying collection '%s' with filter: %s", collection_name, query)
 
         all_questions = []
 
@@ -88,7 +89,7 @@ class MongoQuestionRepository(AbstractQuestionRepository):
             all_questions.extend(batch)
 
         result = self._process_mongo_question_data(all_questions)
-        log.info(
+        logger.info(
             "Retrieved %d questions out of %d requested IDs",
             len(result),
             len(question_ids),
@@ -134,7 +135,7 @@ class MongoQuestionRepository(AbstractQuestionRepository):
                 if isinstance(question_list, list):
                     flattened_questions.extend(question_list)
                 else:
-                    log.warning(
+                    logger.warning(
                         f"Unexpected data structure in aggregation result: {key}"
                     )
 
@@ -152,7 +153,6 @@ class MongoQuestionRepository(AbstractQuestionRepository):
             List of Question objects matching the provided identifiers
 
         """
-        # TODO : add validators for empty query or collection name
 
         all_questions = []
 
@@ -164,7 +164,7 @@ class MongoQuestionRepository(AbstractQuestionRepository):
             all_questions.extend(batch)
 
         result = self._process_mongo_question_data(all_questions)
-        log.info(
+        logger.info(
             "Retrieved %d questions out of %d requested IDs",
             len(result),
             len(all_questions),
@@ -183,7 +183,7 @@ class MongoQuestionRepository(AbstractQuestionRepository):
         Returns:
             List of valid MongoDB ObjectId instances.
         """
-        log.debug("Validating %d question IDs", len(question_ids))
+        logger.debug("Validating %d question IDs", len(question_ids))
         object_ids = []
         invalid_count = 0
 
@@ -192,24 +192,26 @@ class MongoQuestionRepository(AbstractQuestionRepository):
                 if ObjectId.is_valid(question_data["id"]):
                     object_ids.append(ObjectId(question_data["id"]))
                 else:
-                    log.warning("Invalid ObjectId format: %s", question_data["id"])
+                    logger.warning("Invalid ObjectId format: %s", question_data["id"])
                     invalid_count += 1
             except errors.InvalidId:
-                log.warning("Failed to convert ID to ObjectId: %s", question_data["id"])
+                logger.warning(
+                    "Failed to convert ID to ObjectId: %s", question_data["id"]
+                )
                 invalid_count += 1
 
         if invalid_count > 0:
-            log.warning(
+            logger.warning(
                 "Found %d invalid question IDs out of %d",
                 invalid_count,
                 len(question_ids),
             )
 
         if not object_ids:
-            log.warning("No valid question IDs to query")
+            logger.warning("No valid question IDs to query")
             return []
 
-        log.debug("Successfully validated %d question IDs", len(object_ids))
+        logger.debug("Successfully validated %d question IDs", len(object_ids))
         return object_ids
 
     @staticmethod
@@ -224,7 +226,7 @@ class MongoQuestionRepository(AbstractQuestionRepository):
             Normalized name
         """
         normalized = name.lower().replace(" ", "_").lstrip("_")
-        log.debug(f"Normalized name '{name}' to '{normalized}'")
+        logger.debug(f"Normalized name '{name}' to '{normalized}'")
         return normalized
 
     @staticmethod
@@ -246,15 +248,15 @@ class MongoQuestionRepository(AbstractQuestionRepository):
         for question in questions:
             try:
                 question_id = str(question.get("_id", "unknown"))
-                log.debug("Processing question data for ID: %s", question_id)
+                logger.debug("Processing question data for ID: %s", question_id)
 
                 question_with_string_id = {**question, "_id": question_id}
                 question_obj = Question(**question_with_string_id)
                 result.append(question_obj)
 
-            except Exception as e:
+            except ValidationError as e:
                 error_count += 1
-                log.error(
+                logger.error(
                     "Error processing question data: %s. Error: %s",
                     question.get("_id", "unknown"),
                     str(e),
@@ -262,22 +264,22 @@ class MongoQuestionRepository(AbstractQuestionRepository):
                 )
 
         if error_count > 0:
-            log.warning("Failed to process %d questions", error_count)
+            logger.warning("Failed to process %d questions", error_count)
 
-        log.debug("Successfully processed %d question objects", len(result))
+        logger.debug("Successfully processed %d question objects", len(result))
         return result
 
     @classmethod
     def get_repo(cls):
         database_name = getattr(base, "NO_SQL_QUESTIONS_DATABASE_NAME", None)
         if database_name is None:
-            log.error("NO_SQL_QUESTIONS_DATABASE_NAME not configured in settings")
+            logger.error("NO_SQL_QUESTIONS_DATABASE_NAME not configured in settings")
             # TODO : raise custom error exception here for better details
             raise RuntimeError(
                 "NO_SQL_QUESTIONS_DATABASE_NAME not configured in settings"
             )
 
-        log.info("Creating MongoQuestionRepository instance")
+        logger.info("Creating MongoQuestionRepository instance")
 
         return MongoQuestionRepository(
             database_engine=mongo_database,
