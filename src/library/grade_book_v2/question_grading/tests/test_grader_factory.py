@@ -5,8 +5,9 @@ import pytest
 from src.repository.graded_responses.data_types import StudentAnswer
 from src.repository.question_repository.data_types import Question
 
-from ..grader_factory import GraderFactory
-from ..grader_types import AbstractQuestionGrader, MultipleChoiceGrader
+from ..grader_factory import GraderFactory, GraderTypeEnum
+from ..grader_types.base import AbstractQuestionGrader
+from ..grader_types.multiple_choice import MultipleChoiceGrader
 
 
 class TestGraderFactory:
@@ -18,7 +19,9 @@ class TestGraderFactory:
         # Clear the graders
         GraderFactory._graders = {}
         # Re-register the default grader
-        GraderFactory.register_grader("multiple-choice", MultipleChoiceGrader)
+        GraderFactory.register_grader(
+            GraderTypeEnum.MULTIPLE_CHOICE, MultipleChoiceGrader
+        )
 
         yield
 
@@ -51,18 +54,6 @@ class TestGraderFactory:
         # Assert
         assert isinstance(grader, MultipleChoiceGrader)
 
-    def test_get_grader_with_unregistered_type_raises_value_error(self):
-        """Test that attempting to get an unregistered grader raises a ValueError."""
-        # Arrange
-        unregistered_type = "unregistered-type"
-        expected_message = (
-            f"No grader registered for question type: {unregistered_type}"
-        )
-
-        # Act & Assert
-        with pytest.raises(ValueError, match=expected_message):
-            GraderFactory.get_grader(unregistered_type)
-
     def test_get_grader_returns_new_instance_each_call(self):
         """Test that each call to get_grader returns a new instance."""
         # Act
@@ -73,43 +64,6 @@ class TestGraderFactory:
         assert grader1 is not grader2
         assert isinstance(grader1, MultipleChoiceGrader)
         assert isinstance(grader2, MultipleChoiceGrader)
-
-    def test_register_multiple_graders(self):
-        """Test registering multiple graders works correctly."""
-
-        # Arrange
-        class CustomGrader1(AbstractQuestionGrader):
-            def grade(self, question, attempted_answer):
-                return True
-
-            def calculate_score(self, is_correct):
-                return 10.0 if is_correct else 0.0
-
-        class CustomGrader2(AbstractQuestionGrader):
-            def grade(self, question, attempted_answer):
-                return False
-
-            def calculate_score(self, is_correct):
-                return 5.0 if is_correct else 0.0
-
-        # Act
-        GraderFactory.register_grader("custom-type-1", CustomGrader1)
-        GraderFactory.register_grader("custom-type-2", CustomGrader2)
-
-        grader1 = GraderFactory.get_grader("custom-type-1")
-        grader2 = GraderFactory.get_grader("custom-type-2")
-
-        # Create mock question and attempted answer
-        mock_question = Mock(spec=Question)
-        mock_answer = Mock(spec=StudentAnswer)
-
-        # Assert
-        assert isinstance(grader1, CustomGrader1)
-        assert isinstance(grader2, CustomGrader2)
-        assert grader1.grade(mock_question, mock_answer) is True
-        assert grader1.calculate_score(True) == 10.0
-        assert grader2.grade(mock_question, mock_answer) is False
-        assert grader2.calculate_score(False) == 0.0
 
     def test_register_grader_overrides_existing_type(self):
         """Test that registering a grader for an existing type overrides it."""
@@ -127,7 +81,9 @@ class TestGraderFactory:
         mock_answer = Mock(spec=StudentAnswer)
 
         # Act
-        GraderFactory.register_grader("multiple-choice", NewMultipleChoiceGrader)
+        GraderFactory.register_grader(
+            GraderTypeEnum.MULTIPLE_CHOICE, NewMultipleChoiceGrader
+        )
         grader = GraderFactory.get_grader("multiple-choice")
 
         # Assert

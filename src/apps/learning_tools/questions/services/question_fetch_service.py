@@ -20,9 +20,6 @@ def fetch_student_questions(*, resource_context: QuestionSetResources) -> List[D
 
     Returns:
         List[Dict]: List of question data dictionaries
-
-    Raises:
-        Exception: Any provider or data retrieval errors are logged and re-raised
     """
     question_set_ids = resource_context.resources.question_set_ids
     user_id = resource_context.resources.user.id
@@ -33,24 +30,18 @@ def fetch_student_questions(*, resource_context: QuestionSetResources) -> List[D
         len(question_set_ids),
     )
     logger.debug("Question set IDs: %s", question_set_ids)
+    question_provider = QuestionProvider.get_mongo_provider(
+        resource_context=resource_context
+    )
 
-    try:
-        question_provider = QuestionProvider.get_mongo_provider(
-            resource_context=resource_context
-        )
+    question_data = async_to_sync(question_provider.get_questions_from_ids)(
+        question_set_ids
+    )
 
-        question_data = async_to_sync(question_provider.get_questions_from_ids)(
-            question_set_ids
-        )
+    logger.info(
+        "Successfully fetched %d questions for user_id=%s",
+        len(question_data),
+        user_id,
+    )
 
-        logger.info(
-            "Successfully fetched %d questions for user_id=%s",
-            len(question_data),
-            user_id,
-        )
-
-        return [question.model_dump() for question in question_data]
-
-    except Exception as e:
-        logger.error("Failed to fetch questions for user_id=%s: %s", user_id, str(e))
-        raise
+    return [question.model_dump() for question in question_data]

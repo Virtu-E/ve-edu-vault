@@ -9,7 +9,6 @@ from src.library.scheduler.assessment_scheduler import (
 )
 from src.utils.mixins.question_mixin import QuestionSetResources
 
-from ..exceptions import SchedulingError
 from ..models import UserAssessmentAttempt
 
 logger = logging.getLogger(__name__)
@@ -52,34 +51,24 @@ def start_assessment(
     logger.info(
         f"Creating new assessment for user {user.id} and objective {learning_objective.id}"
     )
-
-    try:
-        with transaction.atomic():
-            assessment = UserAssessmentAttempt.create_attempt(
-                user=user, learning_objective=learning_objective
-            )
-
-            logger.info(f"Created new assessment {assessment.assessment_id}")
-
-            assessment_data = AssessmentTimerData(
-                assessment_id=str(assessment.assessment_id),
-                student_id=user.id,
-                started_at=datetime.now(),
-                assessment_duration_seconds=30,  # defaulting to 30 sec for now, but should create dynamic time depending on questions
-            )
-
-            scheduler_response = schedule_test_assessment(data=assessment_data)
-
-            if not scheduler_response:
-                raise SchedulingError("Failed to schedule assessment timer")
-
-            logger.info(
-                f"Successfully scheduled timer for assessment {assessment.assessment_id}"
-            )
-            return assessment
-
-    except Exception as e:
-        logger.error(
-            f"Failed to create assessment for user {user.id} and objective {learning_objective.id}: {e}"
+    with transaction.atomic():
+        assessment = UserAssessmentAttempt.create_attempt(
+            user=user, learning_objective=learning_objective
         )
-        raise
+
+        logger.info(f"Created new assessment {assessment.assessment_id}")
+
+        assessment_data = AssessmentTimerData(
+            assessment_id=str(assessment.assessment_id),
+            student_id=user.id,
+            started_at=datetime.now(),
+            assessment_duration_seconds=30,
+            # defaulting to 30 sec for now, but should create dynamic time depending on questions
+        )
+
+        schedule_test_assessment(data=assessment_data)
+
+        logger.info(
+            f"Successfully scheduled timer for assessment {assessment.assessment_id}"
+        )
+        return assessment

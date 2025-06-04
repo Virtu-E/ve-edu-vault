@@ -11,7 +11,7 @@ class MaximumAttemptsExceededError(VirtuEducateBusinessError):
         user_id: Union[str, int],
         question_id: str,
         max_attempts: int,
-        current_attempts: int,
+        current_attempts: Optional[int] = None,
         **kwargs,
     ):
         message = f"User {user_id} exceeded maximum attempts ({max_attempts}) for question {question_id}"

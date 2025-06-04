@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from typing import Optional
 
 from src.apps.learning_tools.questions.models import UserQuestionSet
+from src.exceptions import UserQuestionSetNotFoundError
 from src.utils.mixins.question_mixin import QuestionSetResources
 
-from ..exceptions import UserQuestionSetNotFoundError
 from ..models import UserAssessmentAttempt
 
 logger = logging.getLogger(__name__)

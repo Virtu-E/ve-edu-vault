@@ -7,7 +7,8 @@ from src.repository.question_repository.mongo.tests.factories import (
     TrueFalseQuestionFactory,
 )
 
-from ..grader_types import AbstractQuestionGrader, MultipleChoiceGrader
+from ..grader_types.base import AbstractQuestionGrader
+from ..grader_types.multiple_choice import MultipleChoiceGrader
 from .factories import StudentAnswerFactory
 
 
