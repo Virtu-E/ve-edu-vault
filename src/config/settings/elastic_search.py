@@ -2,11 +2,11 @@ from decouple import config
 
 ELASTICSEARCH_DSL = {
     "default": {
-        "hosts": [config("ELASTIC_SEARCH_URL")],
+        "hosts": [config("ELASTIC_SEARCH_URL", "")],
         "http_auth": ("elastic", ""),
         "timeout": 30,
         "retry_on_timeout": True,
-        "verify_certs": False,  # In production, you should use proper certificates
+        "verify_certs": False,  # TODO: In production, you should use proper certificates
     },
 }
 # ELASTICSEARCH_DSL_AUTOSYNC = False

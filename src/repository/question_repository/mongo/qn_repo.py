@@ -62,7 +62,6 @@ class MongoQuestionRepository(AbstractQuestionRepository):
         Raises:
             ValueError: If collection_name is empty.
         """
-        # TODO : write a decorator function for this validation
         if not collection_name:
             logger.error("Empty collection name provided")
             raise ValueError("Collection name cannot be empty")
