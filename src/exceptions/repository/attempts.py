@@ -17,11 +17,17 @@ class MaximumAttemptsExceededError(VirtuEducateBusinessError):
         message = f"User {user_id} exceeded maximum attempts ({max_attempts}) for question {question_id}"
         super().__init__(message, **kwargs)
 
-        self.user_id = user_id
-        self.question_id = question_id
-        self.max_attempts = max_attempts
-        self.current_attempts = current_attempts
-        self.error_code = "MAX_ATTEMPTS_EXCEEDED"
+        self.context = {
+            k: v
+            for k, v in {
+                "user_id": user_id,
+                "question_id": question_id,
+                "max_attempts": max_attempts,
+                "error_type": "MAX_ATTEMPTS_EXCEEDED",
+            }.items()
+            if v is not None
+        }
+        self.error_code = "422"
 
 
 class InvalidAttemptInputError(VirtuEducateValidationError):
@@ -40,7 +46,10 @@ class InvalidAttemptInputError(VirtuEducateValidationError):
             message += f" - invalid: {invalid_value}"
 
         super().__init__(message, **kwargs)
-        self.error_code = "INVALID_ATTEMPT_INPUT"
+        self.error_code = "400"
+        self.context = {
+            "error_type": "INVALID_ATTEMPT_INPUT",
+        }
 
 
 class InvalidScoreError(VirtuEducateValidationError):
@@ -52,15 +61,12 @@ class InvalidScoreError(VirtuEducateValidationError):
         )
         super().__init__(message, **kwargs)
 
-        self.score = score
-        self.min_score = min_score
-        self.max_score = max_score
-        self.error_code = "INVALID_SCORE"
+        self.error_code = "400"
 
         self.context = {
             "error_code": self.error_code,
             "score": score,
             "min_score": min_score,
             "max_score": max_score,
-            "error_type": "validation",
+            "error_type": "INVALID_SCORE",
         }

@@ -21,17 +21,15 @@ class QuestionNotFoundError(VirtuEducateValidationError):
 
         super().__init__(message, **kwargs)
 
-        self.question_id = question_id
-        self.user_id = user_id
-        self.collection = collection
-        self.error_code = "QUESTION_NOT_FOUND"
+        self.error_code = "400"
 
         self.context = {
-            "error_code": self.error_code,
-            "question_id": question_id,
-            "user_id": user_id,
-            "collection": collection,
-            "error_type": "not_found",
+            k: v
+            for k, v in {
+                "question_id": question_id,
+                "user_id": user_id,
+                "collection": collection,
+                "error_type": "QUESTION_NOT_FOUND",
+            }.items()
+            if v is not None
         }
-
-        self.context = {k: v for k, v in self.context.items() if v is not None}

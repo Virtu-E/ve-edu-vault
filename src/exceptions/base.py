@@ -24,7 +24,7 @@ class VirtuEducateError(Exception):
         super().__init__(self.message, *args)
 
     def __str__(self):
-        return f"[{self.error_code}] {self.message}"
+        return f"[{type(self).__name__}] {self.message}"
 
     def to_dict(self):
         """Convert exception to dictionary for API responses."""
