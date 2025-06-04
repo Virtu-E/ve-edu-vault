@@ -12,6 +12,15 @@ from .database.mongo import (
     MongoDbTemporaryConnectionError,
     MongoDbTemporaryOperationError,
 )
+from .integration.webhook import (
+    WebhookEventNotSupportedError,
+    WebhookJSONDecodeError,
+    WebhookMissingFieldError,
+    WebhookPayloadError,
+    WebhookSchemaValidationError,
+    WebhookValidationError,
+)
+from .library.scheduler import SchedulingError
 from .repository.attempts import (
     InvalidAttemptInputError,
     InvalidScoreError,
@@ -38,4 +47,13 @@ __all__ = [
     "InvalidScoreError",
     # Question
     "QuestionNotFoundError",
+    # Scheduler
+    "SchedulingError",
+    # webhooks
+    "WebhookValidationError",
+    "WebhookPayloadError",
+    "WebhookSchemaValidationError",
+    "WebhookMissingFieldError",
+    "WebhookJSONDecodeError",
+    "WebhookEventNotSupportedError",
 ]

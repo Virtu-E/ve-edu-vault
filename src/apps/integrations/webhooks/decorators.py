@@ -2,6 +2,7 @@ import logging
 from functools import wraps
 
 from django.http import JsonResponse
+from qstash.errors import SignatureError
 
 from src.library.scheduler.config import RECEIVER, get_webhook_url
 
@@ -34,7 +35,7 @@ def qstash_verification_required(view_func):
             logger.info("QStash signature verified successfully")
             return view_func(request, *args, **kwargs)
 
-        except Exception as e:
+        except SignatureError as e:
             logger.exception(f"QStash verification failed: {str(e)}")
             return JsonResponse({"error": "Unauthorized"}, status=401)
 

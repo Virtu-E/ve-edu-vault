@@ -1,5 +1,5 @@
 from collections import namedtuple
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from rest_framework import status
@@ -89,7 +89,7 @@ class UnifiedAPIErrorHandler(metaclass=ErrorHandlerMeta):
             success=False,
             errors=[error_detail],
             request_id=request_id,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
 
         return ErrorResult(status=http_status, response=error_response)
