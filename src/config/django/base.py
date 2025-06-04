@@ -16,23 +16,28 @@ from pathlib import Path
 from decouple import config
 from django.core.exceptions import ImproperlyConfigured
 
+# =============================================================================
+# CORE SETTINGS
+# =============================================================================
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-MONGO_URL = config("MONGO_URL")
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-
 DEBUG = config("DEBUG", default=False, cast=bool)
 SECRET_KEY = config("SECRET_KEY", default="dev-key-only-for-local")
+
 if not SECRET_KEY or SECRET_KEY == "dev-key-only-for-local":
     if not DEBUG:
         raise ImproperlyConfigured("SECRET_KEY must be set in production")
 
-EDX_AUTH_MODEL = "users.EdxUser"
+# Site Configuration
+SITE_URL = config("SITE_URL")
+FRONT_END_URL = config("FRONT_END_URL")
 
+# =============================================================================
+# APPLICATION DEFINITION
+# =============================================================================
 
 DJANGO_APPS = [
     "django.contrib.admin",
@@ -82,34 +87,9 @@ INSTALLED_APPS = [
     *LEARNING_TOOLS_APPS,
 ]
 
-
-# TODO : csrf protection vs authentication
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "knox.auth.TokenAuthentication",
-        "oauth2_provider.contrib.rest_framework.OAuth2Authentication",
-    ),
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-}
-
-# TODO : need to sync the token expiry time with edx token expiry time
-REST_KNOX = {
-    "TOKEN_TTL": timedelta(hours=8),
-    "AUTO_REFRESH": True,
-    "AUTO_REFRESH_MAX_TTL": timedelta(days=30),
-    "MIN_REFRESH_INTERVAL": 300,
-    "TOKEN_LIMIT_PER_USER": 10,
-}
-
-OAUTH2_PROVIDER = {
-    "SCOPES": {
-        "read": "Read scope",
-        "write": "Write scope",
-        "edx_login": "EDX Login scope",
-    },
-    "ACCESS_TOKEN_EXPIRE_SECONDS": 3600,
-    "REFRESH_TOKEN_EXPIRE_SECONDS": 86400,
-}
+# =============================================================================
+# MIDDLEWARE
+# =============================================================================
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -122,6 +102,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# =============================================================================
+# URL & TEMPLATE CONFIGURATION
+# =============================================================================
 
 ROOT_URLCONF = "src.config.urls"
 
@@ -141,13 +124,14 @@ TEMPLATES = [
     },
 ]
 
-STATICFILES_DIRS = [BASE_DIR / "static"]
+# =============================================================================
+# AUTHENTICATION & AUTHORIZATION
+# =============================================================================
 
-WSGI_APPLICATION = "src.config.wsgi.application"
+# Custom User Model
+EDX_AUTH_MODEL = "users.EdxUser"
 
 # Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -163,7 +147,72 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# TODO : set more app specific logging
+# =============================================================================
+# REST FRAMEWORK & API CONFIGURATION
+# =============================================================================
+
+# TODO: csrf protection vs authentication
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "knox.auth.TokenAuthentication",
+        "oauth2_provider.contrib.rest_framework.OAuth2Authentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+}
+
+# Knox Token Authentication
+# TODO: need to sync the token expiry time with edx token expiry time
+REST_KNOX = {
+    "TOKEN_TTL": timedelta(hours=8),
+    "AUTO_REFRESH": True,
+    "AUTO_REFRESH_MAX_TTL": timedelta(days=30),
+    "MIN_REFRESH_INTERVAL": 300,
+    "TOKEN_LIMIT_PER_USER": 10,
+}
+
+# OAuth2 Provider
+OAUTH2_PROVIDER = {
+    "SCOPES": {
+        "read": "Read scope",
+        "write": "Write scope",
+        "edx_login": "EDX Login scope",
+    },
+    "ACCESS_TOKEN_EXPIRE_SECONDS": 3600,
+    "REFRESH_TOKEN_EXPIRE_SECONDS": 86400,
+}
+
+# =============================================================================
+# DATABASE CONFIGURATION
+# =============================================================================
+
+# MongoDB Configuration
+MONGO_URL = config("MONGO_URL")
+NO_SQL_DATABASE_NAME = config("NO_SQL_DATABASE_NAME")
+NO_SQL_QUESTIONS_DATABASE_NAME = config("NO_SQL_QUESTIONS_DATABASE_NAME")
+NO_SQL_ATTEMPTS_DATABASE = config("NO_SQL_ATTEMPTS_DATABASE")
+NO_SQL_GRADING_RESPONSE_DATABASE_NAME = config("NO_SQL_GRADING_RESPONSE_DATABASE_NAME")
+
+# =============================================================================
+# STATIC FILES & MEDIA
+# =============================================================================
+
+STATIC_URL = "static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# =============================================================================
+# INTERNATIONALIZATION
+# =============================================================================
+
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
+USE_I18N = True
+USE_TZ = True
+
+# =============================================================================
+# LOGGING CONFIGURATION
+# =============================================================================
+
+# TODO: set more app specific logging
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -206,48 +255,14 @@ LOGGING = {
     },
 }
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
+# =============================================================================
+# CELERY CONFIGURATION
+# =============================================================================
 
-LANGUAGE_CODE = "en-us"
-
-TIME_ZONE = "UTC"
-
-USE_I18N = True
-
-USE_TZ = True
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
-STATIC_URL = "static/"
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-
-SITE_URL = config("SITE_URL")
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# TODO : thinking of using getattr when accessing this. Food for thought
-NO_SQL_DATABASE_NAME = config("NO_SQL_DATABASE_NAME")
-NO_SQL_QUESTIONS_DATABASE_NAME = config("NO_SQL_QUESTIONS_DATABASE_NAME")
-NO_SQL_ATTEMPTS_DATABASE = config("NO_SQL_ATTEMPTS_DATABASE")
-NO_SQL_GRADING_RESPONSE_DATABASE_NAME = config("NO_SQL_GRADING_RESPONSE_DATABASE_NAME")
-MINIMUM_QUESTIONS_THRESHOLD = 9
-COMPLETION_THRESHOLD = 2 / 3
-
-ENCRYPTION_KEY = config("ENCRYPTION_KEY")
-LTI_LAUNCH_URL = config("LTI_LAUNCH_URL")
-LEARNING_HISTORY_COLLECTION_NAME = "learning_history"
-
-
-# CELERY SETTINGS
 CELERY_BROKER_URL = config("CELERY_BROKER_URL")
 CELERY_RESULT_BACKEND = config("CELERY_BROKER_URL")
 
-# Redis configuration
-
+# Celery Task Configuration
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -259,18 +274,47 @@ CELERY_TASK_TRACK_STARTED = True
 # Store task results for 7 days
 CELERY_RESULT_EXPIRES = 60 * 60 * 24 * 7
 
+# Connection Configuration
 CELERY_BROKER_POOL_LIMIT = 10  # Or more if needed
 CELERY_BROKER_CONNECTION_TIMEOUT = 5
 
-# QSTASH CONFIGURATION
+# =============================================================================
+# THIRD-PARTY SERVICE CONFIGURATION
+# =============================================================================
+
+# QStash Configuration
 QSTASH_URL = config("QSTASH_URL")
 QSTASH_TOKEN = config("QSTASH_TOKEN")
 QSTASH_CURRENT_SIGNING_KEY = config("QSTASH_CURRENT_SIGNING_KEY")
 QSTASH_NEXT_SIGNING_KEY = config("QSTASH_NEXT_SIGNING_KEY")
 
-FRONT_END_URL = config("FRONT_END_URL")
+# LTI Configuration
+LTI_LAUNCH_URL = config("LTI_LAUNCH_URL")
 
+# Encryption
+ENCRYPTION_KEY = config("ENCRYPTION_KEY")
+
+# =============================================================================
+# APPLICATION-SPECIFIC SETTINGS
+# =============================================================================
+
+# Learning Configuration
+MINIMUM_QUESTIONS_THRESHOLD = 9
+COMPLETION_THRESHOLD = 2 / 3
+LEARNING_HISTORY_COLLECTION_NAME = "learning_history"
+
+# =============================================================================
+# DJANGO DEFAULTS
+# =============================================================================
+
+WSGI_APPLICATION = "src.config.wsgi.application"
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# =============================================================================
+# EXTERNAL CONFIGURATION IMPORTS
+# =============================================================================
+
+# ElasticSearch Configuration
 # 'use_ssl': True,
 # 'verify_certs': True,
-
 from src.config.settings.elastic_search import *  # noqa
