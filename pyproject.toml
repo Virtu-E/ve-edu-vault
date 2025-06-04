@@ -29,8 +29,7 @@ core = [
 ]
 database = [
     "django-elasticsearch-dsl>=8.0",
-    "motor>=3.7.0",
-    "pymongo>=4.10.1",
+    "pymongo>=4.13.0",
 ]
 lint = [
     "black>=24.10.0",

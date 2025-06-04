@@ -13,11 +13,11 @@ class EdxLoginView(KnoxLoginView):
         username = request.data.get("username")
 
         if not username:
-            return Response({"error": "Username required"}, status=400)
+            return Response({"message": "Username required","error_code" : "400"}, status=400)
 
         try:
             user = EdxUser.objects.get(username=username, active=True)
             request.user = user
             return super().post(request, format)
         except EdxUser.DoesNotExist:
-            return Response({"error": "Invalid credentials"}, status=401)
+            return Response({"message": "Invalid credentials", "error_code" : "401"}, status=401)

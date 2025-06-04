@@ -5,7 +5,6 @@ from uuid import UUID
 from bson.binary import UUID_SUBTYPE, Binary
 
 from src.repository.question_repository.data_types import Question
-from src.repository.question_repository.exceptions import QuestionAttemptError
 from src.repository.student_attempts.data_types import StudentQuestionAttempt
 from src.repository.student_attempts.mongo.attempts_repo import MongoAttemptRepository
 from src.repository.student_attempts.providers.data_types import (
@@ -100,41 +99,34 @@ class BulkAttemptProvider:
         Returns:
             Number of attempt records created
         """
-        try:
-            logger.info(
-                f"Starting bulk creation of unanswered attempts for user: {student_user_id}, "
-                f"assessment: {assessment_id}, total questions: {len(unanswered_questions)}"
-            )
+        logger.info(
+            f"Starting bulk creation of unanswered attempts for user: {student_user_id}, "
+            f"assessment: {assessment_id}, total questions: {len(unanswered_questions)}"
+        )
 
-            documents_to_insert = self._build_bulk_unanswered_documents(
-                student_user_id=student_user_id,
-                unanswered_questions=unanswered_questions,
-                assessment_id=assessment_id,
-            )
+        documents_to_insert = self._build_bulk_unanswered_documents(
+            student_user_id=student_user_id,
+            unanswered_questions=unanswered_questions,
+            assessment_id=assessment_id,
+        )
 
-            if not documents_to_insert:
-                logger.info(f"No documents to insert for user: {student_user_id}")
-                return 0
+        if not documents_to_insert:
+            logger.info(f"No documents to insert for user: {student_user_id}")
+            return 0
 
-            bulk_insertion_result = await self.attempt_repository.save_bulk_attempt(
-                data=documents_to_insert,
-                collection_name=self.collection_name,
-            )
+        bulk_insertion_result = await self.attempt_repository.save_bulk_attempt(
+            data=documents_to_insert,
+            collection_name=self.collection_name,
+        )
 
-            records_created = len(documents_to_insert) if bulk_insertion_result else 0
+        records_created = len(documents_to_insert) if bulk_insertion_result else 0
 
-            logger.info(
-                f"Bulk creation completed for user: {student_user_id}. "
-                f"Created {records_created} unanswered attempt records"
-            )
+        logger.info(
+            f"Bulk creation completed for user: {student_user_id}. "
+            f"Created {records_created} unanswered attempt records"
+        )
 
-            return records_created
-
-        except Exception as e:
-            logger.error(f"Failed to bulk create unanswered attempts: {e}")
-            raise QuestionAttemptError(
-                f"Database error bulk creating unanswered attempts for user {student_user_id}"
-            ) from e
+        return records_created
 
     async def get_bulk_qn_attempts(
         self, user_id: int, assessment_id: UUID

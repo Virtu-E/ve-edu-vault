@@ -2,12 +2,9 @@ import logging
 from typing import List
 
 from src.apps.learning_tools.questions.models import QuestionSet
+from src.exceptions import QuestionNotFoundError
 from src.repository.question_repository.base_repo import AbstractQuestionRepository
 from src.repository.question_repository.data_types import Question
-from src.repository.question_repository.exceptions import (
-    QuestionAttemptError,
-    QuestionNotFoundError,
-)
 from src.repository.question_repository.mongo.qn_repo import MongoQuestionRepository
 from src.utils.mixins.question_mixin import QuestionSetResources
 
@@ -50,34 +47,25 @@ class QuestionProvider:
         Returns:
             List[Dict]: Serialized Question objects
 
-        Raises:
-            QuestionAttemptError: If questions cannot be retrieved
         """
-        try:
-            if not question_set_ids:
-                logger.warning("Empty question_set_ids provided")
-                return []
+        if not question_set_ids:
+            logger.warning("Empty question_set_ids provided")
+            return []
 
-            logger.debug(
-                f"Retrieving {len(question_set_ids)} questions from collection {self._collection_name}"
-            )
+        logger.debug(
+            f"Retrieving {len(question_set_ids)} questions from collection {self._collection_name}"
+        )
 
-            questions = await self._question_repo.get_questions_by_ids(
-                collection_name=self._collection_name, question_ids=question_set_ids
-            )
+        questions = await self._question_repo.get_questions_by_ids(
+            collection_name=self._collection_name, question_ids=question_set_ids
+        )
 
-            if not questions:
-                logger.warning("No questions found for provided IDs")
-                return []
+        if not questions:
+            logger.warning("No questions found for provided IDs")
+            return []
 
-            logger.info(f"Successfully retrieved {len(questions)} questions")
-            return questions
-
-        except Exception as e:
-            logger.error(f"Failed to retrieve questions: {e}")
-            raise QuestionAttemptError(
-                "Failed to retrieve questions from database"
-            ) from e
+        logger.info(f"Successfully retrieved {len(questions)} questions")
+        return questions
 
     async def get_question_by_id(self, question_id: str) -> Question:
         """
@@ -89,37 +77,26 @@ class QuestionProvider:
         Returns:
             Question: The retrieved question
 
-        Raises:
-            QuestionNotFoundError: If question is not found
-            QuestionAttemptError: If retrieval fails
+
         """
-        try:
-            if not question_id:
-                raise QuestionNotFoundError("Question ID cannot be empty")
+        if not question_id:
+            raise ValueError("Question ID cannot be empty")
 
-            logger.debug(
-                f"Retrieving question {question_id} from collection {self._collection_name}"
+        logger.debug(
+            f"Retrieving question {question_id} from collection {self._collection_name}"
+        )
+
+        question = await self._question_repo.get_question_by_single_id(
+            collection_name=self._collection_name, question_id=question_id
+        )
+
+        if not question:
+            raise QuestionNotFoundError(
+                question_id=question_id, collection_name=self._collection_name
             )
 
-            question = await self._question_repo.get_question_by_single_id(
-                collection_name=self._collection_name, question_id=question_id
-            )
-
-            if not question:
-                raise QuestionNotFoundError(
-                    f"Question {question_id} not found in collection {self._collection_name}"
-                )
-
-            logger.debug(f"Successfully retrieved question: {question_id}")
-            return question
-
-        except QuestionNotFoundError:
-            raise
-        except Exception as e:
-            logger.error(f"Failed to retrieve question {question_id}: {e}")
-            raise QuestionAttemptError(
-                f"Database error retrieving question {question_id}"
-            ) from e
+        logger.debug(f"Successfully retrieved question: {question_id}")
+        return question
 
     @classmethod
     def get_mongo_provider(

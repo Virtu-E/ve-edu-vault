@@ -3,7 +3,6 @@ from typing import Any, Dict, Optional
 from uuid import UUID
 
 from src.repository.question_repository.data_types import Question
-from src.repository.question_repository.exceptions import QuestionAttemptError
 
 from ..data_types import StudentQuestionAttempt
 from ..mongo.attempts_repo import MongoAttemptRepository
@@ -26,6 +25,7 @@ class StudentAttemptProvider:
         attempt_repository: MongoAttemptRepository,
         collection_name: str,
         grading_config: Optional[GradingConfig] = None,
+        validation_service: Optional[AttemptValidationService] = None,
     ) -> None:
         """
         Initialize attempt provider with repository and configuration.
@@ -38,7 +38,9 @@ class StudentAttemptProvider:
         self.attempt_repository = attempt_repository
         self.collection_name = collection_name
         self.grading_config = grading_config or GradingConfig()
-        self.attempt_validator = AttemptValidationService(self.grading_config)
+        self.attempt_validator = validation_service or AttemptValidationService(
+            self.grading_config
+        )
 
         logger.info(
             f"StudentAttemptProvider initialized with collection: {collection_name}, "
@@ -63,34 +65,21 @@ class StudentAttemptProvider:
         Returns:
             Existing attempt data if found, None otherwise
         """
-        try:
-            self.attempt_validator.validate_retrieval_inputs(
-                student_user_id, question_id
-            )
+        self.attempt_validator.validate_retrieval_inputs(student_user_id, question_id)
 
-            logger.debug(
-                f"Retrieving attempt for user: {student_user_id}, question: {question_id}"
-            )
+        logger.debug(
+            f"Retrieving attempt for user: {student_user_id}, question: {question_id}"
+        )
 
-            existing_attempt = (
-                await self.attempt_repository.get_question_attempt_single(
-                    user_id=student_user_id,
-                    assessment_id=assessment_id,
-                    question_id=question_id,
-                    collection_name=self.collection_name,
-                )
-            )
+        existing_attempt = await self.attempt_repository.get_question_attempt_single(
+            user_id=student_user_id,
+            assessment_id=assessment_id,
+            question_id=question_id,
+            collection_name=self.collection_name,
+        )
 
-            logger.debug(f"Found attempt: {existing_attempt is not None}")
-            return existing_attempt
-
-        except QuestionAttemptError:
-            raise
-        except Exception as e:
-            logger.error(f"Failed to retrieve question attempt: {e}")
-            raise QuestionAttemptError(
-                f"Database error retrieving attempt for question {question_id}"
-            ) from e
+        logger.debug(f"Found attempt: {existing_attempt is not None}")
+        return existing_attempt
 
     def _build_attempt_update_data(
         self,
@@ -148,43 +137,32 @@ class StudentAttemptProvider:
             attempt_score: Numerical score achieved
             existing_attempt: Previous attempt data if exists
         """
-        try:
-            self.attempt_validator.validate_attempt_inputs(
-                student_user_id, question, attempt_score
-            )
-            self.attempt_validator.validate_attempt_limits(
-                existing_attempt, question.id
-            )
+        self.attempt_validator.validate_attempt_inputs(
+            student_user_id, question, attempt_score
+        )
+        self.attempt_validator.validate_attempt_limits(existing_attempt, question.id)
 
-            logger.info(
-                f"Saving attempt for user: {student_user_id}, question: {question.id}, "
-                f"correct: {is_answer_correct}, score: {attempt_score}"
-            )
+        logger.info(
+            f"Saving attempt for user: {student_user_id}, question: {question.id}, "
+            f"correct: {is_answer_correct}, score: {attempt_score}"
+        )
 
-            update_operation = self._build_attempt_update_data(
-                student_user_id=student_user_id,
-                question=question,
-                is_answer_correct=is_answer_correct,
-                attempt_score=attempt_score,
-                existing_attempt=existing_attempt,
-            )
+        update_operation = self._build_attempt_update_data(
+            student_user_id=student_user_id,
+            question=question,
+            is_answer_correct=is_answer_correct,
+            attempt_score=attempt_score,
+            existing_attempt=existing_attempt,
+        )
 
-            await self.attempt_repository.save_attempt(
-                user_id=student_user_id,
-                question_id=question.id,
-                assessment_id=assessment_id,
-                update=update_operation,
-                collection_name=self.collection_name,
-            )
+        await self.attempt_repository.save_attempt(
+            user_id=student_user_id,
+            question_id=question.id,
+            assessment_id=assessment_id,
+            update=update_operation,
+            collection_name=self.collection_name,
+        )
 
-            logger.debug(
-                f"Attempt saved successfully for user: {student_user_id}, question: {question.id}"
-            )
-
-        except QuestionAttemptError:
-            raise
-        except Exception as e:
-            logger.error(f"Failed to save attempt: {e}")
-            raise QuestionAttemptError(
-                f"Database error saving attempt for question {question.id}"
-            ) from e
+        logger.debug(
+            f"Attempt saved successfully for user: {student_user_id}, question: {question.id}"
+        )

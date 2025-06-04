@@ -15,7 +15,7 @@ from src.repository.graded_responses.base_repo import AbstractGradingResponseRep
 
 from ..data_types import GradedResponse
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class MongoGradingResponseRepository(AbstractGradingResponseRepository):
@@ -46,7 +46,7 @@ class MongoGradingResponseRepository(AbstractGradingResponseRepository):
         """
         self.database_engine = database_engine
         self.database_name = database_name
-        log.info(
+        logger.info(
             "Initialized MongoGradingResponseRepository with database '%s'",
             database_name,
         )
@@ -163,15 +163,14 @@ class MongoGradingResponseRepository(AbstractGradingResponseRepository):
         """
         database_name = getattr(base, "NO_SQL_GRADING_RESPONSE_DATABASE_NAME", None)
         if database_name is None:
-            log.error(
+            logger.error(
                 "NO_SQL_GRADING_RESPONSE_DATABASE_NAME not configured in settings"
             )
-            # TODO: raise custom error exception here for better details
             raise RuntimeError(
                 "NO_SQL_GRADING_RESPONSE_DATABASE_NAME not configured in settings"
             )
 
-        log.info("Creating MongoGradingResponseRepository instance")
+        logger.info("Creating MongoGradingResponseRepository instance")
 
         return MongoGradingResponseRepository(
             database_engine=mongo_database,

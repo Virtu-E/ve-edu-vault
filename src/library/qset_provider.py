@@ -70,7 +70,9 @@ class QuestionSetResourceProvider(UserResourceContextMixin):
                 question_id,
                 self._user,
             )
-            raise QuestionNotFoundError(question_id, self._user)
+
+            raise QuestionNotFoundError(question_id = question_id, user_id= self._user.id, collection = self._collection_name,)
+
         return True
 
     def get_resources(self) -> Resources:

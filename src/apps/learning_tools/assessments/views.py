@@ -4,12 +4,12 @@ import uuid
 from rest_framework import status
 from rest_framework.response import Response
 
+from src.exceptions import SchedulingError, UserQuestionSetNotFoundError
 from src.utils.mixins.question_mixin import QuestionSetMixin
 from src.utils.views.base import CustomAPIView
 
-from .exceptions import SchedulingError, UserQuestionSetNotFoundError
 from .serializers import AssessmentGradingSerializer, AssessmentSerializer
-from .services.assessment_grading.assessment_completion import grade_assessment
+from .services.assessment_grader import grade_assessment
 from .services.assessment_start_service import start_assessment
 from .services.assessment_view_service import get_current_ongoing_assessment
 
@@ -33,10 +33,8 @@ class AssessmentCompletionView(QuestionSetMixin, CustomAPIView):
             )
 
             return Response(grading_result.model_dump(), status=status.HTTP_200_OK)
-        except UserQuestionSetNotFoundError:
-            pass
-
-        return Response(status=status.HTTP_200_OK)
+        except UserQuestionSetNotFoundError as e:
+            return Response(e.to_dict(), status=status.HTTP_404_NOT_FOUND)
 
 
 class AssessmentStartView(QuestionSetMixin, CustomAPIView):
@@ -63,10 +61,7 @@ class AssessmentStartView(QuestionSetMixin, CustomAPIView):
             )
 
         except SchedulingError as e:
-            return Response(
-                data={"message": e.message},
-                status=status.HTTP_408_REQUEST_TIMEOUT,
-            )
+            return Response(data=e.to_dict(), status=status.HTTP_400_BAD_REQUEST)
 
 
 class ActiveAssessmentView(QuestionSetMixin, CustomAPIView):
@@ -107,10 +102,5 @@ class ActiveAssessmentView(QuestionSetMixin, CustomAPIView):
                 },
                 status=status.HTTP_200_OK,
             )
-        except UserQuestionSetNotFoundError:
-            return Response(
-                data={
-                    "message": "Unable to retrieve questions. Please contact support."
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        except UserQuestionSetNotFoundError as e:
+            return Response(e.to_dict(), status=status.HTTP_404_NOT_FOUND)

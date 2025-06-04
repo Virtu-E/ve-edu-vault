@@ -14,7 +14,6 @@ from django.db import OperationalError, transaction
 
 from src.apps.core.content.models import SubTopic, Topic
 from src.apps.core.courses.models import AcademicClass, Course, ExaminationLevel
-from src.exceptions import InvalidChangeDataTypeError
 
 from ..course_sync.data_types import (
     ChangeOperation,
@@ -23,8 +22,9 @@ from ..course_sync.data_types import (
     OperationType,
     SubTopicChangeData,
 )
+from ...exceptions import InvalidChangeDataTypeError
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class ChangeStrategy(ABC):
@@ -63,21 +63,21 @@ class CreateStrategy(ChangeStrategy):
         entity_id = change.entity_id
         data = change.data
 
-        log.info("Creating %s with ID %s ", entity_type.name, entity_id)
+        logger.info("Creating %s with ID %s ", entity_type.name, entity_id)
 
         if entity_type == EntityType.TOPIC:
             return self._create_topic(entity_id, data)
         if entity_type == EntityType.SUBTOPIC:
             return self._create_subtopic(entity_id, data)
 
-        log.error("Unsupported entity type for CREATE: %s", entity_type)
+        logger.error("Unsupported entity type for CREATE: %s", entity_type)
         return False
 
     def _create_topic(
         self, block_id: str, topic_data: SubTopicChangeData | CourseChangeData
     ) -> bool:
         """Implement topic creation logic"""
-        log.info("Creating topic: %s", block_id)
+        logger.info("Creating topic: %s", block_id)
         Topic.objects.get_or_create(
             block_id=block_id,
             defaults={
@@ -94,7 +94,7 @@ class CreateStrategy(ChangeStrategy):
         block_id: str, subtopic_data: Union[SubTopicChangeData, CourseChangeData]
     ) -> bool:
         """Implement subtopic creation logic"""
-        log.info("Creating subtopic: %s", block_id)
+        logger.info("Creating subtopic: %s", block_id)
 
         if not isinstance(subtopic_data, SubTopicChangeData):
             raise InvalidChangeDataTypeError(
@@ -124,7 +124,7 @@ class UpdateStrategy(ChangeStrategy):
         entity_id = change.entity_id
         data = change.data
 
-        log.info(f"Updating {entity_type.name} with ID {entity_id}")
+        logger.info(f"Updating {entity_type.name} with ID {entity_id}")
 
         if entity_type == EntityType.COURSE:
             return self._update_course(entity_id, data)
@@ -133,7 +133,7 @@ class UpdateStrategy(ChangeStrategy):
         elif entity_type == EntityType.SUBTOPIC:
             return self._update_subtopic(entity_id, data)
 
-        log.error(f"Unsupported entity type for UPDATE: {entity_type}")
+        logger.error(f"Unsupported entity type for UPDATE: {entity_type}")
         return False
 
     @staticmethod
@@ -141,7 +141,7 @@ class UpdateStrategy(ChangeStrategy):
         course_id: str, course_data: SubTopicChangeData | CourseChangeData
     ):
         """Updates course data"""
-        log.info("Updating course: %s", course_id)
+        logger.info("Updating course: %s", course_id)
 
         if not isinstance(course_data, CourseChangeData):
             raise InvalidChangeDataTypeError(
@@ -159,7 +159,7 @@ class UpdateStrategy(ChangeStrategy):
     @staticmethod
     def _update_topic(block_id: str, topic_data: SubTopicChangeData | CourseChangeData):
         """Updates topic data"""
-        log.info(f"Updating topic: {block_id}")
+        logger.info(f"Updating topic: {block_id}")
 
         topic = Topic.objects.get(block_id=block_id)
         topic.name = topic_data.name
@@ -171,7 +171,7 @@ class UpdateStrategy(ChangeStrategy):
         block_id: str, subtopic_data: SubTopicChangeData | CourseChangeData
     ):
         """Updates subtopic data"""
-        log.info(f"Updating subtopic: {block_id}")
+        logger.info(f"Updating subtopic: {block_id}")
 
         subtopic = SubTopic.objects.get(block_id=block_id)
         subtopic.name = subtopic_data.name
@@ -188,7 +188,7 @@ class DeleteStrategy(ChangeStrategy):
         entity_type = change.entity_type
         entity_id = change.entity_id
 
-        log.info(f"Deleting {entity_type.name} with ID {entity_id}")
+        logger.info(f"Deleting {entity_type.name} with ID {entity_id}")
 
         if entity_type == EntityType.COURSE:
             return self._delete_course(entity_id)
@@ -197,13 +197,13 @@ class DeleteStrategy(ChangeStrategy):
         elif entity_type == EntityType.SUBTOPIC:
             return self._delete_subtopic(entity_id)
         else:
-            log.error(f"Unsupported entity type for DELETE: {entity_type}")
+            logger.error(f"Unsupported entity type for DELETE: {entity_type}")
             return False
 
     @staticmethod
     def _delete_course(course_id: str) -> bool:
         """Deletion of a course"""
-        log.info(f"Deleting course: {course_id}")
+        logger.info(f"Deleting course: {course_id}")
         course = Course.objects.get(id=course_id)
         course.delete()
         return True
@@ -211,7 +211,7 @@ class DeleteStrategy(ChangeStrategy):
     @staticmethod
     def _delete_topic(block_id: str) -> bool:
         """deletion of a topic"""
-        log.info(f"Deleting topic: {block_id}")
+        logger.info(f"Deleting topic: {block_id}")
         topic = Topic.objects.get(block_id=block_id)
         topic.delete()
 
@@ -220,7 +220,7 @@ class DeleteStrategy(ChangeStrategy):
     @staticmethod
     def _delete_subtopic(block_id: str) -> bool:
         """Implement subtopic deletion logic"""
-        log.info(f"Deleting subtopic: {block_id}")
+        logger.info(f"Deleting subtopic: {block_id}")
         subtopic = SubTopic.objects.get(block_id=block_id)
         subtopic.delete()
         return True
@@ -263,7 +263,7 @@ class ChangeProcessor:
         failed_changes = []
 
         for change in changes:
-            log.info(
+            logger.info(
                 f"Processing: Operation={change.operation.name}, Entity={change.entity_type.name}, ID={change.entity_id}"
             )
 
@@ -272,27 +272,27 @@ class ChangeProcessor:
                 if strategy:
                     success = strategy.process(change)
                     if not success:
-                        log.error(
+                        logger.error(
                             f"Failed to process change: {change.operation.name} {change.entity_type.name} {change.entity_id}",
                             exc_info=True,
                         )
                         failed_changes.append(change)
                 else:
-                    log.error(
+                    logger.error(
                         f"No strategy found for operation type: {change.operation}",
                         exc_info=True,
                     )
                     failed_changes.append(change)
 
             except (Topic.DoesNotExist, Course.DoesNotExist, SubTopic.DoesNotExist):
-                log.error(
+                logger.error(
                     f"No strategy found for operation type: {change.operation}",
                     exc_info=True,
                 )
                 failed_changes.append(change)
 
             except OperationalError:
-                log.warning(
+                logger.warning(
                     "Database is probably locked. Need to fix this by hashing event types from webhooks"
                 )
 

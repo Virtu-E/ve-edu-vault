@@ -2,6 +2,7 @@ import logging
 from typing import Any, Dict, Tuple
 
 from src.apps.core.courses.models import AcademicClass, Course, ExaminationLevel
+from src.exceptions import WebhookMissingFieldError
 from src.library.course_sync.course_sync import ChangeResult, CourseSyncService
 from src.library.course_sync.data_transformer import EdxDataTransformer
 from src.library.course_sync.data_types import EdxCourseOutline
@@ -14,7 +15,7 @@ from ..data_types import WebhookRequest
 from ..tasks import process_course_update
 from .abstract_type import WebhookHandler, WebhookResponse
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class CourseUpdatedHandlerCelery(WebhookHandler):
@@ -106,10 +107,12 @@ class CourseUpdatedHandler(WebhookHandler):
             return course_instance, created
 
         except KeyError as e:
-            log.error(
+            logger.error(
                 f"Error creating/updating course {course_id}: {str(e)}", exc_info=True
             )
-            raise KeyError(f"Failed to create/update course: {str(e)}") from e
+            raise WebhookMissingFieldError(
+                field_name="course_id",
+            ) from e
 
     @staticmethod
     def _process_academic_class(course_id: str) -> AcademicClass:
@@ -127,7 +130,7 @@ class CourseUpdatedHandler(WebhookHandler):
             name=academic_class
         )
         if created:
-            log.info(f"Created new academic class: {academic_class}")
+            logger.info(f"Created new academic class: {academic_class}")
         return academic_class_instance
 
     def _sync_course_structure(
