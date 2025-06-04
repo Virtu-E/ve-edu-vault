@@ -27,6 +27,8 @@ from .repository.attempts import (
     MaximumAttemptsExceededError,
 )
 from .repository.questions import QuestionNotFoundError
+from .library.assessments import UserQuestionSetNotFoundError
+from .library.course_sync import InvalidChangeDataTypeError
 
 __all__ = [
     # Base
@@ -56,4 +58,8 @@ __all__ = [
     "WebhookMissingFieldError",
     "WebhookJSONDecodeError",
     "WebhookEventNotSupportedError",
+    #assessment
+    "UserQuestionSetNotFoundError",
+    #course sync
+    "InvalidChangeDataTypeError",
 ]

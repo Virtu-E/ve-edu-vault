@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from src.apps.core.content.models import LearningObjective, SubTopic
 from src.apps.core.users.models import EdxUser
 from src.apps.learning_tools.questions.models import DefaultQuestionSet, UserQuestionSet
-from src.exceptions import ParsingError, ValidationError
+from src.exceptions import VirtuEducateValidationError
 
 log = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ class UserResourceContextMixin:
         """
         if not isinstance(sub_topic, SubTopic):
             log.error("Invalid topic instance: not a SubTopic object")
-            raise ValidationError("Invalid topic instance: expected SubTopic object")
+            raise VirtuEducateValidationError("Invalid topic instance: expected SubTopic object")
 
         course_id = sub_topic.topic.course.course_key
         if not course_id:
@@ -93,7 +93,7 @@ class UserResourceContextMixin:
                 "Could not find database collection associated with the course ID: %s",
                 course_id,
             )
-            raise ParsingError(
-                f"Could not find database collection associated with the course ID: {course_id}"
-            )
+            raise VirtuEducateValidationError(f"Could not find database collection associated with the course ID: {course_id}")
+
+
         return course_id

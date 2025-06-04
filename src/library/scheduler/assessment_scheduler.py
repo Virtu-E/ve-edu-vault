@@ -5,10 +5,12 @@ from datetime import datetime, timedelta
 from typing import List, Union
 
 from qstash.message import PublishResponse, PublishUrlGroupResponse
+from qstash.errors import QStashError, RateLimitExceededError, ChatRateLimitExceededError, DailyMessageLimitExceededError
 
 from ...apps.integrations.webhooks.data_types import WebhookRequest
 from ...apps.integrations.webhooks.registry import HandlerTypeEnum
 from .config import QSTASH, get_webhook_url
+from ...exceptions import SchedulingError
 
 logger = logging.getLogger(__name__)
 
@@ -64,18 +66,29 @@ def schedule_test_assessment(
         data.assessment_duration_seconds,
         end_time.isoformat(),
     )
+    try:
+        response = QSTASH.message.publish(
+            url=get_webhook_url(),
+            body=json.dumps(scheduled_data.model_dump(mode="json")),
+            delay=data.assessment_duration_seconds,
+            retries=3,
+        )
+        logger.info(
+            "Assessment expiration scheduled - ID: %s, QStash message ID: %s",
+            data.assessment_id,
+            response,
+        )
+        return response
+    except (QStashError, RateLimitExceededError, ChatRateLimitExceededError, DailyMessageLimitExceededError) as e:
+        raise SchedulingError(
+            message=f"Failed to schedule assessment expiration: {str(e)}",
+            assessment_id=data.assessment_id,
+            student_id=data.student_id,
+            duration_seconds=data.assessment_duration_seconds,
+            qstash_error=str(e),
+            webhook_url=get_webhook_url()
+        ) from e
 
-    response = QSTASH.message.publish(
-        url=get_webhook_url(),
-        body=json.dumps(scheduled_data.model_dump(mode="json")),
-        delay=data.assessment_duration_seconds,
-        retries=3,
-    )
 
-    logger.info(
-        "Assessment expiration scheduled - ID: %s, QStash message ID: %s",
-        data.assessment_id,
-        response,
-    )
 
-    return response
+

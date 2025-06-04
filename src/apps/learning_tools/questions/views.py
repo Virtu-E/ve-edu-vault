@@ -3,20 +3,18 @@ import logging
 from rest_framework import status
 from rest_framework.response import Response
 
-from src.exceptions import QuestionNotFoundError
+from src.exceptions import QuestionNotFoundError, MaximumAttemptsExceededError
 from src.utils.mixins.question_mixin import QuestionSetMixin
 from src.utils.views.base import CustomAPIView
 
-from .exceptions import GradingError, MaximumAttemptsError, QuestionAttemptError
 from .serializers import QuestionSerializer, UserQuestionAttemptSerializer
-from .services.graded_responses import get_graded_responses
+from .services.graded_responses import get_graded_responses_for_current_assessment
 from .services.question_fetch_service import fetch_student_questions
-from .services.question_grader.grading_mediator import grade_student_submission
+from .services.question_grader.qn_grading_service import grade_student_submission
 
 logger = logging.getLogger(__name__)
 
 
-# TODO : catch question not found error
 class StudentQuestionSetView(QuestionSetMixin, CustomAPIView):
     """API view to retrieve questions for a specific student and learning_objective."""
 
@@ -86,8 +84,9 @@ class QuestionAttemptListView(QuestionSetMixin, CustomAPIView):
         resource_context = await self.get_validated_question_set_resources_async(
             serializer
         )
-        question_attempts = await get_graded_responses(
-            resource_context=resource_context
+        question_attempts = await get_graded_responses_for_current_assessment(
+            resource_context=resource_context,
+
         )
 
         return Response(
@@ -121,15 +120,10 @@ class QuestionAttemptsCreateView(QuestionSetMixin, CustomAPIView):
         except QuestionNotFoundError as e:
             logger.error(f"Question not found: {e}")
             return Response(
-                {"message": "The specified question is not available for the user"},
+                e.to_dict(),
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        except MaximumAttemptsError as e:
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except GradingError as e:
-            logger.error(f"Grading failed: {e}")
-            raise
-        except QuestionAttemptError as e:
-            logger.error(f"General error: {e}")
-            raise
+        except MaximumAttemptsExceededError as e:
+            return Response(e.to_dict(), status=status.HTTP_400_BAD_REQUEST)
+
