@@ -307,3 +307,6 @@ class SingleQuestionGrader:
             )
 
         return None
+
+    def __repr__(self):
+        return f"<{type(self).__name__}: {self.maximum_attempts_per_question}, {self.question_grader_factory!r}>"

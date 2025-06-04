@@ -285,3 +285,8 @@ class MongoQuestionRepository(AbstractQuestionRepository):
             database_engine=mongo_database,
             database_name=database_name,
         )
+
+    def __repr__(self):
+        return (
+            f"<{type(self).__name__}: {self.database_name}, {self.database_engine!r}>"
+        )

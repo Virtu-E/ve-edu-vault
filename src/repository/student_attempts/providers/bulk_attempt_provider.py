@@ -140,3 +140,6 @@ class BulkAttemptProvider:
         return await self.attempt_repository.get_question_attempt_by_custom_query(
             self.collection_name, query
         )
+
+    def __repr__(self):
+        return f"<{type(self).__name__}: {self.attempt_repository!r}, {self.collection_name}, {self.grading_config}>"

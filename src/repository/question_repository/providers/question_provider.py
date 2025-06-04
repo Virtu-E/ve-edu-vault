@@ -23,6 +23,8 @@ class QuestionProvider:
         _collection_name: Name of the collection containing questions
     """
 
+    __slots__ = ("_question_repo", "_collection_name")
+
     def __init__(self, question_repo: AbstractQuestionRepository, collection_name: str):
         """
         Initialize the QuestionProvider.
@@ -114,3 +116,8 @@ class QuestionProvider:
         collection_name = resource_context.resources.collection_name
         question_repo = MongoQuestionRepository.get_repo()
         return cls(question_repo, collection_name)
+
+    def __repr__(self):
+        return (
+            f"<{type(self).__name__}: {self._collection_name}, {self._question_repo!r}>"
+        )

@@ -71,7 +71,11 @@ class QuestionSetResourceProvider(UserResourceContextMixin):
                 self._user,
             )
 
-            raise QuestionNotFoundError(question_id = question_id, user_id= self._user.id, collection = self._collection_name,)
+            raise QuestionNotFoundError(
+                question_id=question_id,
+                user_id=self._user.id,
+                collection=self._collection_name,
+            )
 
         return True
 
@@ -94,3 +98,6 @@ class QuestionSetResourceProvider(UserResourceContextMixin):
             self._question_set_ids,
             self._collection_name,
         )
+
+    def __repr__(self):
+        return f"<{type(self).__name__}: {self._data}>"

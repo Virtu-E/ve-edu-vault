@@ -127,3 +127,6 @@ class FillInTheBlankGrader(AbstractQuestionGrader):
         score = 1.0 if is_correct else 0.0
         logger.debug(f"Calculated score: {score}")
         return score
+
+    def __repr__(self):
+        return f"<{type(self).__name__}()>"

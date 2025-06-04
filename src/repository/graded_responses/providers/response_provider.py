@@ -130,3 +130,6 @@ class GradingResponseProvider:
             repository=MongoGradingResponseRepository.get_repo(),
             collection_name=collection_name,
         )
+
+    def __repr__(self):
+        return f"<{type(self).__name__}: {self.repository!r}, {self.collection_name}>"

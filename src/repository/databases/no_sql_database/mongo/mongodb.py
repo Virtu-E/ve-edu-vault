@@ -88,7 +88,7 @@ class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
                     self._url,
                     tlsCAFile=certifi.where(),
                 )
-                await self._client.admin.command("ping")  # Test connection
+                await self._client.admin.command("ping")
                 logger.info(
                     "Successfully connected to MongoDB at %s:%s", self.host, self.port
                 )
@@ -525,12 +525,12 @@ class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
         return urlparse(self._url)
 
     @property
-    def host(self):
+    def host(self) -> Optional[str]:
         """Get MongoDB host from URL."""
         return self.parsed_url.hostname
 
     @property
-    def port(self):
+    def port(self) -> Optional[int]:
         """Get MongoDB port from URL."""
         return self.parsed_url.port
 
@@ -550,6 +550,12 @@ class AsyncMongoDatabaseEngine(AsyncAbstractNoSqLDatabaseEngine):
                 logger.error("PyMongo error during MongoDB disconnect: %s", e)
             finally:
                 self._client = None
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__}: {self._url}>"
+
+    def __str__(self) -> str:
+        return "AsyncMongoDatabaseEngine"
 
 
 mongo_database = AsyncMongoDatabaseEngine(getattr(settings, "MONGO_URL", None))

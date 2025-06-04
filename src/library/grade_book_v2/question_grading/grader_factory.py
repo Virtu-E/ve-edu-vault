@@ -34,6 +34,9 @@ class GraderFactory:
             raise ValueError(f"No grader registered for question type: {question_type}")
         return grader_class()
 
+    def __repr__(self):
+        return f"<{type(self).__name__}(registered_graders={list(self._graders.keys())!r})>"
+
 
 GraderFactory.register_grader(GraderTypeEnum.MULTIPLE_CHOICE, MultipleChoiceGrader)
 GraderFactory.register_grader(GraderTypeEnum.FILL_IN_BLANKS, FillInTheBlankGrader)

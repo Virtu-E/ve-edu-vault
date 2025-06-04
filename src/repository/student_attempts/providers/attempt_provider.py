@@ -166,3 +166,6 @@ class StudentAttemptProvider:
         logger.debug(
             f"Attempt saved successfully for user: {student_user_id}, question: {question.id}"
         )
+
+    def __repr__(self):
+        return f"<{type(self).__name__}: {self.collection_name}, {self.attempt_repository!r}, {self.grading_config}, {self.attempt_validator}>"

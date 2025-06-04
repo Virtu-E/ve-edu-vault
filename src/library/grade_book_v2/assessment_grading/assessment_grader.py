@@ -138,3 +138,6 @@ class AssessmentGrader:
             "completion_percentage": completion_percentage,
             "passed": passed,
         }
+
+    def __repr__(self):
+        return f"<{type(self).__name__}(user={self._user.username}, assessment_id={self._assessment_id}, learning_objective_id={self._learning_objective.id}, passing_threshold={self._config.passing_threshold})>"

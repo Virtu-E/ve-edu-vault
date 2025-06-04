@@ -57,3 +57,6 @@ class AttemptValidationService:
             raise InvalidAttemptInputError(
                 missing_field="user_id and question_id are required",
             )
+
+    def __repr__(self):
+        return f"<{type(self).__name__}: {self.config!r}>"

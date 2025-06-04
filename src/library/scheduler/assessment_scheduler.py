@@ -2,17 +2,24 @@ import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import List, Union
+from typing import List, TypeAlias, Union
 
+from qstash.errors import (
+    ChatRateLimitExceededError,
+    DailyMessageLimitExceededError,
+    QStashError,
+    RateLimitExceededError,
+)
 from qstash.message import PublishResponse, PublishUrlGroupResponse
-from qstash.errors import QStashError, RateLimitExceededError, ChatRateLimitExceededError, DailyMessageLimitExceededError
 
 from ...apps.integrations.webhooks.data_types import WebhookRequest
 from ...apps.integrations.webhooks.registry import HandlerTypeEnum
-from .config import QSTASH, get_webhook_url
 from ...exceptions import SchedulingError
+from .config import QSTASH, get_webhook_url
 
 logger = logging.getLogger(__name__)
+
+SchedulerResponse: TypeAlias = Union[PublishResponse, List[PublishUrlGroupResponse]]
 
 
 @dataclass
@@ -34,7 +41,7 @@ class AssessmentTimerData:
 
 def schedule_test_assessment(
     data: AssessmentTimerData,
-) -> Union[PublishResponse, List[PublishUrlGroupResponse]]:
+) -> SchedulerResponse:
     """Schedule an assessment expiration webhook using QStash.
 
     Args:
@@ -79,16 +86,17 @@ def schedule_test_assessment(
             response,
         )
         return response
-    except (QStashError, RateLimitExceededError, ChatRateLimitExceededError, DailyMessageLimitExceededError) as e:
+    except (
+        QStashError,
+        RateLimitExceededError,
+        ChatRateLimitExceededError,
+        DailyMessageLimitExceededError,
+    ) as e:
         raise SchedulingError(
             message=f"Failed to schedule assessment expiration: {str(e)}",
             assessment_id=data.assessment_id,
             student_id=data.student_id,
             duration_seconds=data.assessment_duration_seconds,
             qstash_error=str(e),
-            webhook_url=get_webhook_url()
+            webhook_url=get_webhook_url(),
         ) from e
-
-
-
-
