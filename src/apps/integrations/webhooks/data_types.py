@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 
 
 class WebhookRequest(BaseModel):
@@ -10,5 +10,6 @@ class WebhookRequest(BaseModel):
     timestamp: Optional[datetime] = None
     data: Dict[str, Any]
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    @field_serializer("timestamp")
+    def serialize_dt(self, timestamp: Optional[datetime], _info):
+        return timestamp.isoformat() if timestamp else None

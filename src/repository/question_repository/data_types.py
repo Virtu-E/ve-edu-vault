@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 
 class Option(BaseModel):
@@ -106,10 +106,8 @@ class Question(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        """Configuration for the Question model."""
+    @field_serializer("created_at", "updated_at")
+    def serialize_datetimes(self, dt: datetime, _info):
+        return dt.isoformat()
 
-        populate_by_name = (
-            True  # Replaces allow_population_by_field_name in newer versions
-        )
-        json_encoders = {datetime: lambda v: v.strftime("%Y-%m-%dT%H:%M:%SZ")}
+    model_config = ConfigDict(populate_by_name=True)

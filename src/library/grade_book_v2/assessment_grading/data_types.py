@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 
 
 @dataclass
@@ -48,8 +48,9 @@ class AssessmentResult(BaseModel):
     graded_at: datetime
     question_summaries: List[QuestionAttemptSummary]
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    @field_serializer("graded_at")
+    def serialize_dt(self, graded_at: datetime, _info):
+        return graded_at.isoformat()
 
 
 @dataclass

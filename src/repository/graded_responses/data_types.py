@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 
 class GradedFeedback(BaseModel):
@@ -54,11 +54,11 @@ class GradedResponse(BaseModel):
     question_type: str
     score: float
 
-    class Config:
-        """Configuration for the QuestionAttempt model."""
+    @field_serializer("created_at")
+    def serialize_dt(self, created_at: datetime, _info):
+        return created_at.isoformat()
 
-        populate_by_name = True
-        json_encoders = {datetime: lambda v: v.strftime("%Y-%m-%dT%H:%M:%SZ")}
+    model_config = ConfigDict(populate_by_name=True)
 
 
 @dataclass
