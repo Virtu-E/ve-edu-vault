@@ -33,7 +33,6 @@ I understand that everything in tech is a trade-off. Here's why I chose what I c
 |----------|---------|---------------------------|
 | **PostgreSQL** | Core schema (subjects, topics, users) | **vs MySQL**: Better JSON support, proven reliability |
 | **MongoDB** | Questions & assessments | **vs PostgreSQL**: Schema flexibility without migrations for evolving question types |
-| **Redis** | Caching & task queues | **vs Memcached**: Built-in pub/sub for real-time sync |
 
 ### **Background Processing** *(over synchronous operations)*
 
