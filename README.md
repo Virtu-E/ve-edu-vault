@@ -33,7 +33,7 @@ I understand that everything in tech is a trade-off. Here's why I chose what I c
 |----------|---------|---------------------------|
 | **PostgreSQL** | Core schema (subjects, topics, users) | **vs MySQL**: Better JSON support, proven reliability |
 | **MongoDB** | Questions & assessments | **vs PostgreSQL**: Schema flexibility without migrations for evolving question types |
-
+| **Redis** | Caching & task queues | **vs Memcached**: Built-in pub/sub for real-time sync |
 
 ### **Background Processing** *(over synchronous operations)*
 
@@ -225,6 +225,54 @@ Every architectural decision serves the mission: **enabling quality education fo
 This isn't just a backend system - it's the foundation for educational transformation in Malawi. Every performance optimization means more students can access learning. Every reliability improvement means fewer interrupted study sessions. Every feature addition means better educational outcomes.
 
 **This is why I built this the way I did** - because quality education should be accessible to every Malawian student, and the technology should be robust enough to serve that mission at scale.
+
+## Getting Started
+
+I know this could be better with Docker (actually, in our main codebase, we use Docker), but I'll update this when I have the time - right now, I'm focusing on getting this launched.
+
+### Prerequisites
+
+| Component | Version | Purpose |
+|-----------|---------|---------|
+| **Python** | 3.13+ | Runtime environment |
+| **PostgreSQL** | 13+ | Primary database |
+| **MongoDB** | 4.4+ | Document storage |
+| **Redis** | 6.0+ | Caching and message broker |
+
+### Quick Setup
+
+```bash
+# Clone and setup
+git clone https://github.com/your-organization/ve-edu-vault.git
+cd ve-edu-vault
+
+# Virtual environment
+uv venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
+# Dependencies
+uv sync --all-groups
+
+# Configuration
+cp .env.sample .env
+# Edit .env with your configuration
+
+# Database
+make migrate-dev
+
+# Start development server
+make serve-async
+```
+
+### Available Commands
+
+```bash
+make help           # All available commands
+make serve-async    # Development server with async support
+make test           # Run test suite
+make test-watch     # Continuous testing
+make lint-fix       # Auto-fix code quality issues
+```
 
 ---
 
