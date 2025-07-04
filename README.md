@@ -1,5 +1,9 @@
 # VE-EDU-VAULT: Why I Built This Backend for Educational Impact in Malawi
 
+![Virtu Educate Platform](https://i.ibb.co/ZzTCY3Cv/Virtu-Educate-Home-Page-07-04-2025-10-55-PM.png)
+
+*The student dashboard powered by VE-EDU-VAULT - personalized learning for Malawian students*
+
 ![Python](https://img.shields.io/badge/python-3.13-blue.svg)
 ![Django](https://img.shields.io/badge/django-5.2-green.svg)
 ![MongoDB](https://img.shields.io/badge/mongodb-latest-green.svg)
@@ -33,6 +37,7 @@ I understand that everything in tech is a trade-off. Here's why I chose what I c
 |----------|---------|---------------------------|
 | **PostgreSQL** | Core schema (subjects, topics, users) | **vs MySQL**: Better JSON support, proven reliability |
 | **MongoDB** | Questions & assessments | **vs PostgreSQL**: Schema flexibility without migrations for evolving question types |
+
 
 ### **Background Processing** *(over synchronous operations)*
 
