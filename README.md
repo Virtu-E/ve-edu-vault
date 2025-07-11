@@ -2,7 +2,8 @@
 
 ![Virtu Educate Platform](https://i.ibb.co/ZzTCY3Cv/Virtu-Educate-Home-Page-07-04-2025-10-55-PM.png)
 
-*The student dashboard powered by VE-EDU-VAULT - personalized learning for Malawian students*
+*The student dashboard powered by VE-EDU-VAULT - personalized learning for Malawian students, built using React and TypeScript*
+
 
 ![Python](https://img.shields.io/badge/python-3.13-blue.svg)
 ![Django](https://img.shields.io/badge/django-5.2-green.svg)
