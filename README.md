@@ -17,6 +17,8 @@
 ![Docker](https://img.shields.io/badge/docker-✓-blue.svg)
 ![Type Hints](https://img.shields.io/badge/type_hints-✓-lightgrey.svg)
 
+## For front end work, please see : https://github.com/Virtu-E/ve-edu-lab
+
 ## What This Project Is Really About
 
 **VE-EDU-VAULT** is one of the backends for [Virtu Educate](https://github.com/Virtu-E) - a platform providing quality education resources tailored specifically for Malawian students and their unique challenges. 
