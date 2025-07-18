@@ -1,10 +1,5 @@
 # VE-EDU-VAULT: Why I Built This Backend for Educational Impact in Malawi
 
-![Virtu Educate Platform](https://raw.githubusercontent.com/Virtu-E/ve-edu-lab/main/public/virtu-homepage.png)
-
-*The student dashboard powered by VE-EDU-VAULT - personalized learning for Malawian students, built using React and TypeScript*
-
-
 ![Python](https://img.shields.io/badge/python-3.13-blue.svg)
 ![Django](https://img.shields.io/badge/django-5.2-green.svg)
 ![MongoDB](https://img.shields.io/badge/mongodb-latest-green.svg)
@@ -17,7 +12,13 @@
 ![Docker](https://img.shields.io/badge/docker-✓-blue.svg)
 ![Type Hints](https://img.shields.io/badge/type_hints-✓-lightgrey.svg)
 
+![Virtu Educate Platform](https://raw.githubusercontent.com/Virtu-E/ve-edu-lab/main/public/virtu-homepage.png)
+
+*The student dashboard powered by VE-EDU-VAULT - personalized learning for Malawian students, built using React and TypeScript*
+
 ## For front end work, please see : https://github.com/Virtu-E/ve-edu-lab
+
+
 
 ## What This Project Is Really About
 
