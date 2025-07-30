@@ -17,6 +17,7 @@
 *The student dashboard powered by VE-EDU-VAULT - personalized learning for Malawian students, built using React and TypeScript*
 
 ## For front end work, please see : https://github.com/Virtu-E/ve-edu-lab
+## Authentication Workflow, see :https://github.com/Virtu-E/ve-edx-auth
 
 
 
