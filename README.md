@@ -18,6 +18,8 @@
 
 ## For front end work, please see : https://github.com/Virtu-E/ve-edu-lab
 ## Authentication Workflow, see :https://github.com/Virtu-E/ve-edx-auth
+## Visit Beta Site, https://www.virtueducate.com/ ( Work In Progress, Login & Explore )
+
 
 
 
