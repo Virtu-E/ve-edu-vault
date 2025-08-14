@@ -5,11 +5,8 @@ from django.db import transaction
 from rest_framework import status
 from rest_framework.response import Response
 
-from src.exceptions import (
-    AssessmentAlreadyGradedError,
-    SchedulingError,
-    UserQuestionSetNotFoundError,
-)
+from src.exceptions import (AssessmentAlreadyGradedError, SchedulingError,
+                            UserQuestionSetNotFoundError)
 from src.utils.mixins.question_mixin import QuestionSetMixin
 from src.utils.views.base import CustomAPIView
 
@@ -17,10 +14,8 @@ from .serializers import AssessmentGradingSerializer, AssessmentSerializer
 from .services.assessment_grader import grade_assessment
 from .services.assessment_start_service import start_assessment
 from .services.assessment_view_service import (
-    get_current_ongoing_assessment,
-    get_individual_assessments,
-    get_user_active_learning_assessment_overview,
-)
+    get_current_ongoing_assessment, get_individual_assessments,
+    get_user_active_learning_assessment_overview)
 
 logger = logging.getLogger(__name__)
 
