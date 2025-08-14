@@ -2,22 +2,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.apps.core.courses.tests.factories import (
-    AcademicClassFactory,
-    CourseFactory,
-    ExaminationLevelFactory,
-)
+from src.apps.core.courses.tests.factories import (AcademicClassFactory,
+                                                   CourseFactory,
+                                                   ExaminationLevelFactory)
 
 from ..course_sync import ChangeResult, CourseSyncService
 from ..data_transformer import EdxDataTransformer
-from ..data_types import (
-    ChangeOperation,
-    CourseChangeData,
-    CourseStructure,
-    EdxCourseOutline,
-    EntityType,
-    OperationType,
-)
+from ..data_types import (ChangeOperation, CourseChangeData, CourseStructure,
+                          EdxCourseOutline, EntityType, OperationType)
 from ..diff_engine import DiffEngine
 
 

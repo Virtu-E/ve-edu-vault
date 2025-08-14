@@ -15,16 +15,26 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from oauth2_provider import urls as oauth2_urls
+from oauth2_provider.views import TokenView
+
+from src.config.django.dev import STATIC_ROOT, STATIC_URL
+
+# Custom admin site configuration
+admin.site.site_header = "VirtuEducate Admin"
+admin.site.site_title = "VirtuEducate Admin Portal"
+admin.site.index_title = "Welcome to VirtuEducate Administration"
 
 urlpatterns = [
     # Admin interface
     path("admin/", admin.site.urls),
     # LTI provider endpoints
     path(
-        "lti/",
+        "api/v1/lti/",
         include("src.apps.integrations.lti_provider.urls", namespace="lti_provider"),
     ),
     # API v1 endpoints grouped by domain
@@ -33,8 +43,16 @@ urlpatterns = [
     path("api/v1/questions/", include("src.apps.learning_tools.questions.urls")),
     path("api/v1/extensions/", include("src.apps.content_ext.urls")),
     path("api/v1/webhooks/", include("src.apps.integrations.webhooks.urls")),
-    # path("api/v1/topics/", include("elastic_search.urls")),
+    path("api/v1/search/", include("src.apps.core.search.urls")),
     path("api/v1/flashcards/", include("src.apps.learning_tools.flash_cards.urls")),
     path("api/v1/oauth/", include(oauth2_urls)),
+    path("oauth2/access_token", TokenView.as_view(), name="token"),
     path("api/v1/auth/", include("src.apps.core.authentication.urls")),
+    path("api/v1/user/", include("src.apps.core.users.urls")),
+    path("api/v1/user/", include("src.apps.core.users.urls")),
+    path("api/v1/timetable/", include("src.apps.learning_tools.time_table.urls")),
+    path("api/v1/notifications/", include("src.apps.core.notifications.urls")),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(STATIC_URL, document_root=STATIC_ROOT)

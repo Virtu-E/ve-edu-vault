@@ -1,18 +1,12 @@
 import pytest
 
 from src.apps.core.content.tests.factories import SubTopicFactory, TopicFactory
-from src.apps.core.courses.tests.factories import (
-    AcademicClassFactory,
-    CourseFactory,
-    ExaminationLevelFactory,
-)
+from src.apps.core.courses.tests.factories import (AcademicClassFactory,
+                                                   CourseFactory,
+                                                   ExaminationLevelFactory)
 
-from ..change_processor import (
-    ChangeProcessor,
-    CreateStrategy,
-    DeleteStrategy,
-    UpdateStrategy,
-)
+from ..change_processor import (ChangeProcessor, CreateStrategy,
+                                DeleteStrategy, UpdateStrategy)
 
 
 @pytest.fixture(autouse=True)

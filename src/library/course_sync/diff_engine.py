@@ -11,14 +11,8 @@ from abc import ABC, abstractmethod
 from functools import wraps
 from typing import List, Optional
 
-from .data_types import (
-    ChangeOperation,
-    CourseChangeData,
-    EdxCourseOutline,
-    EntityType,
-    OperationType,
-    SubTopicChangeData,
-)
+from .data_types import (ChangeOperation, CourseChangeData, EdxCourseOutline,
+                         EntityType, OperationType, SubTopicChangeData)
 
 log = logging.getLogger(__name__)
 

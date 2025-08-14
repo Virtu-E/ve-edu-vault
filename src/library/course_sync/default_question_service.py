@@ -1,15 +1,14 @@
 import logging
 from typing import Optional, Type, TypedDict
 
-from asgiref.sync import sync_to_async
+from asgiref.sync import async_to_sync
 from django.core.exceptions import ObjectDoesNotExist
 
 from src.apps.core.content.models import LearningObjective
-from src.apps.learning_tools.questions.models import (
-    DefaultQuestionSet,
-    QuestionCategory,
-)
-from src.repository.question_repository.mongo.qn_repo import MongoQuestionRepository
+from src.apps.learning_tools.questions.models import (DefaultQuestionSet,
+                                                      QuestionCategory)
+from src.repository.question_repository.mongo.qn_repo import \
+    MongoQuestionRepository
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +33,7 @@ class DefaultQuestionService:
         self._question_repo = question_repo.get_repo()
         logger.debug("SubTopicService initialized")
 
-    async def process_default_question(
+    def process_default_question(
         self, objective: LearningObjective, collection_name: str
     ) -> Optional[DefaultQuestionSet]:
         """
@@ -61,9 +60,7 @@ class DefaultQuestionService:
             )
 
             logger.debug("Retrieving question category...")
-            category = await sync_to_async(QuestionCategory.objects.get)(
-                learning_objective=objective
-            )
+            category = QuestionCategory.objects.get(learning_objective=objective)
             logger.debug(f"Found category with ID: {category.category_id}")
 
             query = {"category_id": category.category_id}
@@ -71,11 +68,9 @@ class DefaultQuestionService:
             logger.debug(
                 f"Querying {collection_name} for questions with category_id: {category.category_id}"
             )
-            question_collection = (
-                await self._question_repo.get_question_by_custom_query(
-                    collection_name=collection_name, query=query
-                )
-            )
+            question_collection = async_to_sync(
+                self._question_repo.get_question_by_custom_query
+            )(collection_name=collection_name, query=query)
 
             question_count = len(question_collection)
             logger.info(
@@ -96,9 +91,7 @@ class DefaultQuestionService:
             logger.debug(
                 f"Creating or updating default question set for objective ID {objective.id}"
             )
-            default_question_set, created = await sync_to_async(
-                DefaultQuestionSet.objects.get_or_create
-            )(
+            default_question_set, created = DefaultQuestionSet.objects.get_or_create(
                 learning_objective=objective,
                 defaults={"question_list_ids": question_list_ids},
             )
@@ -114,7 +107,7 @@ class DefaultQuestionService:
                     f"with {question_count} questions"
                 )
                 default_question_set.question_list_ids = question_list_ids
-                await sync_to_async(default_question_set.save)()
+                default_question_set.save()
 
             return default_question_set
 

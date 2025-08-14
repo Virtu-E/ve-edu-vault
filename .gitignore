@@ -108,3 +108,4 @@ Thumbs.db
 ehthumbs.db
 
  .mypy_cache/
+src/config/staticfiles/

@@ -1,9 +1,9 @@
 import logging
 
-from src.library.grade_book_v2.question_grading.grader_types.base import (
-    AbstractQuestionGrader,
-)
-from src.repository.graded_responses.data_types import StudentAnswer
+from src.apps.learning_tools.assessments.services.data_types import \
+    StudentAnswer
+from src.library.grade_book_v2.question_grading.grader_types.base import \
+    AbstractQuestionGrader
 from src.repository.question_repository.data_types import Question
 
 logger = logging.getLogger(__name__)
@@ -58,6 +58,34 @@ class MultipleChoiceGrader(AbstractQuestionGrader):
         score = 1.0 if is_correct else 0.0
         logger.debug(f"Calculated score: {score}")
         return score
+
+    def get_correct_answer_id(
+        self, question: Question, attempted_answer: StudentAnswer
+    ) -> str:
+        """
+        Gets the correct option ID from the question.
+
+        Args:
+            question (Question): The multiple-choice question
+            attempted_answer (StudentAnswer): The student's attempted answer (unused for this method)
+
+        Returns:
+            str: The correct option ID
+        """
+        correct_options = [
+            option.id for option in question.content.options if option.is_correct
+        ]
+
+        if not correct_options:
+            logger.warning(f"No correct options found for question {question.id}")
+            return ""
+
+        if len(correct_options) > 1:
+            logger.warning(
+                f"Multiple correct options found for question {question.id}, using first one"
+            )
+
+        return correct_options[0]
 
     def __repr__(self):
         return f"<{type(self).__name__}()>"

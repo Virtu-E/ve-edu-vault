@@ -4,57 +4,15 @@ from typing import Optional
 
 from rest_framework import status
 
-from src.exceptions import (
-    VirtuEducateBusinessError,
-    VirtuEducateError,
-    VirtuEducateSystemError,
-    VirtuEducateValidationError,
-)
+from src.exceptions import (VirtuEducateBusinessError, VirtuEducateError,
+                            VirtuEducateSystemError,
+                            VirtuEducateValidationError)
 from src.exceptions.data_types import ErrorDetail, ErrorResponse
 
 ErrorResult = namedtuple("ErrorResult", ["status", "response"])
 
 
-class ErrorHandlerMeta(type):
-    """Metaclass that validates error handler methods only accept VirtuEducate errors"""
-
-    def __new__(mcs, name, bases, namespace, **kwargs):
-        # Get the new class
-        cls = super().__new__(mcs, name, bases, namespace, **kwargs)
-
-        if "create_error_detail" in namespace:
-            original_method = namespace["create_error_detail"]
-            cls.create_error_detail = mcs._wrap_method(
-                original_method, "create_error_detail"
-            )
-
-        return cls
-
-    @staticmethod
-    def _wrap_method(method, method_name):
-        """Wrap method to validate exception type"""
-
-        def wrapper(*args, **kwargs):
-            # Find the exception parameter
-            if len(args) >= 2:  # cls/self + exception
-                exception = args[1]
-            elif "exception" in kwargs:
-                exception = kwargs["exception"]
-            else:
-                raise ValueError(f"{method_name} must receive an exception parameter")
-
-            if not isinstance(exception, VirtuEducateError):
-                raise TypeError(
-                    f"{method_name} only handles VirtuEducateError instances. "
-                    f"Got {type(exception).__name__}: {exception}"
-                )
-
-            return method(*args, **kwargs)
-
-        return wrapper
-
-
-class UnifiedAPIErrorHandler(metaclass=ErrorHandlerMeta):
+class UnifiedAPIErrorHandler:
     """Handles conversion of exceptions to standardized error responses"""
 
     @staticmethod

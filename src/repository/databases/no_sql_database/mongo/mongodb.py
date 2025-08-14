@@ -6,29 +6,17 @@ from urllib.parse import ParseResult, urlparse
 import certifi
 from django.conf import settings
 from pymongo import AsyncMongoClient
-from pymongo.errors import (
-    AutoReconnect,
-    ConfigurationError,
-    ConnectionFailure,
-    CursorNotFound,
-    DocumentTooLarge,
-    DuplicateKeyError,
-    ExecutionTimeout,
-    NetworkTimeout,
-    NotPrimaryError,
-    OperationFailure,
-    PyMongoError,
-    ServerSelectionTimeoutError,
-    WTimeoutError,
-)
+from pymongo.errors import (AutoReconnect, ConfigurationError,
+                            ConnectionFailure, CursorNotFound,
+                            DocumentTooLarge, DuplicateKeyError,
+                            ExecutionTimeout, NetworkTimeout, NotPrimaryError,
+                            OperationFailure, PyMongoError,
+                            ServerSelectionTimeoutError, WTimeoutError)
 
-from src.exceptions import (
-    MongoDbConfigurationError,
-    MongoDbConnectionError,
-    MongoDbOperationError,
-    MongoDbTemporaryConnectionError,
-    MongoDbTemporaryOperationError,
-)
+from src.exceptions import (MongoDbConfigurationError, MongoDbConnectionError,
+                            MongoDbOperationError,
+                            MongoDbTemporaryConnectionError,
+                            MongoDbTemporaryOperationError)
 
 from ..async_base_engine import AsyncAbstractNoSqLDatabaseEngine
 

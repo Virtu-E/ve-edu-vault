@@ -3,7 +3,8 @@ from collections import namedtuple
 from typing import Dict
 
 from src.exceptions import QuestionNotFoundError
-from src.repository.question_repository.mongo.qn_repo import MongoQuestionRepository
+from src.repository.question_repository.mongo.qn_repo import \
+    MongoQuestionRepository
 from src.utils.mixins.resource import UserResourceContextMixin
 
 log = logging.getLogger(__name__)

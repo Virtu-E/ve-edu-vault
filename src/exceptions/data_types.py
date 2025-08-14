@@ -1,9 +1,9 @@
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+from pydantic import BaseModel
 
-@dataclass
-class ErrorDetail:
+
+class ErrorDetail(BaseModel):
     """Single error detail structure"""
 
     code: str
@@ -12,8 +12,7 @@ class ErrorDetail:
     context: Optional[Dict[str, Any]] = None
 
 
-@dataclass
-class ErrorResponse:
+class ErrorResponse(BaseModel):
     """Standardized error response structure"""
 
     success: bool = False

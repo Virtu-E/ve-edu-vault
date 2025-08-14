@@ -7,10 +7,9 @@ from pydantic_core._pydantic_core import ValidationError
 from src.apps.learning_tools.questions.models import QuestionSet
 from src.config.django import base
 from src.repository.databases.no_sql_database.mongo.mongodb import (
-    AsyncMongoDatabaseEngine,
-    mongo_database,
-)
-from src.repository.question_repository.base_repo import AbstractQuestionRepository
+    AsyncMongoDatabaseEngine, mongo_database)
+from src.repository.question_repository.base_repo import \
+    AbstractQuestionRepository
 from src.repository.question_repository.data_types import Question
 
 logger = logging.getLogger(__name__)
@@ -230,7 +229,7 @@ class MongoQuestionRepository(AbstractQuestionRepository):
 
     @staticmethod
     def _process_mongo_question_data(
-        questions: Iterable[Dict[str, Any]]
+        questions: Iterable[Dict[str, Any]],
     ) -> List[Question]:
         """
         Process raw MongoDB documents into Question domain objects.

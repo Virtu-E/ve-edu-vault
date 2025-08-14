@@ -1,0 +1,56 @@
+services:
+  # Base PostgreSQL configuration
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - edu-vault-network
+
+  # Base Django application
+  web:
+    command: >
+      sh -c "python manage.py migrate --settings=${DJANGO_SETTINGS_MODULE} &&
+             uvicorn src.config.asgi:application --host 0.0.0.0 --port 8000"
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - edu-vault-network
+
+  # Base Celery worker
+  celery:
+    command: celery -A src.config worker -l info
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    depends_on:
+      - db
+    networks:
+      - edu-vault-network
+
+volumes:
+  postgres_data:
+
+networks:
+  edu-vault-network:
+    external: true
+    name: edu-vault-network

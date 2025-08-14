@@ -41,6 +41,7 @@ FRONT_END_URL = config("FRONT_END_URL")
 # =============================================================================
 
 DJANGO_APPS = [
+    "django_admin_env_notice",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -52,9 +53,9 @@ DJANGO_APPS = [
 EXTERNAL_APPS = [
     "pylti1p3.contrib.django.lti1p3_tool_config",
     "rest_framework",
+    "django_filters",
     "corsheaders",
     "django_json_widget",
-    "django_elasticsearch_dsl",
     "django_extensions",
     "oauth2_provider",
     "knox",
@@ -67,6 +68,8 @@ CORE_APPS = [
     "src.apps.content_ext",
     "src.apps.core.courses",
     "src.apps.core.users",
+    "src.apps.core.search",
+    "src.apps.core.notifications",
 ]
 
 INTEGRATION_APPS = [
@@ -78,6 +81,7 @@ INTEGRATION_APPS = [
 LEARNING_TOOLS_APPS = [
     "src.apps.learning_tools.assessments",
     "src.apps.learning_tools.questions",
+    "src.apps.learning_tools.time_table",
 ]
 
 INSTALLED_APPS = [
@@ -93,7 +97,9 @@ INSTALLED_APPS = [
 # =============================================================================
 
 MIDDLEWARE = [
+    "csp.middleware.CSPMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -120,6 +126,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "django_admin_env_notice.context_processors.from_settings",
             ],
         },
     },
@@ -159,6 +166,7 @@ REST_FRAMEWORK = {
         "oauth2_provider.contrib.rest_framework.OAuth2Authentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_THROTTLE_RATES": {"anon": "100/hour", "user": "1000/hour"},
 }
 
 # Knox Token Authentication
@@ -168,7 +176,7 @@ REST_KNOX = {
     "AUTO_REFRESH": True,
     "AUTO_REFRESH_MAX_TTL": timedelta(days=30),
     "MIN_REFRESH_INTERVAL": 300,
-    "TOKEN_LIMIT_PER_USER": 10,
+    "TOKEN_LIMIT_PER_USER": 4,
 }
 
 # OAuth2 Provider
@@ -193,12 +201,6 @@ NO_SQL_QUESTIONS_DATABASE_NAME = config("NO_SQL_QUESTIONS_DATABASE_NAME")
 NO_SQL_ATTEMPTS_DATABASE = config("NO_SQL_ATTEMPTS_DATABASE")
 NO_SQL_GRADING_RESPONSE_DATABASE_NAME = config("NO_SQL_GRADING_RESPONSE_DATABASE_NAME")
 
-# =============================================================================
-# STATIC FILES & MEDIA
-# =============================================================================
-
-STATIC_URL = "static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # =============================================================================
 # INTERNATIONALIZATION
@@ -311,11 +313,14 @@ LEARNING_HISTORY_COLLECTION_NAME = "learning_history"
 WSGI_APPLICATION = "src.config.wsgi.application"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+
+ENABLE_SCHEDULING = config("ENABLE_SCHEDULING", cast=bool, default=False)
+
+
 # =============================================================================
-# EXTERNAL CONFIGURATION IMPORTS
+# CACHING
 # =============================================================================
 
-# ElasticSearch Configuration
-# 'use_ssl': True,
-# 'verify_certs': True,
-from src.config.settings.elastic_search import *  # noqa
+
+# Cache timeout for notifications (1 hour)
+NOTIFICATION_CACHE_TIMEOUT = 60 * 60  # 3600 seconds

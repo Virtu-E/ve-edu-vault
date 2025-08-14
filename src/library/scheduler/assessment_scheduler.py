@@ -4,12 +4,9 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List, TypeAlias, Union
 
-from qstash.errors import (
-    ChatRateLimitExceededError,
-    DailyMessageLimitExceededError,
-    QStashError,
-    RateLimitExceededError,
-)
+from qstash.errors import (ChatRateLimitExceededError,
+                           DailyMessageLimitExceededError, QStashError,
+                           RateLimitExceededError)
 from qstash.message import PublishResponse, PublishUrlGroupResponse
 
 from ...apps.integrations.webhooks.data_types import WebhookRequest
@@ -31,30 +28,26 @@ class AssessmentTimerData:
         student_id: ID of the student taking the assessment
         started_at: Timestamp when the assessment was started
         assessment_duration_seconds: Duration of the assessment in seconds
+        block_id : ID of the targetd Learning Objective
     """
 
     assessment_id: str
     student_id: int
     started_at: datetime
     assessment_duration_seconds: int
+    block_id: str
 
 
 def schedule_test_assessment(
     data: AssessmentTimerData,
 ) -> SchedulerResponse:
-    """Schedule an assessment expiration webhook using QStash.
+    """Schedule an assessment expiration webhook using QStash."""
 
-    Args:
-        data: AssessmentTimerData containing all necessary information
-             for scheduling the assessment expiration
-
-    Returns:
-        str: QStash message ID for the scheduled task
-    """
     assessment_data = {
         "assessment_id": data.assessment_id,
         "student_id": data.student_id,
         "started_at": data.started_at.isoformat(),
+        "block_id": data.block_id,
     }
 
     scheduled_data = WebhookRequest(
@@ -63,6 +56,9 @@ def schedule_test_assessment(
         timestamp=data.started_at,
         data=assessment_data,
     )
+
+    # Wrap the webhook data in event_metadata to match what the handler expects
+    payload = {"event_metadata": scheduled_data.model_dump(mode="json")}
 
     end_time = datetime.now() + timedelta(seconds=data.assessment_duration_seconds)
 
@@ -73,10 +69,11 @@ def schedule_test_assessment(
         data.assessment_duration_seconds,
         end_time.isoformat(),
     )
+
     try:
         response = QSTASH.message.publish(
             url=get_webhook_url(),
-            body=json.dumps(scheduled_data.model_dump(mode="json")),
+            body=json.dumps(payload),
             delay=data.assessment_duration_seconds,
             retries=3,
         )

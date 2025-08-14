@@ -3,12 +3,8 @@ import uuid
 import factory
 import factory.fuzzy
 
-from src.repository.graded_responses.data_types import (
-    GradedFeedback,
-    GradedResponse,
-    GradingRequest,
-    StudentAnswer,
-)
+from src.apps.learning_tools.assessments.services.data_types import (
+    GradedFeedback, GradedResponseSchema, GradingRequest, StudentAnswer)
 
 
 class StudentAnswerFactory(factory.Factory):
@@ -117,7 +113,7 @@ class FeedbackWithStepsFactory(GradedFeedbackFactory):
 
 class GradedResponseFactory(factory.Factory):
     class Meta:
-        model = GradedResponse
+        model = GradedResponseSchema
 
     question_metadata = factory.Dict(
         {

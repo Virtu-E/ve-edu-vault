@@ -1,11 +1,8 @@
 import pytest
 
 from src.repository.question_repository.mongo.tests.factories import (
-    EmptyOptionsContentFactory,
-    NoCorrectOptionsQuestionFactory,
-    QuestionFactory,
-    TrueFalseQuestionFactory,
-)
+    EmptyOptionsContentFactory, NoCorrectOptionsQuestionFactory,
+    QuestionFactory, TrueFalseQuestionFactory)
 
 from ..grader_types.base import AbstractQuestionGrader
 from ..grader_types.multiple_choice import MultipleChoiceGrader

@@ -1,5 +1,6 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone
 
 from src.apps.core.content.models import SubTopic, Topic
 from src.apps.core.users.models import EdxUser
@@ -18,23 +19,22 @@ class SubTopicExt(models.Model):
         help_text="Estimated time to complete the sub-topic in minutes",
         validators=[MinValueValidator(5), MaxValueValidator(300)],
         default=30,
-        blank=True,
-        null=True,
     )
 
     metadata = models.JSONField(
         help_text="Additional configurable metadata for the sub-topic",
         default=dict,
         blank=True,
-        null=True,
     )
 
     assessment_criteria = models.JSONField(
         help_text="Criteria for assessing sub-topic mastery",
         default=list,
         blank=True,
-        null=True,
     )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Sub-topic Extension"
@@ -60,7 +60,6 @@ class TopicExt(models.Model):
     description = models.TextField(
         help_text="Comprehensive description of the topic and its importance",
         blank=True,
-        null=True,
     )
 
     base_mastery_points = models.PositiveIntegerField(
@@ -74,14 +73,17 @@ class TopicExt(models.Model):
     )
 
     teacher_guide = models.TextField(
-        blank=True, null=True, help_text="Guidance for teachers on topic instruction"
+        blank=True, help_text="Guidance for teachers on topic instruction"
     )
 
     minimum_mastery_percentage = models.PositiveIntegerField(
-        default=0,
+        default=70,  # More sensible default than 0
         validators=[MinValueValidator(1), MaxValueValidator(100)],
         help_text="Minimum percentage required for topic mastery",
     )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Topic Extension"
@@ -101,11 +103,11 @@ class TopicMastery(models.Model):
     """
 
     user = models.ForeignKey(
-        EdxUser, on_delete=models.CASCADE, related_name="topic_mastery"
+        EdxUser, on_delete=models.CASCADE, related_name="topic_masteries"
     )
 
-    topic = models.OneToOneField(
-        Topic, on_delete=models.CASCADE, related_name="topic_mastery"
+    topic = models.ForeignKey(
+        Topic, on_delete=models.CASCADE, related_name="user_masteries"
     )
 
     points_earned = models.PositiveIntegerField(
@@ -114,28 +116,46 @@ class TopicMastery(models.Model):
 
     mastery_achievements = models.JSONField(
         default=dict,
-        help_text="List of specific achievements earned in this category",
+        help_text="Dictionary of specific achievements earned in this topic",
+        blank=True,
     )
 
     started_at = models.DateTimeField(auto_now_add=True)
-
     last_activity = models.DateTimeField(auto_now=True)
-
     completed_at = models.DateTimeField(null=True, blank=True)
 
     MASTERY_STATUS_CHOICES = [
         ("not_started", "Not Started"),
         ("in_progress", "In Progress"),
         ("mastered", "Mastered"),
+        ("needs_review", "Needs Review"),
     ]
 
     mastery_status = models.CharField(
-        max_length=20, choices=MASTERY_STATUS_CHOICES, default="not_started"
+        max_length=20,
+        choices=MASTERY_STATUS_CHOICES,
+        default="not_started",
     )
 
     class Meta:
         verbose_name = "User Topic Mastery"
-        verbose_name_plural = "User Topic Mastery"
+        verbose_name_plural = "User Topic Masteries"
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "topic"], name="unique_user_topic_mastery"
+            )
+        ]
+
+        indexes = [
+            models.Index(
+                fields=["user", "mastery_status"], name="topicmastery_user_status_idx"
+            ),
+            models.Index(
+                fields=["user", "last_activity"], name="topicmastery_user_activity_idx"
+            ),
+            models.Index(fields=["mastery_status"], name="topicmastery_status_idx"),
+        ]
 
     def __str__(self):
         return f"{self.user.username} - {self.topic.name} Mastery"
@@ -144,7 +164,35 @@ class TopicMastery(models.Model):
         return (
             f"<TopicMastery: id={self.id}, "
             f"user='{self.user.username}', "
-            f"topic='{self.topic.name}',"
-            f" status='{self.mastery_status}', "
+            f"topic='{self.topic.name}', "
+            f"status='{self.mastery_status}', "
             f"points={self.points_earned}>"
         )
+
+    def save(self, *args, **kwargs):
+        """Custom save method to handle completion timestamp"""
+        if self.mastery_status == "mastered" and not self.completed_at:
+            self.completed_at = timezone.now()
+        elif self.mastery_status != "mastered":
+            self.completed_at = None
+        super().save(*args, **kwargs)
+
+    @property
+    def is_active(self):
+        """Check if the mastery record shows recent activity"""
+        if not self.last_activity:
+            return False
+        return (timezone.now() - self.last_activity).days <= 30
+
+    @property
+    def progress_percentage(self):
+        """Calculate progress percentage based on topic's base mastery points"""
+        if (
+            hasattr(self.topic, "extension")
+            and self.topic.extension.base_mastery_points > 0
+        ):
+            return min(
+                100,
+                (self.points_earned / self.topic.extension.base_mastery_points) * 100,
+            )
+        return 0

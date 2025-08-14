@@ -10,7 +10,8 @@ import logging
 from collections import namedtuple
 from typing import List, Optional
 
-from src.apps.core.courses.models import AcademicClass, Course, ExaminationLevel
+from src.apps.core.courses.models import (AcademicClass, Course,
+                                          ExaminationLevel)
 
 from .change_processor import ChangeProcessor
 from .data_transformer import EdxDataTransformer

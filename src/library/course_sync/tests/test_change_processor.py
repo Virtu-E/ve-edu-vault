@@ -3,14 +3,8 @@ from unittest.mock import MagicMock, patch
 from src.apps.core.content.models import SubTopic, Topic
 from src.apps.core.courses.models import Course
 
-from ..data_types import (
-    ChangeOperation,
-    CourseChangeData,
-    DefaultChangeData,
-    EntityType,
-    OperationType,
-    SubTopicChangeData,
-)
+from ..data_types import (ChangeOperation, CourseChangeData, DefaultChangeData,
+                          EntityType, OperationType, SubTopicChangeData)
 
 
 class TestCreateStrategy:

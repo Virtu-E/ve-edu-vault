@@ -7,14 +7,14 @@ class InvalidChangeDataTypeError(VirtuEducateValidationError):
     """Raised when the wrong change data type is provided for an operation."""
 
     def __init__(
-            self,
-            expected_type: str,
-            actual_type: str,
-            operation: str,
-            message: Optional[str] = None,
-            error_code: str = "INVALID_CHANGE_DATA_TYPE",
-            context: Optional[dict] = None,
-            *args,
+        self,
+        expected_type: str,
+        actual_type: str,
+        operation: str,
+        message: Optional[str] = None,
+        error_code: str = "INVALID_CHANGE_DATA_TYPE",
+        context: Optional[dict] = None,
+        *args,
     ):
         message = message or (
             f"Invalid data type for {operation}. "

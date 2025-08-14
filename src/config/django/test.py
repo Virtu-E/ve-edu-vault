@@ -38,20 +38,30 @@ ALLOWED_HOSTS = ["*"]
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    },
-    "OPTIONS": {
-        "timeout": 30,  # seconds
-    },
+        "NAME": ":memory:",
+    }
 }
+
+
+# Disable migrations for faster tests
+class DisableMigrations:
+    def __contains__(self, item):
+        return True
+
+    def __getitem__(self, item):
+        return None
+
+
+MIGRATION_MODULES = DisableMigrations()
+
 
 # Disable Celery tasks for testing
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 
-# Disable Elasticsearch indexing
-ELASTICSEARCH_DSL_AUTOSYNC = False
-ELASTICSEARCH_DSL_INDEX_SETTINGS = {}
+LOGGING_CONFIG = None
 
+MEDIA_ROOT = "/tmp/test_media"
+STATIC_ROOT = "/tmp/test_static"
 
-DISABLE_CUSTOM_SIGNAL_PROCESSOR = True
+EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"

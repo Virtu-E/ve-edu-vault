@@ -1,6 +1,7 @@
 from typing import Optional, Union
 
-from src.exceptions import VirtuEducateBusinessError, VirtuEducateValidationError
+from src.exceptions import (VirtuEducateBusinessError,
+                            VirtuEducateValidationError)
 
 
 class MaximumAttemptsExceededError(VirtuEducateBusinessError):

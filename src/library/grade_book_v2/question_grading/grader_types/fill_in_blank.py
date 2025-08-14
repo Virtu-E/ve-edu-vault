@@ -1,15 +1,16 @@
 import logging
 from typing import List
 
-from src.library.grade_book_v2.question_grading.grader_types.base import (
-    AbstractQuestionGrader,
-)
-from src.repository.graded_responses.data_types import StudentAnswer
+from src.apps.learning_tools.assessments.services.data_types import \
+    StudentAnswer
+from src.library.grade_book_v2.question_grading.grader_types.base import \
+    AbstractQuestionGrader
 from src.repository.question_repository.data_types import Question
 
 logger = logging.getLogger(__name__)
 
 
+# TODO : implement correct option id for fill in the blank
 class FillInTheBlankGrader(AbstractQuestionGrader):
     """
     Grader for fill-in-the-blank questions.

@@ -1,6 +1,7 @@
 from typing import Optional
 
-from src.exceptions import VirtuEducateBusinessError, VirtuEducateValidationError
+from src.exceptions import (VirtuEducateBusinessError,
+                            VirtuEducateValidationError)
 
 
 class WebhookValidationError(VirtuEducateValidationError): ...

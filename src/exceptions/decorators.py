@@ -48,7 +48,7 @@ def handle_virtueducate_errors(
 
                 error_result = UnifiedAPIErrorHandler.handle_exception(e, request_id)
                 return JsonResponse(
-                    error_result.response.dict(), status=error_result.status
+                    error_result.response.model_dump(), status=error_result.status
                 )
 
         return wrapper

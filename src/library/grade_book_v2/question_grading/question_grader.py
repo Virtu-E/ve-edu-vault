@@ -2,13 +2,10 @@ import logging
 from datetime import datetime
 from typing import Optional, Type
 
-from src.repository.graded_responses.data_types import (
-    GradedFeedback,
-    GradedResponse,
-    StudentAnswer,
-)
+from src.apps.learning_tools.assessments.models import StudentQuestionAttempt
+from src.apps.learning_tools.assessments.services.data_types import (
+    GradedFeedback, GradedResponseSchema, StudentAnswer)
 from src.repository.question_repository.data_types import Question
-from src.repository.student_attempts.data_types import StudentQuestionAttempt
 
 from .grader_factory import GraderFactory
 
@@ -50,7 +47,7 @@ class SingleQuestionGrader:
         submitted_answer: StudentAnswer,
         target_question: Question,
         previous_attempt_history: Optional[StudentQuestionAttempt],
-    ) -> GradedResponse:
+    ) -> GradedResponseSchema:
         """
         Grade a student's answer attempt and generate comprehensive feedback.
 
@@ -92,6 +89,11 @@ class SingleQuestionGrader:
         remaining_attempts_count = max(
             0, self.maximum_attempts_per_question - current_attempt_number
         )
+        correct_answer_id = None
+        if remaining_attempts_count == 0:
+            correct_answer_id = question_type_grader.get_correct_answer_id(
+                target_question, submitted_answer
+            )
 
         comprehensive_feedback = self._generate_contextual_feedback(
             remaining_attempts=remaining_attempts_count,
@@ -104,8 +106,9 @@ class SingleQuestionGrader:
             f"correct={answer_is_correct}, score={calculated_score}, attempts_remaining={remaining_attempts_count}"
         )
 
-        return GradedResponse(
+        return GradedResponseSchema(
             is_correct=answer_is_correct,
+            correct_option_id=correct_answer_id,
             question_id=target_question.id,
             user_id=int(student_user_id),
             grading_version="1.0",
@@ -238,7 +241,7 @@ class SingleQuestionGrader:
         attempt_history: Optional[StudentQuestionAttempt],
         submitted_answer: StudentAnswer,
         student_user_id: str,
-    ) -> Optional[GradedResponse]:
+    ) -> Optional[GradedResponseSchema]:
         """
         Handle edge cases that bypass normal grading flow.
 
@@ -268,7 +271,7 @@ class SingleQuestionGrader:
                 0, self.maximum_attempts_per_question - attempt_history.total_attempts
             )
 
-            return GradedResponse(
+            return GradedResponseSchema(
                 question_id=target_question.id,
                 user_id=int(student_user_id),
                 grading_version="1.0",
@@ -293,7 +296,7 @@ class SingleQuestionGrader:
                 answer_is_correct=False,
             )
 
-            return GradedResponse(
+            return GradedResponseSchema(
                 question_id=target_question.id,
                 user_id=int(student_user_id),
                 grading_version="1.0",

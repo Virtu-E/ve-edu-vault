@@ -3,9 +3,11 @@ from typing import List
 
 from src.apps.learning_tools.questions.models import QuestionSet
 from src.exceptions import QuestionNotFoundError
-from src.repository.question_repository.base_repo import AbstractQuestionRepository
+from src.repository.question_repository.base_repo import \
+    AbstractQuestionRepository
 from src.repository.question_repository.data_types import Question
-from src.repository.question_repository.mongo.qn_repo import MongoQuestionRepository
+from src.repository.question_repository.mongo.qn_repo import \
+    MongoQuestionRepository
 from src.utils.mixins.question_mixin import QuestionSetResources
 
 logger = logging.getLogger(__name__)

@@ -3,10 +3,10 @@ import os
 
 from celery import Celery
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 # Set the default Django settings module for the 'celery' program.
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "src.config.django.base")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "src.config.django.dev")
 
 
 app = Celery("edu_vault")
@@ -24,4 +24,4 @@ app.autodiscover_tasks()
 
 @app.task(bind=True, ignore_result=True)
 def debug_task(self):
-    log.info(f"Request: {self.request!r}")
+    logger.info(f"Request: {self.request!r}")
