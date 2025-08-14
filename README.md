@@ -1,4 +1,4 @@
-# VE-EDU-VAULT: Why I Built This Backend for Educational Impact in Malawi
+# VE-EDU-VAULT: Why I am Building This Backend for Educational Impact in Malawi
 
 ![Python](https://img.shields.io/badge/python-3.13-blue.svg)
 ![Django](https://img.shields.io/badge/django-5.2-green.svg)
